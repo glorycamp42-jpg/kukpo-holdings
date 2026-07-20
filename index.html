@@ -163,11 +163,14 @@ h2 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:tex
 .contact-card .btn{margin-top:34px}
 
 /* ---------- footer ---------- */
-footer{position:relative;z-index:2;border-top:1px solid var(--stroke);padding:44px clamp(20px,6vw,80px);background:rgba(5,5,9,.9)}
-footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+footer{position:relative;z-index:2;border-top:1px solid var(--stroke);padding:48px clamp(20px,6vw,80px) 36px;background:rgba(5,5,9,.9)}
 footer .fine{color:#8f8fae;font-size:12.5px;letter-spacing:.05em;line-height:1.8}
-.legal-links{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:#8f8fae}
-.legal-links a:hover,.legal-links a:focus-visible{color:#fff;text-decoration:underline}
+.foot-top{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;padding-bottom:28px;border-bottom:1px solid var(--stroke);margin-bottom:26px}
+.foot-bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.legal-links{position:static;display:flex;gap:10px;flex-wrap:wrap}
+.legal-links a{font-size:12px;letter-spacing:.04em;color:#b3b3cf;padding:9px 17px;border:1px solid var(--stroke);border-radius:99px;background:rgba(255,255,255,.03);transition:.25s;white-space:nowrap}
+.legal-links a:hover,.legal-links a:focus-visible{color:#fff;border-color:rgba(124,92,255,.6);background:rgba(124,92,255,.1)}
+@media(max-width:640px){.foot-top,.foot-bottom{justify-content:center;text-align:center}}
 #vidToggle{position:absolute;bottom:26px;right:26px;z-index:5;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(10,10,18,.6);backdrop-filter:blur(8px);color:#fff;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.3s}
 #vidToggle:hover{border-color:#fff;transform:scale(1.06)}
 
@@ -334,13 +337,18 @@ footer .fine{color:#8f8fae;font-size:12.5px;letter-spacing:.05em;line-height:1.8
 
 <footer>
   <div class="wrap">
-    <a href="#top" class="logo"><span class="logo-dot" aria-hidden="true"></span><span><b>KUKPO</b>&nbsp;HOLDINGS</span></a>
-    <nav class="legal-links" aria-label="Legal">
-      <a href="privacy.html">Privacy Policy · 개인정보처리방침</a>
-      <a href="terms.html">Terms of Use · 이용약관</a>
-      <a href="accessibility.html">Accessibility · 접근성</a>
-    </nav>
-    <div class="fine">Systems for people, technology for a better world.<br>© 2026 KUKPO Holdings. All Rights Reserved.</div>
+    <div class="foot-top">
+      <a href="#top" class="logo"><span class="logo-dot" aria-hidden="true"></span><span><b>KUKPO</b>&nbsp;HOLDINGS</span></a>
+      <div class="fine">Systems for people, technology for a better world.</div>
+    </div>
+    <div class="foot-bottom">
+      <div class="legal-links" role="navigation" aria-label="Legal">
+        <a href="privacy.html">Privacy Policy · 개인정보처리방침</a>
+        <a href="terms.html">Terms of Use · 이용약관</a>
+        <a href="accessibility.html">Accessibility · 접근성</a>
+      </div>
+      <div class="fine">© 2026 KUKPO Holdings. All Rights Reserved.</div>
+    </div>
   </div>
 </footer>
 
