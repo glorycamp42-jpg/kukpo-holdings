@@ -20,6 +20,16 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:300;background:var(--grad);color:#0b0b14;font-weight:700;padding:12px 22px;border-radius:10px;transition:top .2s}
+.skip-link:focus{top:12px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #8ab4ff;outline-offset:3px;border-radius:6px}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  .rv{opacity:1;transform:none}
+  .marquee-track{animation:none}
+}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Pretendard','Malgun Gothic',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 ::selection{background:rgba(124,92,255,.4)}
 a{color:inherit;text-decoration:none}
@@ -155,7 +165,11 @@ h2 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:tex
 /* ---------- footer ---------- */
 footer{position:relative;z-index:2;border-top:1px solid var(--stroke);padding:44px clamp(20px,6vw,80px);background:rgba(5,5,9,.9)}
 footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
-footer .fine{color:#6c6c88;font-size:12.5px;letter-spacing:.05em;line-height:1.8}
+footer .fine{color:#8f8fae;font-size:12.5px;letter-spacing:.05em;line-height:1.8}
+.legal-links{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:#8f8fae}
+.legal-links a:hover,.legal-links a:focus-visible{color:#fff;text-decoration:underline}
+#vidToggle{position:absolute;bottom:26px;right:26px;z-index:5;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(10,10,18,.6);backdrop-filter:blur(8px);color:#fff;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.3s}
+#vidToggle:hover{border-color:#fff;transform:scale(1.06)}
 
 /* ---------- chat widget ---------- */
 #chat-fab{position:fixed;right:26px;bottom:26px;z-index:150;width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 40px rgba(88,110,255,.55);transition:.35s}
@@ -195,8 +209,9 @@ footer .fine{color:#6c6c88;font-size:12.5px;letter-spacing:.05em;line-height:1.8
 </head>
 <body>
 
-<div id="preloader"><div class="pre-logo">KUKPO</div><div class="pre-bar"><i></i></div></div>
-<canvas id="bg3d"></canvas>
+<a href="#main" class="skip-link">본문 바로가기 · Skip to content</a>
+<div id="preloader" aria-hidden="true"><div class="pre-logo">KUKPO</div><div class="pre-bar"><i></i></div></div>
+<canvas id="bg3d" aria-hidden="true"></canvas>
 
 <nav id="nav">
   <a href="#top" class="logo"><span class="logo-dot"></span><span><b>KUKPO</b>&nbsp;HOLDINGS</span></a>
@@ -210,7 +225,7 @@ footer .fine{color:#6c6c88;font-size:12.5px;letter-spacing:.05em;line-height:1.8
 </nav>
 
 <header class="hero" id="top">
-  <video autoplay muted loop playsinline poster="poster.jpg" id="heroVideo">
+  <video autoplay muted loop playsinline poster="poster.jpg" id="heroVideo" aria-hidden="true" tabindex="-1">
     <source src="hero.mp4" type="video/mp4">
     <source src="hero.webm" type="video/webm">
   </video>
@@ -230,11 +245,13 @@ footer .fine{color:#6c6c88;font-size:12.5px;letter-spacing:.05em;line-height:1.8
       <div class="hstat"><b>AI</b><span>Native</span></div>
     </div>
   </div>
-  <div class="scroll-hint"><div class="mouse"></div>SCROLL</div>
+  <div class="scroll-hint" aria-hidden="true"><div class="mouse"></div>SCROLL</div>
+  <button id="vidToggle" onclick="toggleVideo()" aria-label="배경 영상 일시정지 / Pause background video" aria-pressed="false" title="Pause background video">⏸</button>
 </header>
 
-<div class="marquee"><div class="marquee-track" id="mtrack"></div></div>
+<div class="marquee" aria-hidden="true"><div class="marquee-track" id="mtrack"></div></div>
 
+<main id="main">
 <section id="about">
   <div class="wrap">
     <div class="kicker rv">Philosophy · 경작의 정신</div>
@@ -313,29 +330,35 @@ footer .fine{color:#6c6c88;font-size:12.5px;letter-spacing:.05em;line-height:1.8
     </div>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="wrap">
-    <a href="#top" class="logo"><span class="logo-dot"></span><span><b>KUKPO</b>&nbsp;HOLDINGS</span></a>
+    <a href="#top" class="logo"><span class="logo-dot" aria-hidden="true"></span><span><b>KUKPO</b>&nbsp;HOLDINGS</span></a>
+    <nav class="legal-links" aria-label="Legal">
+      <a href="privacy.html">Privacy Policy · 개인정보처리방침</a>
+      <a href="terms.html">Terms of Use · 이용약관</a>
+      <a href="accessibility.html">Accessibility · 접근성</a>
+    </nav>
     <div class="fine">Systems for people, technology for a better world.<br>© 2026 KUKPO Holdings. All Rights Reserved.</div>
   </div>
 </footer>
 
-<button id="chat-fab" onclick="toggleChat()" aria-label="AI Chat">
-  <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 5.9 2 10.7c0 2.7 1.4 5.1 3.6 6.7-.1.9-.5 2.3-1.5 3.6 0 0 2.4-.3 4.5-1.7 1.1.3 2.2.5 3.4.5 5.5 0 10-3.9 10-8.7S17.5 2 12 2z"/></svg>
-  <span class="ping"></span>
+<button id="chat-fab" onclick="toggleChat()" aria-label="AI 채팅 상담 열기 / Open AI chat" aria-expanded="false">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.5 2 2 5.9 2 10.7c0 2.7 1.4 5.1 3.6 6.7-.1.9-.5 2.3-1.5 3.6 0 0 2.4-.3 4.5-1.7 1.1.3 2.2.5 3.4.5 5.5 0 10-3.9 10-8.7S17.5 2 12 2z"/></svg>
+  <span class="ping" aria-hidden="true"></span>
 </button>
 
-<div id="chat-panel">
+<div id="chat-panel" role="dialog" aria-label="KUKPO AI 채팅 상담">
   <div class="chat-head">
-    <div class="chat-ava">K</div>
-    <div><h4>KUKPO AI Agent</h4><small><i></i>ONLINE · 즉시 응답</small></div>
-    <button class="chat-close" onclick="toggleChat(false)">✕</button>
+    <div class="chat-ava" aria-hidden="true">K</div>
+    <div><h4>KUKPO AI Agent</h4><small><i aria-hidden="true"></i>ONLINE · 즉시 응답</small></div>
+    <button class="chat-close" onclick="toggleChat(false)" aria-label="채팅 닫기 / Close chat">✕</button>
   </div>
-  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-body" id="chatBody" aria-live="polite"></div>
   <div class="chat-input">
-    <input id="chatInput" type="text" placeholder="무엇이든 물어보세요..." onkeydown="if(event.key==='Enter')sendMsg()">
-    <button class="chat-send" onclick="sendMsg()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
+    <input id="chatInput" type="text" placeholder="무엇이든 물어보세요..." aria-label="AI 에이전트에게 질문 입력" onkeydown="if(event.key==='Enter')sendMsg()">
+    <button class="chat-send" onclick="sendMsg()" aria-label="메시지 전송 / Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
   </div>
 </div>
 
@@ -348,6 +371,17 @@ setTimeout(()=>document.getElementById('preloader').classList.add('done'),3500);
 /* ============ NAV ============ */
 const nav=document.getElementById('nav');
 addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>40),{passive:true});
+
+/* ============ ACCESSIBILITY: reduced motion + video control ============ */
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const heroVid=document.getElementById('heroVideo');
+if(REDUCED&&heroVid){heroVid.removeAttribute('autoplay');heroVid.pause();}
+function toggleVideo(){
+  const b=document.getElementById('vidToggle');
+  if(heroVid.paused){heroVid.play();b.textContent='⏸';b.setAttribute('aria-pressed','false');b.setAttribute('aria-label','배경 영상 일시정지 / Pause background video');}
+  else{heroVid.pause();b.textContent='▶';b.setAttribute('aria-pressed','true');b.setAttribute('aria-label','배경 영상 재생 / Play background video');}
+}
+addEventListener('keydown',e=>{if(e.key==='Escape')toggleChat(false)});
 
 /* ============ PROJECTS DATA ============ */
 const PROJECTS=[
@@ -400,7 +434,9 @@ document.querySelectorAll('.rv').forEach(el=>io.observe(el));
 /* ============ COUNTERS ============ */
 const cio=new IntersectionObserver(es=>es.forEach(e=>{
   if(!e.isIntersecting)return;const b=e.target;cio.unobserve(b);
-  const t=+b.dataset.count;let cur=0;const step=Math.max(1,Math.round(t/40));
+  const t=+b.dataset.count;
+  if(REDUCED){b.textContent=t+(t>=10?'+':'');return;}
+  let cur=0;const step=Math.max(1,Math.round(t/40));
   const tm=setInterval(()=>{cur+=step;if(cur>=t){cur=t;clearInterval(tm)}b.textContent=cur+(t>=10?'+':'')},34);
 }),{threshold:.6});
 document.querySelectorAll('[data-count]').forEach(b=>cio.observe(b));
@@ -412,7 +448,7 @@ document.querySelectorAll('.vcard').forEach(c=>c.addEventListener('mousemove',e=
 
 /* ============ THREE.JS BACKGROUND ============ */
 (function(){
-  if(!window.THREE)return;
+  if(!window.THREE||REDUCED)return;
   const canvas=document.getElementById('bg3d');
   const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -460,6 +496,7 @@ let chatOpened=false;
 function toggleChat(force){
   const open=force!==undefined?force:!panel.classList.contains('open');
   panel.classList.toggle('open',open);
+  document.getElementById('chat-fab').setAttribute('aria-expanded',open?'true':'false');
   if(open&&!chatOpened){chatOpened=true;botSay("안녕하세요! 👋 KUKPO Holdings AI 에이전트입니다.\n회사, 프로젝트, 서비스 문의 등 무엇이든 물어보세요.",true);}
   if(open)setTimeout(()=>document.getElementById('chatInput').focus(),350);
 }
