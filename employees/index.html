@@ -113,7 +113,7 @@ const KIND = {wage:'급여',bonus:'보너스',reimbursement:'환급',other:'기�
 const PAYTYPE = {hourly:'시급',monthly:'월급',per_project:'건당/프로젝트',other:'기타'};
 const STATUS = {active:['재직','ok'],leave:['휴직','warn'],terminated:['퇴사','gray']};
 const PST = {new:['신규','info'],treating:['치료 중','ok'],discharged:['치료 종료','gray'],settled:['세틀 완료','ok'],closed:['종결','gray'],dropped:['중단','bad']};
-let S = {emps:[],rates:[],scheds:[],pays:[],pts:[],closed:[],abs:[]}, view='dash', cur=null, curTab='info';
+let S = {emps:[],rates:[],scheds:[],pays:[],pts:[],closed:[],abs:[],adj:[]}, view='dash', cur=null, curTab='info';
 
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
 const today = () => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10) };
@@ -124,16 +124,17 @@ const hrs = (a,b) => { if(!a||!b) return 0; const [h1,m1]=a.split(':').map(Numbe
 const t12 = t => { if(!t) return ''; let [h,m]=t.split(':').map(Number); const ap=h<12?'오전':'오후'; h=h%12||12; return `${ap} ${h}:${String(m).padStart(2,'0')}` };
 
 async function load(){
-  const [e,r,s,p,pt,cl,ab] = await Promise.all([
+  const [e,r,s,p,pt,cl,ab,aj] = await Promise.all([
     SB.from('emp_employees').select('*').order('start_date'),
     SB.from('emp_pay_rates').select('*').order('effective_from'),
     SB.from('emp_schedules').select('*').order('effective_from'),
     SB.from('emp_payments').select('*').order('paid_on',{ascending:false}),
     SB.from('emp_patients').select('*').order('created_at',{ascending:false}),
     SB.from('emp_closures').select('*').order('closed_on'),
-    SB.from('emp_absences').select('*').order('absent_on')]);
-  const err = [e,r,s,p,pt,cl,ab].find(x=>x.error); if(err){toast('불러오기 오류: '+err.error.message); return}
-  S={emps:e.data,rates:r.data,scheds:s.data,pays:p.data,pts:pt.data,closed:cl.data,abs:ab.data};
+    SB.from('emp_absences').select('*').order('absent_on'),
+    SB.from('emp_hour_adjustments').select('*').order('work_date')]);
+  const err = [e,r,s,p,pt,cl,ab,aj].find(x=>x.error); if(err){toast('불러오기 오류: '+err.error.message); return}
+  S={emps:e.data,rates:r.data,scheds:s.data,pays:p.data,pts:pt.data,closed:cl.data,abs:ab.data,adj:aj.data};
 }
 const empName = id => (S.emps.find(e=>e.id===id)||{}).name || '—';
 const eff = (list,id,date) => list.filter(x=>x.employee_id===id && x.effective_from<=date).at(-1);
@@ -145,8 +146,11 @@ function expected(emp, from, to){
   const e = emp.end_date && emp.end_date<to ? emp.end_date : to;
   for(let d=pd(s); ymd(d)<=e; d.setDate(d.getDate()+1)){
     const ds=ymd(d), sc=eff(S.scheds,emp.id,ds), rt=eff(S.rates,emp.id,ds);
-    if(!sc || !sc.days.includes(d.getDay()) || S.closed.some(c=>c.closed_on===ds) || S.abs.some(a=>a.employee_id===emp.id&&a.absent_on===ds)) continue;
-    const h=hrs(sc.start_time,sc.end_time); days++; hours+=h;
+    const aj=S.adj.find(a=>a.employee_id===emp.id&&a.work_date===ds);
+    let h;
+    if(aj){ h=Number(aj.hours); if(!h) continue; }
+    else { if(!sc || !sc.days.includes(d.getDay()) || S.closed.some(c=>c.closed_on===ds) || S.abs.some(a=>a.employee_id===emp.id&&a.absent_on===ds)) continue; h=hrs(sc.start_time,sc.end_time); }
+    days++; hours+=h;
     if(rt && rt.pay_type==='hourly') amt+=h*Number(rt.amount);
   }
   // 월급제: 그 달 유효한 월급
@@ -234,7 +238,7 @@ function vEmp(){
     <p class="muted" style="font-size:12px">조건이 바뀌면 삭제하지 말고 새 적용일로 추가하세요. 지난달 정산은 그때 조건으로 계산됩니다.</p>`;
   if(curTab==='paid') body=`<div class="row"><div><span class="muted">총지급</span> <b style="font-size:18px;color:var(--navy)">${money(tot)}</b></div><div class="sp"></div><button class="btn sm" id="addPay">+ 지급 기록</button></div><div style="height:10px"></div>
     <div class="tbl"><table><tr><th>지급일</th><th>종류</th><th class="n">금액</th><th>방법</th><th>대상 기간</th><th>메모</th><th></th></tr>
-    ${pays.map(p=>`<tr><td>${fmtD(p.paid_on)}</td><td>${KIND[p.kind]}</td><td class="n">${money(p.amount)}</td><td>${esc(p.method)||'—'}</td><td class="muted">${p.period_start?fmtD(p.period_start)+' ~ '+fmtD(p.period_end):'—'}</td><td class="muted">${esc(p.note)}</td><td class="n"><button class="btn del sm" data-del="emp_payments" data-id="${p.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">지급 기록 없음</td></tr>'}</table></div>`;
+    ${pays.map(p=>`<tr class="click" data-pay="${p.id}"><td>${fmtD(p.paid_on)}</td><td>${KIND[p.kind]}</td><td class="n">${money(p.amount)}</td><td>${esc(p.method)||'—'}</td><td class="muted">${p.period_start?fmtD(p.period_start)+' ~ '+fmtD(p.period_end):'—'}</td><td class="muted">${esc(p.note)}</td><td class="n"><button class="btn del sm" data-del="emp_payments" data-id="${p.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">지급 기록 없음</td></tr>'}</table></div>`;
   if(curTab==='pts') body=`<div class="row"><span class="muted">${esc(e.name)} 님이 데려와서 관리하는 환자</span><div class="sp"></div><button class="btn sm" id="addPt">+ 환자 추가</button></div><div style="height:10px"></div>${ptTable(pts,false)}`;
   $('#view').innerHTML=`<div class="row"><button class="btn sec sm" id="back">← 직원 목록</button></div>
     <div class="row" style="margin-top:12px"><h1 style="margin:0">${esc(e.name)}</h1><span class="pill ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span><span class="muted">${esc(e.company)} · ${esc(e.role)}</span></div>
@@ -245,6 +249,7 @@ function vEmp(){
   $('#addRate')&&($('#addRate').onclick=()=>rateForm(e));
   $('#addSch')&&($('#addSch').onclick=()=>schForm(e));
   $('#addPay')&&($('#addPay').onclick=()=>payForm(e));
+  document.querySelectorAll('[data-pay]').forEach(r=>r.onclick=()=>payForm(e,S.pays.find(p=>p.id===r.dataset.pay)));
   $('#addPt')&&($('#addPt').onclick=()=>ptForm(null,e.id));
   bindRows();
 }
@@ -276,7 +281,7 @@ function vPay(){
   const rows=S.emps.filter(e=>!(e.end_date&&e.end_date<f) && !(e.start_date&&e.start_date>t)).map(e=>{const x=expected(e,f,t);return {e,...x,wage:paidIn(e.id,f,t,'wage'),bonus:paidIn(e.id,f,t,'bonus'),all:paidIn(e.id,f,t)}});
   const sum=k=>rows.reduce((a,r)=>a+r[k],0);
   $('#view').innerHTML=`<div class="row"><h1 style="margin:0">월 정산</h1><div class="sp"></div><input type="month" id="ym" value="${ym}" style="width:auto"></div>
-  <p class="muted">예상 급여 = 그달 스케줄 근무일 × 그날 유효한 시급 (회사 휴무일·개인 결근 제외). 실제 출근일과 다르면 지급할 때 금액을 고쳐 넣으세요.</p>
+  <p class="muted">예상 급여 = 그달 스케줄 근무일 × 그날 유효한 시급 (회사 휴무일·개인 결근 제외, 근무시간 조정 반영). 실제 출근일과 다르면 지급할 때 금액을 고쳐 넣으세요.</p>
   <div class="tbl"><table><tr><th>직원</th><th class="n">근무일</th><th class="n">시간</th><th class="n">예상 급여</th><th class="n">지급한 급여</th><th class="n">남은 급여</th><th class="n">보너스 등</th><th></th></tr>
   ${rows.map(r=>{const rem=r.amt-r.wage;return `<tr><td><b>${esc(r.e.name)}</b><div class="muted" style="font-size:12px">${curRate(r.e.id)}</div></td><td class="n">${r.days}일</td><td class="n">${r.hours}</td><td class="n">${money(r.amt)}</td><td class="n">${money(r.wage)}</td><td class="n" style="color:${rem>0.005?'var(--bad)':'var(--ok)'};font-weight:600">${money(rem)}</td><td class="n">${money(r.all-r.wage)}</td><td class="n">${rem>0.005?`<button class="btn sm" data-payfor="${r.e.id}" data-amt="${rem.toFixed(2)}">지급 기록</button>`:''}</td></tr>`}).join('')}
   <tr><th>합계</th><th class="n">${sum('days')}일</th><th class="n">${sum('hours')}</th><th class="n">${money(sum('amt'))}</th><th class="n">${money(sum('wage'))}</th><th class="n">${money(sum('amt')-sum('wage'))}</th><th class="n">${money(sum('all')-sum('wage'))}</th><th></th></tr>
@@ -289,6 +294,11 @@ function vPay(){
   <p class="muted" style="font-size:12px">스케줄에 있는데 안 나온 날 (무급).</p>
   <div class="tbl"><table><tr><th>날짜</th><th>직원</th><th>메모</th><th></th></tr>
   ${S.abs.filter(a=>a.absent_on>=f&&a.absent_on<=t).map(a=>`<tr><td>${fmtD(a.absent_on)} (${DAYS[pd(a.absent_on).getDay()]})</td><td>${esc(empName(a.employee_id))}</td><td class="muted">${esc(a.note)}</td><td class="n"><button class="btn del sm" data-del="emp_absences" data-id="${a.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="4" class="empty">이달 결근 없음</td></tr>'}</table></div>`);
+  $('#view').insertAdjacentHTML('beforeend',`<div class="row" style="margin-top:22px"><h2 style="margin:0">근무시간 조정</h2><div class="sp"></div><button class="btn sm" id="addAj">+ 시간 조정</button></div>
+  <p class="muted" style="font-size:12px">그날 실제로 일한 시간을 넣으면 스케줄 대신 이 시간으로 계산됩니다. 스케줄에 없는 날 추가 근무도 여기에 넣으세요. 0시간 = 무급.</p>
+  <div class="tbl"><table><tr><th>날짜</th><th>직원</th><th class="n">실제 시간</th><th>메모</th><th></th></tr>
+  ${S.adj.filter(a=>a.work_date>=f&&a.work_date<=t).map(a=>`<tr><td>${fmtD(a.work_date)} (${DAYS[pd(a.work_date).getDay()]})</td><td>${esc(empName(a.employee_id))}</td><td class="n">${Number(a.hours)}시간</td><td class="muted">${esc(a.note)}</td><td class="n"><button class="btn del sm" data-del="emp_hour_adjustments" data-id="${a.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">이달 조정 없음</td></tr>'}</table></div>`);
+  $('#addAj').onclick=()=>modal('근무시간 조정',`<div class="form"><div><label>직원 *</label><select name="employee_id" required>${S.emps.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></div>${fld('work_date','날짜 *',today(),'date','required')}${fld('hours','실제 일한 시간 *','','number','step="0.25" min="0" max="24" required')}${fld('note','메모','','text','placeholder="예: 조퇴, 추가 근무"')}</div>`,async fd=>{const {data:ex}=await SB.from('emp_hour_adjustments').select('id').eq('employee_id',fd.employee_id).eq('work_date',fd.work_date).maybeSingle();return save('emp_hour_adjustments',fd,ex?.id)});
   $('#addAb').onclick=()=>modal('개인 결근 추가',`<div class="form"><div><label>직원 *</label><select name="employee_id" required>${S.emps.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></div>${fld('absent_on','날짜 *',today(),'date','required')}${fld('note','메모','결근 (무급)')}</div>`,fd=>save('emp_absences',fd));
   $('#addCl').onclick=()=>modal('회사 휴무일 추가',`<div class="form">${fld('closed_on','날짜 *',today(),'date','required')}${fld('note','메모','','text','placeholder="예: Labor Day"')}</div>`,fd=>save('emp_closures',fd));
   bindRows();
@@ -340,9 +350,10 @@ function schForm(e){
     fd=>{const days=DAYS.map((_,i)=>fd['d'+i]?i:null).filter(x=>x!==null); if(!days.length){toast('요일을 선택하세요');return false} return save('emp_schedules',{employee_id:e.id,days,start_time:fd.start_time,end_time:fd.end_time,effective_from:fd.effective_from})});
 }
 function payForm(e,d={}){
-  modal(`${esc(e.name)} — 지급 기록`,`<div class="form">${fld('paid_on','지급일 *',d.paid_on||today(),'date','required')}${fld('amount','금액 ($) *',d.amount,'number','step="0.01" required')}${sel('kind','종류',d.kind||'wage',KIND)}
-    ${fld('method','지급 방법','','text','placeholder="체크 / Zelle / 현금"')}${fld('period_start','대상 기간 시작',d.period_start,'date')}${fld('period_end','대상 기간 끝',d.period_end,'date')}</div><div style="margin-top:12px">${fld('note','메모','')}</div>`,
-    fd=>save('emp_payments',{...fd,employee_id:e.id}));
+  modal(`${esc(e.name)} — ${d.id?'지급 기록 수정':'지급 기록'}`,`<div class="form">${fld('paid_on','지급일 *',d.paid_on||today(),'date','required')}${fld('amount','금액 ($) *',d.amount,'number','step="0.01" required')}${sel('kind','종류',d.kind||'wage',KIND)}
+    ${fld('method','지급 방법',d.method||'','text','placeholder="체크 / Zelle / 현금"')}${fld('period_start','대상 기간 시작',d.period_start,'date')}${fld('period_end','대상 기간 끝',d.period_end,'date')}</div><div style="margin-top:12px">${fld('note','메모',d.note||'')}</div>`,
+    fd=>save('emp_payments',{...fd,employee_id:e.id},d.id),
+    d.id?async()=>{const{error}=await SB.from('emp_payments').delete().eq('id',d.id);if(error)return toast(error.message);await log('delete',{table:'emp_payments',id:d.id});await refresh('삭제했습니다')}:null);
 }
 function ptForm(p,empId){
   p=p||{employee_id:empId,status:'new'};
