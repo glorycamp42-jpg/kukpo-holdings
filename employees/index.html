@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Kukpo 직원 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--navy:#1f3a5f;--navy2:#2c5282;--bg:#f5f7fa;--card:#fff;--line:#e3e8ef;--muted:#64748b;--text:#1e293b;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--soft:#eef2f7}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+button,input,select,textarea{font:inherit}
+.hidden{display:none!important}
+header{background:var(--navy);color:#fff;padding:0 20px;display:flex;align-items:center;gap:20px;height:56px;position:sticky;top:0;z-index:5}
+header .brand{font-weight:700;letter-spacing:.02em}
+header .brand small{font-weight:400;opacity:.7;margin-left:6px}
+nav{display:flex;gap:4px;flex:1;overflow-x:auto}
+nav button{background:none;border:0;color:#cbd5e1;padding:8px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}
+nav button.on{background:rgba(255,255,255,.14);color:#fff}
+header .who{font-size:12px;opacity:.85;white-space:nowrap}
+header .who button{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:5px;padding:3px 8px;margin-left:6px;cursor:pointer;font-size:12px}
+main{max-width:1100px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:20px;margin:0 0 16px;color:var(--navy)}
+h2{font-size:15px;margin:22px 0 10px;color:var(--navy)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi .l{color:var(--muted);font-size:12px}
+.kpi .v{font-size:22px;font-weight:700;margin-top:4px;color:var(--navy)}
+.kpi .s{color:var(--muted);font-size:12px;margin-top:2px}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f8fafc;color:#475569;font-weight:600;font-size:12px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer} tr.click:hover td{background:#f8fafc}
+.tbl{border:1px solid var(--line);border-radius:10px;overflow:auto}
+.tbl table{min-width:560px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn.sec{background:#fff;color:var(--navy);border:1px solid #cbd5e1}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.del{background:#fff;color:var(--bad);border:1px solid #fecaca}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;background:var(--soft);color:var(--navy)}
+.pill.ok{background:#dcfce7;color:var(--ok)} .pill.warn{background:#fef3c7;color:var(--warn)} .pill.bad{background:#fee2e2;color:var(--bad)} .pill.gray{background:#f1f5f9;color:#64748b}
+.alert{padding:10px 12px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;margin-bottom:8px;font-size:13px}
+.alert.info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.muted{color:var(--muted)}
+label{display:block;font-size:12px;color:#475569;margin-bottom:4px;font-weight:500}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
+textarea{min-height:70px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.dl{display:grid;grid-template-columns:130px 1fr;gap:8px 12px}
+.dl dt{color:var(--muted)} .dl dd{margin:0}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:18px 0 14px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted);white-space:nowrap}
+.tabs button.on{border-color:var(--navy);color:var(--navy);font-weight:600}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.days label{display:flex;align-items:center;gap:4px;border:1px solid #cbd5e1;border-radius:6px;padding:5px 9px;margin:0;cursor:pointer;font-weight:400}
+.days input{width:auto}
+#login{max-width:380px;margin:12vh auto;padding:0 16px}
+#login .card{padding:26px}
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:flex-start;justify-content:center;padding:6vh 12px;z-index:20;overflow:auto}
+.modal{background:#fff;border-radius:12px;max-width:620px;width:100%;padding:20px}
+.modal h3{margin:0 0 14px;color:var(--navy)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:8px;z-index:30;font-size:13px}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+@media(max-width:640px){header{flex-wrap:wrap;height:auto;padding:10px 12px;gap:8px}.dl{grid-template-columns:100px 1fr}}
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <div style="text-align:center;margin-bottom:18px">
+    <div style="font-size:12px;letter-spacing:.12em;color:var(--muted)">KUKPO HOLDINGS</div>
+    <div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px">직원 관리</div>
+  </div>
+  <form class="card" id="loginForm">
+    <label>이메일</label><input id="lEmail" type="email" autocomplete="username" required>
+    <div style="height:12px"></div>
+    <label>비밀번호</label><input id="lPw" type="password" autocomplete="current-password" required>
+    <div style="height:16px"></div>
+    <button class="btn" style="width:100%">로그인</button>
+    <p id="lErr" class="muted" style="color:var(--bad);font-size:13px;margin:10px 0 0"></p>
+    <p class="muted" style="font-size:12px;margin:12px 0 0">Eugene · David 전용. Kukpo Social과 같은 계정입니다.</p>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="brand">KUKPO<small>직원 관리</small></div>
+    <nav id="nav">
+      <button data-v="dash">대시보드</button>
+      <button data-v="emps">직원</button>
+      <button data-v="pay">월 정산</button>
+      <button data-v="pts">환자 관리</button>
+    </nav>
+    <div class="who"><span id="whoEmail"></span><button id="pwBtn">비번 변경</button><button id="outBtn">로그아웃</button></div>
+  </header>
+  <main id="view"></main>
+</div>
+
+<script>
+const SB = supabase.createClient('https://wgohvustiekmyfdihibk.supabase.co','sb_publishable_sZOi0oR6xRHUPv7CEQSjpg_kW-2j6yg');
+const $ = s => document.querySelector(s);
+const esc = s => (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const DAYS = ['일','월','화','수','목','금','토'];
+const KIND = {wage:'급여',bonus:'보너스',reimbursement:'환급',other:'기타'};
+const PAYTYPE = {hourly:'시급',monthly:'월급',per_project:'건당/프로젝트',other:'기타'};
+const STATUS = {active:['재직','ok'],leave:['휴직','warn'],terminated:['퇴사','gray']};
+const PST = {new:['신규','info'],treating:['치료 중','ok'],discharged:['치료 종료','gray'],settled:['세틀 완료','ok'],closed:['종결','gray'],dropped:['중단','bad']};
+let S = {emps:[],rates:[],scheds:[],pays:[],pts:[]}, view='dash', cur=null, curTab='info';
+
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+const today = () => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10) };
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pd = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) };
+const fmtD = s => s ? s.replaceAll('-','.') : '—';
+const hrs = (a,b) => { if(!a||!b) return 0; const [h1,m1]=a.split(':').map(Number),[h2,m2]=b.split(':').map(Number); return ((h2*60+m2)-(h1*60+m1))/60 };
+const t12 = t => { if(!t) return ''; let [h,m]=t.split(':').map(Number); const ap=h<12?'오전':'오후'; h=h%12||12; return `${ap} ${h}:${String(m).padStart(2,'0')}` };
+
+async function load(){
+  const [e,r,s,p,pt] = await Promise.all([
+    SB.from('emp_employees').select('*').order('start_date'),
+    SB.from('emp_pay_rates').select('*').order('effective_from'),
+    SB.from('emp_schedules').select('*').order('effective_from'),
+    SB.from('emp_payments').select('*').order('paid_on',{ascending:false}),
+    SB.from('emp_patients').select('*').order('created_at',{ascending:false})]);
+  const err = [e,r,s,p,pt].find(x=>x.error); if(err){toast('불러오기 오류: '+err.error.message); return}
+  S={emps:e.data,rates:r.data,scheds:s.data,pays:p.data,pts:pt.data};
+}
+const empName = id => (S.emps.find(e=>e.id===id)||{}).name || '—';
+const eff = (list,id,date) => list.filter(x=>x.employee_id===id && x.effective_from<=date).at(-1);
+
+// 예상 급여: 스케줄 × 그날 유효한 시급
+function expected(emp, from, to){
+  let days=0,hours=0,amt=0;
+  const s = emp.start_date && emp.start_date>from ? emp.start_date : from;
+  const e = emp.end_date && emp.end_date<to ? emp.end_date : to;
+  for(let d=pd(s); ymd(d)<=e; d.setDate(d.getDate()+1)){
+    const ds=ymd(d), sc=eff(S.scheds,emp.id,ds), rt=eff(S.rates,emp.id,ds);
+    if(!sc || !sc.days.includes(d.getDay())) continue;
+    const h=hrs(sc.start_time,sc.end_time); days++; hours+=h;
+    if(rt && rt.pay_type==='hourly') amt+=h*Number(rt.amount);
+  }
+  // 월급제: 그 달 유효한 월급
+  const rtEnd = eff(S.rates,emp.id,e);
+  if(rtEnd && rtEnd.pay_type==='monthly') amt=Number(rtEnd.amount);
+  return {days,hours,amt};
+}
+const monthRange = ym => { const [y,m]=ym.split('-').map(Number); return [`${ym}-01`, ymd(new Date(y,m,0))] };
+const paidIn = (id,from,to,kind) => S.pays.filter(p=>p.employee_id===id && p.paid_on>=from && p.paid_on<=to && (!kind||p.kind===kind)).reduce((a,p)=>a+Number(p.amount),0);
+
+function alerts(){
+  const out=[], yr=today().slice(0,4);
+  for(const e of S.emps.filter(e=>e.status!=='terminated')){
+    if(e.employment_type==='1099' && !e.w9_received) out.push(`<b>${esc(e.name)}</b> — W-9 아직 안 받음`);
+    if(!S.rates.some(r=>r.employee_id===e.id)) out.push(`<b>${esc(e.name)}</b> — 보수 조건이 입력 안 됨`);
+    const y = paidIn(e.id,`${yr}-01-01`,`${yr}-12-31`);
+    if(e.employment_type==='1099' && y>=2000) out.push(`<b>${esc(e.name)}</b> — ${yr}년 지급 ${money(y)} (연 $2,000 이상 → 1099-NEC 대상, ${Number(yr)+1}년 1월 31일까지)`);
+  }
+  return out;
+}
+
+// ---------- VIEWS ----------
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view || (view==='emp'&&b.dataset.v==='emps')));
+  ({dash:vDash,emps:vEmps,emp:vEmp,pay:vPay,pts:vPts})[view]();
+}
+function go(v,id){view=v; if(id!==undefined) cur=id; render(); scrollTo(0,0)}
+
+function vDash(){
+  const ym=today().slice(0,7), [f,t]=monthRange(ym), yr=ym.slice(0,4);
+  const act=S.emps.filter(e=>e.status==='active');
+  const exp=act.reduce((a,e)=>a+expected(e,f,t).amt,0);
+  const paidM=S.pays.filter(p=>p.paid_on>=f&&p.paid_on<=t).reduce((a,p)=>a+Number(p.amount),0);
+  const paidY=S.pays.filter(p=>p.paid_on.startsWith(yr)).reduce((a,p)=>a+Number(p.amount),0);
+  const openPts=S.pts.filter(p=>['new','treating'].includes(p.status)).length;
+  const al=alerts();
+  $('#view').innerHTML=`<h1>대시보드</h1>
+  <div class="grid kpis">
+    <div class="card kpi"><div class="l">재직 인원</div><div class="v">${act.length}명</div><div class="s">전체 ${S.emps.length}명</div></div>
+    <div class="card kpi"><div class="l">${+ym.slice(5)}월 예상 인건비</div><div class="v">${money(exp)}</div><div class="s">스케줄 × 시급 기준</div></div>
+    <div class="card kpi"><div class="l">${+ym.slice(5)}월 지급액</div><div class="v">${money(paidM)}</div><div class="s">보너스 포함</div></div>
+    <div class="card kpi"><div class="l">${yr}년 총지급</div><div class="v">${money(paidY)}</div><div class="s">진행 중 환자 ${openPts}명</div></div>
+  </div>
+  <h2>확인할 일</h2>
+  ${al.length? al.map(a=>`<div class="alert">${a}</div>`).join('') : '<div class="alert info">처리할 일이 없습니다.</div>'}
+  <h2>최근 지급</h2>
+  <div class="tbl"><table><tr><th>날짜</th><th>직원</th><th>종류</th><th class="n">금액</th><th>메모</th></tr>
+  ${S.pays.slice(0,8).map(p=>`<tr><td>${fmtD(p.paid_on)}</td><td>${esc(empName(p.employee_id))}</td><td>${KIND[p.kind]}</td><td class="n">${money(p.amount)}</td><td class="muted">${esc(p.note)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">지급 기록 없음</td></tr>'}
+  </table></div>`;
+}
+
+function curRate(id){ const r=eff(S.rates,id,today()) || S.rates.filter(x=>x.employee_id===id).at(-1); return r? `${PAYTYPE[r.pay_type]} ${money(r.amount)}`:'<span class="pill warn">미입력</span>' }
+function curSched(id){ const s=eff(S.scheds,id,today()) || S.scheds.filter(x=>x.employee_id===id).at(-1); return s? `${s.days.map(d=>DAYS[d]).join('·')} ${t12(s.start_time)}–${t12(s.end_time)}`:'<span class="muted">—</span>' }
+
+function vEmps(){
+  $('#view').innerHTML=`<div class="row"><h1 style="margin:0">직원</h1><div class="sp"></div><button class="btn" id="addEmp">+ 직원 추가</button></div><div style="height:14px"></div>
+  <div class="tbl"><table><tr><th>이름</th><th>소속 / 역할</th><th>형태</th><th>근무</th><th>보수</th><th>시작일</th><th>상태</th></tr>
+  ${S.emps.map(e=>`<tr class="click" data-id="${e.id}"><td><b>${esc(e.name)}</b><div class="muted" style="font-size:12px">${esc(e.phone)}</div></td><td>${esc(e.company)}<div class="muted" style="font-size:12px">${esc(e.role)}</div></td><td>${e.employment_type}</td><td>${curSched(e.id)}</td><td>${curRate(e.id)}</td><td>${fmtD(e.start_date)}</td><td><span class="pill ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span></td></tr>`).join('') || '<tr><td colspan="7" class="empty">직원 없음</td></tr>'}
+  </table></div>`;
+  document.querySelectorAll('tr.click').forEach(r=>r.onclick=()=>{curTab='info';go('emp',r.dataset.id)});
+  $('#addEmp').onclick=()=>empForm();
+}
+
+function vEmp(){
+  const e=S.emps.find(x=>x.id===cur); if(!e) return go('emps');
+  const pays=S.pays.filter(p=>p.employee_id===e.id), rates=S.rates.filter(r=>r.employee_id===e.id), sch=S.scheds.filter(s=>s.employee_id===e.id), pts=S.pts.filter(p=>p.employee_id===e.id);
+  const tot=pays.reduce((a,p)=>a+Number(p.amount),0);
+  const tabs=[['info','기본 정보'],['pay','보수 · 스케줄'],['paid',`지급 내역 (${pays.length})`],['pts',`담당 환자 (${pts.length})`]];
+  let body='';
+  if(curTab==='info') body=`<div class="card"><dl class="dl">
+    <dt>이름</dt><dd>${esc(e.name)}</dd><dt>전화</dt><dd>${esc(e.phone)||'—'}</dd><dt>이메일</dt><dd>${esc(e.email)||'—'}</dd>
+    <dt>소속</dt><dd>${esc(e.company)||'—'}</dd><dt>역할</dt><dd>${esc(e.role)||'—'}</dd>
+    <dt>고용 형태</dt><dd>${e.employment_type}${e.employment_type==='1099'?' (W-9, 원천징수 없음)':''}</dd>
+    <dt>W-9</dt><dd>${e.employment_type==='1099'?(e.w9_received?'<span class="pill ok">받음</span>':'<span class="pill warn">안 받음</span>'):'—'}</dd>
+    <dt>시작일</dt><dd>${fmtD(e.start_date)}</dd><dt>종료일</dt><dd>${fmtD(e.end_date)}</dd>
+    <dt>상태</dt><dd><span class="pill ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span></dd>
+    <dt>메모</dt><dd style="white-space:pre-wrap">${esc(e.notes)||'—'}</dd></dl>
+    <div class="row" style="margin-top:14px"><button class="btn sec" id="editEmp">수정</button></div></div>`;
+  if(curTab==='pay') body=`<div class="row"><h2 style="margin:0">보수 이력</h2><div class="sp"></div><button class="btn sm" id="addRate">+ 보수 변경</button></div><div style="height:8px"></div>
+    <div class="tbl"><table><tr><th>적용 시작</th><th>종류</th><th class="n">금액</th><th>메모</th><th></th></tr>
+    ${rates.slice().reverse().map(r=>`<tr><td>${fmtD(r.effective_from)}</td><td>${PAYTYPE[r.pay_type]}</td><td class="n">${money(r.amount)}</td><td class="muted">${esc(r.note)}</td><td class="n"><button class="btn del sm" data-del="emp_pay_rates" data-id="${r.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">보수 조건 없음</td></tr>'}</table></div>
+    <div class="row" style="margin-top:22px"><h2 style="margin:0">근무 스케줄 이력</h2><div class="sp"></div><button class="btn sm" id="addSch">+ 스케줄 변경</button></div><div style="height:8px"></div>
+    <div class="tbl"><table><tr><th>적용 시작</th><th>요일</th><th>시간</th><th class="n">하루</th><th></th></tr>
+    ${sch.slice().reverse().map(s=>`<tr><td>${fmtD(s.effective_from)}</td><td>${s.days.map(d=>DAYS[d]).join('·')}</td><td>${t12(s.start_time)} – ${t12(s.end_time)}</td><td class="n">${hrs(s.start_time,s.end_time)}시간</td><td class="n"><button class="btn del sm" data-del="emp_schedules" data-id="${s.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">스케줄 없음</td></tr>'}</table></div>
+    <p class="muted" style="font-size:12px">조건이 바뀌면 삭제하지 말고 새 적용일로 추가하세요. 지난달 정산은 그때 조건으로 계산됩니다.</p>`;
+  if(curTab==='paid') body=`<div class="row"><div><span class="muted">총지급</span> <b style="font-size:18px;color:var(--navy)">${money(tot)}</b></div><div class="sp"></div><button class="btn sm" id="addPay">+ 지급 기록</button></div><div style="height:10px"></div>
+    <div class="tbl"><table><tr><th>지급일</th><th>종류</th><th class="n">금액</th><th>방법</th><th>대상 기간</th><th>메모</th><th></th></tr>
+    ${pays.map(p=>`<tr><td>${fmtD(p.paid_on)}</td><td>${KIND[p.kind]}</td><td class="n">${money(p.amount)}</td><td>${esc(p.method)||'—'}</td><td class="muted">${p.period_start?fmtD(p.period_start)+' ~ '+fmtD(p.period_end):'—'}</td><td class="muted">${esc(p.note)}</td><td class="n"><button class="btn del sm" data-del="emp_payments" data-id="${p.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">지급 기록 없음</td></tr>'}</table></div>`;
+  if(curTab==='pts') body=`<div class="row"><span class="muted">${esc(e.name)} 님이 데려와서 관리하는 환자</span><div class="sp"></div><button class="btn sm" id="addPt">+ 환자 추가</button></div><div style="height:10px"></div>${ptTable(pts,false)}`;
+  $('#view').innerHTML=`<div class="row"><button class="btn sec sm" id="back">← 직원 목록</button></div>
+    <div class="row" style="margin-top:12px"><h1 style="margin:0">${esc(e.name)}</h1><span class="pill ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span><span class="muted">${esc(e.company)} · ${esc(e.role)}</span></div>
+    <div class="tabs">${tabs.map(([k,l])=>`<button data-t="${k}" class="${curTab===k?'on':''}">${l}</button>`).join('')}</div>${body}`;
+  $('#back').onclick=()=>go('emps');
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{curTab=b.dataset.t;render()});
+  $('#editEmp')&&($('#editEmp').onclick=()=>empForm(e));
+  $('#addRate')&&($('#addRate').onclick=()=>rateForm(e));
+  $('#addSch')&&($('#addSch').onclick=()=>schForm(e));
+  $('#addPay')&&($('#addPay').onclick=()=>payForm(e));
+  $('#addPt')&&($('#addPt').onclick=()=>ptForm(null,e.id));
+  bindRows();
+}
+
+function ptTable(list,showEmp){
+  return `<div class="tbl"><table><tr><th>환자</th>${showEmp?'<th>담당</th>':''}<th>사고일</th><th>케이스</th><th>변호사</th><th>병원</th><th>첫 방문</th><th>상태</th></tr>
+  ${list.map(p=>`<tr class="click" data-pt="${p.id}"><td><b>${esc(p.patient_name)}</b><div class="muted" style="font-size:12px">${esc(p.phone)}</div></td>${showEmp?`<td>${esc(empName(p.employee_id))}</td>`:''}<td>${fmtD(p.date_of_injury)}</td><td>${esc(p.case_type)||'—'}</td><td>${esc(p.attorney)||'—'}</td><td>${esc(p.clinic)||'—'}</td><td>${fmtD(p.first_visit)}</td><td><span class="pill ${PST[p.status][1]}">${PST[p.status][0]}</span></td></tr>`).join('') || `<tr><td colspan="${showEmp?8:7}" class="empty">등록된 환자 없음</td></tr>`}</table></div>`;
+}
+function bindRows(){
+  document.querySelectorAll('[data-pt]').forEach(r=>r.onclick=()=>ptForm(S.pts.find(p=>p.id===r.dataset.pt)));
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async ev=>{ev.stopPropagation(); if(!confirm('삭제할까요?'))return; const {error}=await SB.from(b.dataset.del).delete().eq('id',b.dataset.id); if(error) return toast(error.message); await log('delete',{table:b.dataset.del,id:b.dataset.id}); await refresh('삭제했습니다')});
+}
+
+function vPts(){
+  const f=window._ptf||'all';
+  const list=S.pts.filter(p=>f==='all'||p.employee_id===f);
+  const open=list.filter(p=>['new','treating'].includes(p.status)).length;
+  $('#view').innerHTML=`<div class="row"><h1 style="margin:0">환자 관리</h1><div class="sp"></div>
+    <select id="ptF" style="width:auto">${[['all','전체 담당자'],...S.emps.map(e=>[e.id,e.name])].map(([v,l])=>`<option value="${v}" ${v===f?'selected':''}>${esc(l)}</option>`).join('')}</select>
+    <button class="btn" id="addPt">+ 환자 추가</button></div>
+    <p class="muted">직원이 데려온 환자를 담당자별로 관리합니다. 총 ${list.length}명 · 진행 중 ${open}명. Eugene·David만 볼 수 있습니다.</p>${ptTable(list,true)}`;
+  $('#ptF').onchange=ev=>{window._ptf=ev.target.value;render()};
+  $('#addPt').onclick=()=>ptForm(null,f!=='all'?f:null);
+  bindRows();
+}
+
+function vPay(){
+  const ym=window._ym||today().slice(0,7), [f,t]=monthRange(ym);
+  const rows=S.emps.filter(e=>!(e.end_date&&e.end_date<f) && !(e.start_date&&e.start_date>t)).map(e=>{const x=expected(e,f,t);return {e,...x,wage:paidIn(e.id,f,t,'wage'),bonus:paidIn(e.id,f,t,'bonus'),all:paidIn(e.id,f,t)}});
+  const sum=k=>rows.reduce((a,r)=>a+r[k],0);
+  $('#view').innerHTML=`<div class="row"><h1 style="margin:0">월 정산</h1><div class="sp"></div><input type="month" id="ym" value="${ym}" style="width:auto"></div>
+  <p class="muted">예상 급여 = 그달 스케줄 근무일 × 그날 유효한 시급. 실제 출근일과 다르면 지급할 때 금액을 고쳐 넣으세요.</p>
+  <div class="tbl"><table><tr><th>직원</th><th class="n">근무일</th><th class="n">시간</th><th class="n">예상 급여</th><th class="n">지급한 급여</th><th class="n">남은 급여</th><th class="n">보너스 등</th><th></th></tr>
+  ${rows.map(r=>{const rem=r.amt-r.wage;return `<tr><td><b>${esc(r.e.name)}</b><div class="muted" style="font-size:12px">${curRate(r.e.id)}</div></td><td class="n">${r.days}일</td><td class="n">${r.hours}</td><td class="n">${money(r.amt)}</td><td class="n">${money(r.wage)}</td><td class="n" style="color:${rem>0.005?'var(--bad)':'var(--ok)'};font-weight:600">${money(rem)}</td><td class="n">${money(r.all-r.wage)}</td><td class="n">${rem>0.005?`<button class="btn sm" data-payfor="${r.e.id}" data-amt="${rem.toFixed(2)}">지급 기록</button>`:''}</td></tr>`}).join('')}
+  <tr><th>합계</th><th class="n">${sum('days')}일</th><th class="n">${sum('hours')}</th><th class="n">${money(sum('amt'))}</th><th class="n">${money(sum('wage'))}</th><th class="n">${money(sum('amt')-sum('wage'))}</th><th class="n">${money(sum('all')-sum('wage'))}</th><th></th></tr>
+  </table></div>`;
+  $('#ym').onchange=ev=>{window._ym=ev.target.value;render()};
+  document.querySelectorAll('[data-payfor]').forEach(b=>b.onclick=()=>payForm(S.emps.find(e=>e.id===b.dataset.payfor),{amount:b.dataset.amt,kind:'wage',period_start:f,period_end:t,paid_on:today()}));
+}
+
+// ---------- FORMS ----------
+function modal(title,html,onSave,onDelete){
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.innerHTML=`<form class="modal"><h3>${title}</h3>${html}<div class="row" style="margin-top:18px">${onDelete?'<button type="button" class="btn del" id="mDel">삭제</button>':''}<div class="sp"></div><button type="button" class="btn sec" id="mX">취소</button><button class="btn">저장</button></div></form>`;
+  document.body.appendChild(bg);
+  const close=()=>bg.remove();
+  bg.querySelector('#mX').onclick=close; bg.onclick=ev=>{if(ev.target===bg)close()};
+  if(onDelete) bg.querySelector('#mDel').onclick=async()=>{if(confirm('삭제할까요?')){await onDelete();close()}};
+  bg.querySelector('form').onsubmit=async ev=>{ev.preventDefault(); const fd=Object.fromEntries(new FormData(ev.target)); for(const k in fd) if(fd[k]==='') fd[k]=null; const ok=await onSave(fd,ev.target); if(ok!==false) close()};
+  return bg;
+}
+const fld=(n,l,v,type='text',extra='')=>`<div><label>${l}</label><input name="${n}" type="${type}" value="${esc(v??'')}" ${extra}></div>`;
+const sel=(n,l,v,opts)=>`<div><label>${l}</label><select name="${n}">${Object.entries(opts).map(([k,x])=>`<option value="${k}" ${k===v?'selected':''}>${Array.isArray(x)?x[0]:x}</option>`).join('')}</select></div>`;
+async function log(action,detail){await SB.from('emp_log').insert({action,detail})}
+async function refresh(msg){await load();render();if(msg)toast(msg)}
+async function save(table,row,id){
+  const q = id? SB.from(table).update(row).eq('id',id) : SB.from(table).insert(row);
+  const {error}=await q; if(error){toast('저장 실패: '+error.message);return false}
+  await log(id?'update':'insert',{table,id,row}); await refresh('저장했습니다');
+}
+
+function empForm(e={}){
+  modal(e.id?'직원 수정':'직원 추가',`<div class="form">
+    ${fld('name','이름 *',e.name,'text','required')}${fld('phone','전화',e.phone)}${fld('email','이메일',e.email,'email')}
+    ${fld('company','소속',e.company||'')}${fld('role','역할',e.role)}
+    ${sel('employment_type','고용 형태',e.employment_type||'1099',{'1099':'1099 (W-9)','W-2':'W-2 직원'})}
+    ${fld('start_date','시작일',e.start_date,'date')}${fld('end_date','종료일',e.end_date,'date')}
+    ${sel('status','상태',e.status||'active',STATUS)}
+    <div><label>W-9 받음</label><select name="w9_received"><option value="false">아니오</option><option value="true" ${e.w9_received?'selected':''}>예</option></select></div>
+    </div><div style="margin-top:12px"><label>메모</label><textarea name="notes">${esc(e.notes)}</textarea></div>`,
+    fd=>{fd.w9_received=fd.w9_received==='true';fd.updated_at=new Date().toISOString();return save('emp_employees',fd,e.id)},
+    e.id?async()=>{const{error}=await SB.from('emp_employees').delete().eq('id',e.id);if(error)return toast(error.message);await log('delete',{table:'emp_employees',id:e.id,name:e.name});go('emps');await refresh('삭제했습니다')}:null);
+}
+function rateForm(e){
+  modal(`${esc(e.name)} — 보수 변경`,`<div class="form">${sel('pay_type','종류','hourly',PAYTYPE)}${fld('amount','금액 ($) *','','number','step="0.01" required')}${fld('effective_from','적용 시작일 *',today(),'date','required')}</div><div style="margin-top:12px">${fld('note','메모','')}</div>`,
+    fd=>save('emp_pay_rates',{...fd,employee_id:e.id}));
+}
+function schForm(e){
+  const last=S.scheds.filter(s=>s.employee_id===e.id).at(-1)||{days:[],start_time:'09:00',end_time:'17:00'};
+  modal(`${esc(e.name)} — 스케줄 변경`,`<label>근무 요일</label><div class="days">${DAYS.map((d,i)=>`<label><input type="checkbox" name="d${i}" ${last.days.includes(i)?'checked':''}>${d}</label>`).join('')}</div><div style="height:12px"></div>
+    <div class="form">${fld('start_time','시작',last.start_time?.slice(0,5),'time','required')}${fld('end_time','종료',last.end_time?.slice(0,5),'time','required')}${fld('effective_from','적용 시작일 *',today(),'date','required')}</div>`,
+    fd=>{const days=DAYS.map((_,i)=>fd['d'+i]?i:null).filter(x=>x!==null); if(!days.length){toast('요일을 선택하세요');return false} return save('emp_schedules',{employee_id:e.id,days,start_time:fd.start_time,end_time:fd.end_time,effective_from:fd.effective_from})});
+}
+function payForm(e,d={}){
+  modal(`${esc(e.name)} — 지급 기록`,`<div class="form">${fld('paid_on','지급일 *',d.paid_on||today(),'date','required')}${fld('amount','금액 ($) *',d.amount,'number','step="0.01" required')}${sel('kind','종류',d.kind||'wage',KIND)}
+    ${fld('method','지급 방법','','text','placeholder="체크 / Zelle / 현금"')}${fld('period_start','대상 기간 시작',d.period_start,'date')}${fld('period_end','대상 기간 끝',d.period_end,'date')}</div><div style="margin-top:12px">${fld('note','메모','')}</div>`,
+    fd=>save('emp_payments',{...fd,employee_id:e.id}));
+}
+function ptForm(p,empId){
+  p=p||{employee_id:empId,status:'new'};
+  modal(p.id?'환자 정보':'환자 추가',`<div class="form">
+    ${fld('patient_name','환자 이름 *',p.patient_name,'text','required')}${fld('phone','전화',p.phone)}
+    <div><label>담당 직원</label><select name="employee_id"><option value="">—</option>${S.emps.map(e=>`<option value="${e.id}" ${e.id===p.employee_id?'selected':''}>${esc(e.name)}</option>`).join('')}</select></div>
+    ${fld('date_of_injury','사고일',p.date_of_injury,'date')}${fld('case_type','케이스 종류',p.case_type,'text','placeholder="교통사고 / 주차장 / 산재"')}
+    ${fld('attorney','변호사 / 로펌',p.attorney)}${fld('clinic','병원',p.clinic,'text','placeholder="Western Chiro / Center for Pain / Mira MRI"')}
+    ${fld('first_visit','첫 방문일',p.first_visit,'date')}${sel('status','상태',p.status,PST)}
+    </div><div style="margin-top:12px"><label>메모 (진행 상황)</label><textarea name="notes">${esc(p.notes)}</textarea></div>`,
+    fd=>{fd.updated_at=new Date().toISOString();return save('emp_patients',fd,p.id)},
+    p.id?async()=>{const{error}=await SB.from('emp_patients').delete().eq('id',p.id);if(error)return toast(error.message);await log('delete',{table:'emp_patients',id:p.id});await refresh('삭제했습니다')}:null);
+}
+
+// ---------- AUTH ----------
+async function boot(){
+  const {data:{session}}=await SB.auth.getSession();
+  if(!session){$('#login').classList.remove('hidden');$('#app').classList.add('hidden');return}
+  const {data:isAdmin}=await SB.rpc('emp_is_admin');
+  if(!isAdmin){await SB.auth.signOut();$('#lErr').textContent='접근 권한이 없는 계정입니다.';$('#login').classList.remove('hidden');return}
+  $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
+  $('#whoEmail').textContent=session.user.email;
+  await load(); render();
+}
+$('#loginForm').onsubmit=async ev=>{ev.preventDefault();$('#lErr').textContent='';
+  const {error}=await SB.auth.signInWithPassword({email:$('#lEmail').value.trim(),password:$('#lPw').value});
+  if(error){$('#lErr').textContent='이메일 또는 비밀번호가 맞지 않습니다.';return} boot()};
+$('#outBtn').onclick=async()=>{await SB.auth.signOut();location.reload()};
+$('#pwBtn').onclick=()=>modal('비밀번호 변경',`${fld('pw','새 비밀번호 (8자 이상)','','password','minlength="8" required autocomplete="new-password"')}`,async fd=>{const{error}=await SB.auth.updateUser({password:fd.pw});if(error){toast(error.message);return false}toast('비밀번호를 바꿨습니다')});
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+boot();
+</script>
+</body>
+</html>
