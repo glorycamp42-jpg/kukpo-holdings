@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1f3a5f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kukpo Hub">
+<title>Kukpo Hub</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3a5f'/%3E%3Ctext x='32' y='43' font-family='Arial' font-weight='700' font-size='30' fill='white' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1f3a5f;--bg:#f5f7fa;--card:#fff;--line:#e3e8ef;--muted:#64748b;--text:#1e293b}
+@media (prefers-color-scheme:dark){:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--muted:#94a3b8;--text:#e2e8f0;--navy:#93c5fd}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Noto Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:48px 16px}
+.top{text-align:center;margin-bottom:28px}
+.top .org{font-size:12px;letter-spacing:.14em;color:var(--muted)}
+.top h1{margin:6px 0 4px;font-size:26px;color:var(--navy)}
+.top p{margin:0;color:var(--muted);font-size:14px}
+.grid{display:grid;gap:14px;width:100%;max-width:720px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 20px;transition:transform .12s,box-shadow .12s}
+a.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,23,42,.08)}
+.ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:18px}
+.card .en{font-size:12px;color:var(--muted);margin-bottom:10px}
+.card p{margin:0;font-size:13px;color:var(--muted);line-height:1.5}
+.lock{display:inline-block;margin-top:12px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:#fef3c7;color:#92400e}
+.foot{margin-top:32px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="org">KUKPO HOLDINGS</div>
+  <h1>Kukpo Hub</h1>
+  <p id="hello">내부 업무 바로가기</p>
+</div>
+<div class="grid">
+  <a class="card" href="https://social.kukpoholdings.com/">
+    <div class="ico" style="background:#fce7f3">📣</div>
+    <h2>소셜</h2><div class="en">Kukpo Social</div>
+    <p>SNS 콘텐츠 만들기 · 예약 · 게시</p>
+  </a>
+  <a class="card" href="https://kukpo-referral.vercel.app/">
+    <div class="ico" style="background:#dbeafe">🤝</div>
+    <h2>마케팅</h2><div class="en">Referral HQ</div>
+    <p>변호사 사무실 방문 · 리퍼럴 · 캠페인</p>
+  </a>
+  <a class="card" href="/employees/">
+    <div class="ico" style="background:#dcfce7">👥</div>
+    <h2>직원 관리</h2><div class="en">Employees</div>
+    <p>직원 · 월 정산 · 지급 · 환자 관리</p>
+    <span class="lock">🔒 Eugene · David 전용</span>
+  </a>
+</div>
+<div class="foot">휴대폰에서 "홈 화면에 추가"하면 앱처럼 쓸 수 있습니다.</div>
+<script>
+const h=new Date().getHours();
+document.getElementById('hello').textContent=(h<12?'좋은 아침입니다':h<18?'좋은 오후입니다':'수고 많으셨습니다')+' — 내부 업무 바로가기';
+</script>
+</body>
+</html>
