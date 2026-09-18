@@ -283,7 +283,7 @@ function vPay(){
   $('#view').innerHTML=`<div class="row"><h1 style="margin:0">월 정산</h1><div class="sp"></div><input type="month" id="ym" value="${ym}" style="width:auto"></div>
   <p class="muted">예상 급여 = 그달 스케줄 근무일 × 그날 유효한 시급 (회사 휴무일·개인 결근 제외, 근무시간 조정 반영). 실제 출근일과 다르면 지급할 때 금액을 고쳐 넣으세요.</p>
   <div class="tbl"><table><tr><th>직원</th><th class="n">근무일</th><th class="n">시간</th><th class="n">예상 급여</th><th class="n">지급한 급여</th><th class="n">남은 급여</th><th class="n">보너스 등</th><th></th></tr>
-  ${rows.map(r=>{const rem=r.amt-r.wage;return `<tr><td><b>${esc(r.e.name)}</b><div class="muted" style="font-size:12px">${curRate(r.e.id)}</div></td><td class="n">${r.days}일</td><td class="n">${r.hours}</td><td class="n">${money(r.amt)}</td><td class="n">${money(r.wage)}</td><td class="n" style="color:${rem>0.005?'var(--bad)':'var(--ok)'};font-weight:600">${money(rem)}</td><td class="n">${money(r.all-r.wage)}</td><td class="n">${rem>0.005?`<button class="btn sm" data-payfor="${r.e.id}" data-amt="${rem.toFixed(2)}">지급 기록</button>`:''}</td></tr>`}).join('')}
+  ${rows.map(r=>{const rem=r.amt-r.wage;return `<tr><td><b>${esc(r.e.name)}</b><div class="muted" style="font-size:12px">${curRate(r.e.id)}</div></td><td class="n">${r.days}일</td><td class="n">${r.hours}</td><td class="n">${money(r.amt)}</td><td class="n">${money(r.wage)}</td><td class="n" style="color:${rem>0.005?'var(--bad)':'var(--ok)'};font-weight:600">${money(rem)}</td><td class="n">${money(r.all-r.wage)}</td><td class="n" style="white-space:nowrap"><button class="btn sec sm" data-stmt="${r.e.id}">🖨 명세서</button> ${rem>0.005?`<button class="btn sm" data-payfor="${r.e.id}" data-amt="${rem.toFixed(2)}">지급 기록</button>`:''}</td></tr>`}).join('')}
   <tr><th>합계</th><th class="n">${sum('days')}일</th><th class="n">${sum('hours')}</th><th class="n">${money(sum('amt'))}</th><th class="n">${money(sum('wage'))}</th><th class="n">${money(sum('amt')-sum('wage'))}</th><th class="n">${money(sum('all')-sum('wage'))}</th><th></th></tr>
   </table></div>
   <div class="row" style="margin-top:22px"><h2 style="margin:0">회사 휴무일</h2><div class="sp"></div><button class="btn sm" id="addCl">+ 휴무일 추가</button></div>
@@ -303,7 +303,96 @@ function vPay(){
   $('#addCl').onclick=()=>modal('회사 휴무일 추가',`<div class="form">${fld('closed_on','날짜 *',today(),'date','required')}${fld('note','메모','','text','placeholder="예: Labor Day"')}</div>`,fd=>save('emp_closures',fd));
   bindRows();
   $('#ym').onchange=ev=>{window._ym=ev.target.value;render()};
+  document.querySelectorAll('[data-stmt]').forEach(b=>b.onclick=()=>openStatement(b.dataset.stmt,ym));
   document.querySelectorAll('[data-payfor]').forEach(b=>b.onclick=()=>payForm(S.emps.find(e=>e.id===b.dataset.payfor),{amount:b.dataset.amt,kind:'wage',period_start:f,period_end:t,paid_on:today()}));
+}
+
+
+// ---------- 급여 명세서 ----------
+function breakdown(emp,from,to){
+  const out=[]; const s0=emp.start_date&&emp.start_date>from?emp.start_date:from; const e0=emp.end_date&&emp.end_date<to?emp.end_date:to;
+  for(let d=pd(s0); ymd(d)<=e0; d.setDate(d.getDate()+1)){
+    const ds=ymd(d), sc=eff(S.scheds,emp.id,ds), rt=eff(S.rates,emp.id,ds);
+    const sched=!!(sc&&sc.days.includes(d.getDay()));
+    const aj=S.adj.find(a=>a.employee_id===emp.id&&a.work_date===ds);
+    const cl=S.closed.find(c=>c.closed_on===ds), ab=S.abs.find(a=>a.employee_id===emp.id&&a.absent_on===ds);
+    let h=0, st, paid=true;
+    if(aj){ h=Number(aj.hours); st=h?(sched?'Adjusted 시간 조정':'Extra 추가 근무'):'Unpaid 무급'; if(!h) paid=false; if(aj.note) st+=' · '+aj.note; }
+    else if(!sched) continue;
+    else if(cl){ st='Closed 회사 휴무'+(cl.note?' · '+cl.note:''); paid=false; }
+    else if(ab){ st='Absent 결근'+(ab.note&&ab.note!=='결근 (무급)'?' · '+ab.note:''); paid=false; }
+    else { h=hrs(sc.start_time,sc.end_time); st='Worked 근무'; }
+    const rate=rt&&rt.pay_type==='hourly'?Number(rt.amount):0;
+    out.push({ds,dow:d.getDay(),st,h,rate,amt:paid?h*rate:0,paid});
+  }
+  return out;
+}
+function openStatement(empId,ym){
+  const e=S.emps.find(x=>x.id===empId); const [f,t]=monthRange(ym);
+  const rows=breakdown(e,f,t), ex=expected(e,f,t);
+  const EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const [y,m]=ym.split('-').map(Number); const mName=new Date(y,m-1,1).toLocaleString('en-US',{month:'long'});
+  const pays=S.pays.filter(p=>p.employee_id===e.id&&p.paid_on>=f&&p.paid_on<=t).sort((a,b)=>a.paid_on<b.paid_on?-1:1);
+  const wagePaid=pays.filter(p=>p.kind==='wage').reduce((a,p)=>a+Number(p.amount),0);
+  const other=pays.filter(p=>p.kind!=='wage').reduce((a,p)=>a+Number(p.amount),0);
+  const bal=ex.amt-wagePaid;
+  const rt=eff(S.rates,e.id,t)||S.rates.filter(x=>x.employee_id===e.id).at(-1);
+  const sc=eff(S.scheds,e.id,t)||S.scheds.filter(x=>x.employee_id===e.id).at(-1);
+  const fD=s=>{const d=pd(s);return d.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})};
+  let n=0;
+  const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Payroll Statement - ${esc(e.name)} - ${mName} ${y}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+@page{size:Letter;margin:.6in .65in}
+*{box-sizing:border-box}body{margin:0;font-family:"Noto Sans KR",Arial,sans-serif;color:#1f2328;font-size:10pt;line-height:1.45;background:#fff}
+.wrap{max-width:7.2in;margin:0 auto;padding:24px 0}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #1f3a5f;padding-bottom:10px}
+.org{font-size:8.5pt;letter-spacing:.14em;color:#5b6573}.ttl{font-size:19pt;font-weight:700;color:#1f3a5f;margin-top:2px}.sub{font-size:9pt;color:#5b6573}
+.per{text-align:right}.per b{display:block;font-size:13pt;color:#1f3a5f}.per span{font-size:8.5pt;color:#5b6573}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;margin:16px 0 6px}
+.info div{display:flex;justify-content:space-between;border-bottom:1px solid #eef1f4;padding:5px 0}.info dt{color:#5b6573}.info dd{margin:0;font-weight:500;text-align:right}
+h3{font-size:10.5pt;color:#1f3a5f;margin:18px 0 6px}
+table{width:100%;border-collapse:collapse}th{background:#f3f5f8;font-size:8.5pt;color:#3d4652;text-align:left;padding:6px 8px;font-weight:600}
+td{padding:5px 8px;border-bottom:1px solid #eef1f4;font-size:9.5pt}.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.off td{color:#9aa3ae}tfoot td{font-weight:700;border-top:1.5px solid #1f3a5f;border-bottom:0;padding-top:7px}
+.sum{margin-top:14px;margin-left:auto;width:3.4in}.sum div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eef1f4}
+.sum .big{border-top:2px solid #1f3a5f;border-bottom:0;margin-top:4px;padding-top:8px;font-size:12pt;font-weight:700;color:#1f3a5f}
+.notes{margin-top:16px;font-size:8.5pt;color:#5b6573}.notes li{margin:2px 0}
+.sig{display:flex;gap:40px;margin-top:40px}.sig div{flex:1;border-top:1px solid #1f2328;padding-top:5px;font-size:8.5pt;color:#5b6573}
+.bar{position:sticky;top:0;background:#1f3a5f;color:#fff;padding:10px 16px;display:flex;gap:10px;justify-content:center;font-family:sans-serif}
+.bar button{background:#fff;color:#1f3a5f;border:0;border-radius:6px;padding:7px 16px;font-weight:600;cursor:pointer}
+@media print{.bar{display:none}.wrap{padding:0}}
+</style></head><body>
+<div class="bar"><button onclick="print()">🖨 인쇄 / PDF 저장</button><button onclick="close()">닫기</button></div>
+<div class="wrap">
+<div class="hd"><div><div class="org">KUKPO HOLDINGS${e.company&&e.company!=='Kukpo Holdings'?' · '+esc(e.company).toUpperCase():''}</div><div class="ttl">Payroll Statement</div><div class="sub">급여 명세서</div></div>
+<div class="per"><b>${mName} ${y}</b><span>${fD(f)} – ${fD(t)}</span></div></div>
+<div class="info">
+<div><dt>Employee 직원</dt><dd>${esc(e.name)}</dd></div><div><dt>Pay Rate 보수</dt><dd>${rt?(rt.pay_type==='hourly'?money(rt.amount)+' / hr':money(rt.amount)+' '+PAYTYPE[rt.pay_type]):'—'}</dd></div>
+<div><dt>Company 소속</dt><dd>${esc(e.company)||'—'}</dd></div><div><dt>Schedule 스케줄</dt><dd>${sc?sc.days.map(d=>EN[d]).join(', ')+' · '+hrs(sc.start_time,sc.end_time)+'h':'—'}</dd></div>
+<div><dt>Role 역할</dt><dd>${esc(e.role)||'—'}</dd></div><div><dt>Classification 형태</dt><dd>${e.employment_type==='1099'?'1099 Contractor':'W-2 Employee'}</dd></div>
+</div>
+<h3>1. Daily Breakdown 일별 내역</h3>
+<table><thead><tr><th>#</th><th>Date</th><th>Day</th><th>Status 상태</th><th class="n">Hours</th><th class="n">Rate</th><th class="n">Amount</th></tr></thead><tbody>
+${rows.map(r=>`<tr class="${r.paid?'':'off'}"><td>${r.paid?++n:'–'}</td><td>${fD(r.ds)}</td><td>${EN[r.dow]}</td><td>${esc(r.st)}</td><td class="n">${r.h.toFixed(2)}</td><td class="n">${r.paid&&r.rate?money(r.rate):'–'}</td><td class="n">${money(r.amt)}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#9aa3ae;padding:14px">No scheduled days</td></tr>'}
+</tbody><tfoot><tr><td colspan="4">TOTAL · ${ex.days} days</td><td class="n">${ex.hours.toFixed(2)}</td><td></td><td class="n">${money(ex.amt)}</td></tr></tfoot></table>
+${pays.length?`<h3>2. Payments This Month 이달 지급</h3><table><thead><tr><th>Date</th><th>Type 종류</th><th>Method</th><th>Note</th><th class="n">Amount</th></tr></thead><tbody>
+${pays.map(p=>`<tr><td>${fD(p.paid_on)}</td><td>${({wage:'Wages 급여',bonus:'Bonus 보너스',reimbursement:'Reimbursement 환급',other:'Other 기타'})[p.kind]}</td><td>${esc(p.method)||'–'}</td><td>${esc(p.note)||''}</td><td class="n">${money(p.amount)}</td></tr>`).join('')}</tbody></table>`:''}
+<div class="sum">
+<div><span>Gross Wages 총 급여</span><b>${money(ex.amt)}</b></div>
+${other?`<div><span>Bonus / Other 보너스·기타</span><b>${money(other)}</b></div>`:''}
+<div><span>Wages Paid 지급한 급여</span><b>${money(wagePaid)}</b></div>
+<div class="big"><span>${bal>0.005?'Balance Due 남은 금액':'Balance 잔액'}</span><span>${money(bal)}</span></div>
+</div>
+<ul class="notes">
+${e.employment_type==='1099'?'<li>Gross pay only. No federal, state, FICA, or other withholdings applied (1099 contractor). 원천징수 없음.</li>':''}
+${rows.some(r=>!r.paid)?'<li>Greyed rows are unpaid (company closure, absence, or 0 hours). 회색 줄은 무급.</li>':''}
+<li>Issued ${fD(today())} · Kukpo Holdings LLC, 4041 Wilshire Blvd, Los Angeles</li>
+</ul>
+<div class="sig"><div>Employee Signature / Date</div><div>Approved By / Date</div></div>
+</div></body></html>`;
+  const w=window.open('','_blank'); if(!w){toast('팝업이 막혔습니다. 팝업 허용 후 다시 눌러주세요');return}
+  w.document.open(); w.document.write(html); w.document.close();
 }
 
 // ---------- FORMS ----------
