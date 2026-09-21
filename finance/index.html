@@ -141,7 +141,7 @@ function vLedger(){
   </div>
   <div class="row muted" style="font-size:13px;margin-bottom:10px">${rows.length}건 · 수입 <b class="pos">${money(s.income)}</b> · 지출 <b class="neg">${money(s.expense)}</b> · 투자 받음 <b class="inv">${money(s.invest_in)}</b></div>
   <div class="tbl"><table><tr><th>날짜</th><th>종류</th><th>상대방</th><th>프로젝트</th><th>분류</th><th>방법</th><th>메모</th><th class="n">금액</th><th></th></tr>
-  ${rows.map(r=>`<tr class="${r.auto?'auto':'click'}" data-id="${r.id}"><td>${fmtD(r.entry_date)}</td><td><span class="pill t-${r.type}">${TYPES[r.type]}</span></td><td>${esc(r.counterparty)||'—'}</td><td>${esc(r.project)||'—'}</td><td>${esc(r.category)||'—'}</td><td>${esc(r.method)||'—'}</td><td class="muted" style="max-width:220px">${esc(r.memo)}</td><td class="n ${['income','invest_in','loan_in'].includes(r.type)?'pos':'neg'}">${['income','invest_in','loan_in'].includes(r.type)?'+':'−'}${money(r.amount)}</td><td>${r.receipt_path?`<button class="btn sec sm" data-rc="${esc(r.receipt_path)}">📎</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">기록 없음</td></tr>'}</table></div>
+  ${rows.map(r=>`<tr class="${r.auto?'auto':'click'}" data-id="${r.id}"><td>${fmtD(r.entry_date)}</td><td><span class="pill t-${r.type}">${TYPES[r.type]}</span></td><td>${esc(r.counterparty)||'—'}</td><td>${esc(r.project)||'—'}</td><td>${esc(r.category)||'—'}</td><td>${esc(r.method)||'—'}</td><td class="muted" style="max-width:220px">${esc(r.memo)}</td><td class="n ${(['income','invest_in','loan_in'].includes(r.type)?1:-1)*r.amount>=0?'pos':'neg'}">${(['income','invest_in','loan_in'].includes(r.type)?1:-1)*r.amount>=0?'+':'−'}${money(Math.abs(r.amount))}${r.amount<0?' <span class="muted">(환불)</span>':''}</td><td>${r.receipt_path?`<button class="btn sec sm" data-rc="${esc(r.receipt_path)}">📎</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">기록 없음</td></tr>'}</table></div>
   <p class="note">회색 줄 = 직원 관리의 급여 지급 기록 (수정은 직원 관리에서).</p>`;
   $('#fm').onchange=e=>{F.ym=e.target.value;render()};$('#ft').onchange=e=>{F.type=e.target.value;render()};$('#fp').onchange=e=>{F.project=e.target.value;render()};
   $('#add').onclick=()=>entryForm();$('#csv').onclick=()=>csv(rows);
@@ -176,7 +176,7 @@ function entryForm(r){
   bg.innerHTML=`<form class="modal"><h3>${isEdit?'기록 수정':'기록 추가'}</h3><div class="form">
    <div><label>날짜 *</label><input name="entry_date" type="date" required value="${r.entry_date||today()}"></div>
    <div><label>종류 *</label><select name="type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${k===t?'selected':''}>${v}</option>`).join('')}</select></div>
-   <div><label>금액 ($) *</label><input name="amount" type="number" step="0.01" min="0" required value="${r.amount??''}"></div>
+   <div><label>금액 ($) *</label><input name="amount" type="number" step="0.01" required value="${r.amount??''}"></div>
    <div><label>상대방 (누구에게서/누구에게)</label><input name="counterparty" value="${esc(r.counterparty||'')}" placeholder="예: Howard Kim"></div>
    <div><label>프로젝트</label><input name="project" list="pl" value="${esc(r.project||'Kukpo Holdings')}"><datalist id="pl">${PROJECTS.map(p=>`<option>${p}</option>`).join('')}</datalist></div>
    <div><label>분류</label><input name="category" list="cl" value="${esc(r.category||'')}"><datalist id="cl"></datalist></div>
