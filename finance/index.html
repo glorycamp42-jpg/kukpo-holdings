@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Kukpo 재무</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--navy:#1f3a5f;--bg:#f5f7fa;--card:#fff;--line:#e3e8ef;--muted:#64748b;--text:#1e293b;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--soft:#eef2f7;--inv:#6d28d9;--loan:#0e7490}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+button,input,select,textarea{font:inherit}
+.hidden{display:none!important}
+header{background:var(--navy);color:#fff;padding:0 20px;display:flex;align-items:center;gap:20px;height:56px;position:sticky;top:0;z-index:5}
+header .brand{font-weight:700;letter-spacing:.02em}header .brand small{font-weight:400;opacity:.7;margin-left:6px}
+header a.hub{color:#cbd5e1;font-size:12px;text-decoration:none}
+nav{display:flex;gap:4px;flex:1;overflow-x:auto}
+nav button{background:none;border:0;color:#cbd5e1;padding:8px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}
+nav button.on{background:rgba(255,255,255,.14);color:#fff}
+header .who{font-size:12px;opacity:.85;white-space:nowrap}
+header .who button{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:5px;padding:3px 8px;margin-left:6px;cursor:pointer;font-size:12px}
+main{max-width:1150px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:20px;margin:0;color:var(--navy)}h2{font-size:15px;margin:24px 0 10px;color:var(--navy)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpi .l{color:var(--muted);font-size:12px}.kpi .v{font-size:21px;font-weight:700;margin-top:4px}.kpi .s{color:var(--muted);font-size:12px;margin-top:2px}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f8fafc;color:#475569;font-weight:600;font-size:12px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover td{background:#f8fafc}
+tr.auto td{color:#64748b;background:#fcfcfd}
+.tbl{border:1px solid var(--line);border-radius:10px;overflow:auto}.tbl table{min-width:640px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn.sec{background:#fff;color:var(--navy);border:1px solid #cbd5e1}.btn.sm{padding:4px 9px;font-size:12px}
+.btn.del{background:#fff;color:var(--bad);border:1px solid #fecaca}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.t-income{background:#dcfce7;color:var(--ok)}.t-expense{background:#fee2e2;color:var(--bad)}
+.t-invest_in,.t-invest_out{background:#ede9fe;color:var(--inv)}.t-loan_in,.t-loan_out{background:#cffafe;color:var(--loan)}
+.pos{color:var(--ok)}.neg{color:var(--bad)}.inv{color:var(--inv)}
+.muted{color:var(--muted)}
+label{display:block;font-size:12px;color:#475569;margin-bottom:4px;font-weight:500}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
+textarea{min-height:64px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.filters{display:flex;gap:8px;flex-wrap:wrap}.filters select,.filters input{width:auto}
+.bar{height:8px;border-radius:4px;display:inline-block;vertical-align:middle}
+#login{max-width:380px;margin:12vh auto;padding:0 16px}#login .card{padding:26px}
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:flex-start;justify-content:center;padding:6vh 12px;z-index:20;overflow:auto}
+.modal{background:#fff;border-radius:12px;max-width:640px;width:100%;padding:20px}.modal h3{margin:0 0 14px;color:var(--navy)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:8px;z-index:30;font-size:13px}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+@media(max-width:640px){header{flex-wrap:wrap;height:auto;padding:10px 12px;gap:8px}}
+</style>
+</head>
+<body>
+<div id="login" class="hidden">
+  <div style="text-align:center;margin-bottom:18px"><div style="font-size:12px;letter-spacing:.12em;color:var(--muted)">KUKPO HOLDINGS</div>
+  <div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px">재무 · 장부</div></div>
+  <form class="card" id="loginForm">
+    <label>이메일</label><input id="lEmail" type="email" autocomplete="username" required>
+    <div style="height:12px"></div>
+    <label>비밀번호</label><input id="lPw" type="password" autocomplete="current-password" required>
+    <div style="height:16px"></div>
+    <button class="btn" style="width:100%">로그인</button>
+    <p id="lErr" style="color:var(--bad);font-size:13px;margin:10px 0 0"></p>
+    <p class="muted" style="font-size:12px;margin:12px 0 0">Eugene · David 전용. 직원 관리와 같은 계정입니다.</p>
+  </form>
+</div>
+<div id="app" class="hidden">
+  <header>
+    <div class="brand">KUKPO<small>재무</small></div>
+    <nav id="nav"><button data-v="dash">대시보드</button><button data-v="ledger">장부</button><button data-v="inv">투자·대출</button></nav>
+    <a class="hub" href="/hub">Hub</a>
+    <div class="who"><span id="whoEmail"></span><button id="outBtn">로그아웃</button></div>
+  </header>
+  <main id="view"></main>
+</div>
+<script>
+const SB=supabase.createClient('https://wgohvustiekmyfdihibk.supabase.co','sb_publishable_sZOi0oR6xRHUPv7CEQSjpg_kW-2j6yg');
+const $=s=>document.querySelector(s);
+const esc=s=>(s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(n<0?'-':'')+'$'+Math.abs(Number(n||0)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const TYPES={income:'수입',expense:'지출',invest_in:'투자 받음',invest_out:'투자 반환·배당',loan_in:'대출 받음',loan_out:'대출 상환'};
+const PROJECTS=['Kukpo Holdings','KtownLawyer.com','Kukpo Social','Center for Pain','Mira MRI','Western Chiro','All Nations Corona ADHC','RingVid'];
+const CATS={income:['서비스료','마케팅 서비스','관리비','컨설팅','소프트웨어 판매','기타 수입'],expense:['급여','광고·마케팅','소프트웨어·구독','임대료','장비','법률·회계','식비·교통','기타 지출'],invest_in:['지분 투자','출자금'],invest_out:['배당·분배','투자금 반환'],loan_in:['대여금'],loan_out:['상환']};
+const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const fmtD=s=>s?s.replaceAll('-','.'):'—';
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
+let E=[],PAY=[],view='dash',F={ym:today().slice(0,7),type:'all',project:'all'};
+
+async function load(){
+  const [a,b,c]=await Promise.all([SB.from('fin_entries').select('*').order('entry_date',{ascending:false}),SB.from('emp_payments').select('*').order('paid_on',{ascending:false}),SB.from('emp_employees').select('id,name,company')]);
+  const err=[a,b,c].find(x=>x.error); if(err){toast('불러오기 오류: '+err.error.message);return}
+  E=a.data;
+  const emp=Object.fromEntries(c.data.map(e=>[e.id,e]));
+  PAY=b.data.map(p=>({id:'pay_'+p.id,auto:true,entry_date:p.paid_on,type:'expense',amount:Number(p.amount),counterparty:emp[p.employee_id]?.name||'—',project:emp[p.employee_id]?.company||'Kukpo Holdings',category:p.kind==='bonus'?'급여 (보너스)':'급여',method:p.method,memo:(p.note||'')+' · 직원 관리에서 자동'}));
+}
+const all=()=>[...E,...PAY].sort((a,b)=>a.entry_date<b.entry_date?1:-1);
+const inMonth=(r,ym)=>r.entry_date.startsWith(ym);
+function sums(rows){const s={income:0,expense:0,invest_in:0,invest_out:0,loan_in:0,loan_out:0};rows.forEach(r=>s[r.type]+=Number(r.amount));s.net=s.income-s.expense;s.cash=s.net+s.invest_in-s.invest_out+s.loan_in-s.loan_out;return s}
+
+function render(){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));({dash:vDash,ledger:vLedger,inv:vInv})[view]()}
+function go(v){view=v;render();scrollTo(0,0)}
+
+function vDash(){
+  const ym=F.ym, yr=ym.slice(0,4), rows=all();
+  const m=sums(rows.filter(r=>inMonth(r,ym))), y=sums(rows.filter(r=>r.entry_date.startsWith(yr)));
+  const projs=[...new Set(rows.filter(r=>inMonth(r,ym)).map(r=>r.project||'—'))];
+  const months=[];{const [Y,M]=ym.split('-').map(Number);for(let i=11;i>=0;i--){const d=new Date(Y,M-1-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))}}
+  const ms=months.map(k=>({k,...sums(rows.filter(r=>inMonth(r,k)))}));const mx=Math.max(1,...ms.map(x=>Math.max(x.income,x.expense)));
+  const k=(l,v,s,c='')=>`<div class="card kpi"><div class="l">${l}</div><div class="v ${c}">${money(v)}</div><div class="s">${s}</div></div>`;
+  $('#view').innerHTML=`<div class="row"><h1>대시보드</h1><div class="sp"></div><input type="month" id="ym" value="${ym}" style="width:auto"><button class="btn" id="add">+ 기록 추가</button></div>
+  <h2>${+ym.slice(5)}월 요약</h2>
+  <div class="grid kpis">${k('수입',m.income,'매출·서비스료','pos')}${k('지출',m.expense,'급여 포함','neg')}${k('영업 순이익',m.net,'수입 − 지출',m.net<0?'neg':'pos')}
+  ${k('투자 받음',m.invest_in,'매출 아님 (자본)','inv')}${k('투자 반환·배당',m.invest_out,'','inv')}${k('현금 흐름',m.cash,'투자·대출 포함 순증감',m.cash<0?'neg':'')}</div>
+  <h2>${yr}년 누적</h2>
+  <div class="grid kpis">${k('수입',y.income,'','pos')}${k('지출',y.expense,'','neg')}${k('영업 순이익',y.net,'',y.net<0?'neg':'pos')}${k('투자 받음 (순)',y.invest_in-y.invest_out,'받은 투자 − 반환','inv')}${k('대출 잔액 (순)',y.loan_in-y.loan_out,'','')}</div>
+  <h2>${+ym.slice(5)}월 프로젝트별</h2>
+  <div class="tbl"><table><tr><th>프로젝트</th><th class="n">수입</th><th class="n">지출</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
+  ${projs.map(p=>{const s=sums(rows.filter(r=>inMonth(r,ym)&&(r.project||'—')===p));return `<tr><td>${esc(p)}</td><td class="n pos">${money(s.income)}</td><td class="n neg">${money(s.expense)}</td><td class="n">${money(s.net)}</td><td class="n inv">${money(s.invest_in-s.invest_out)}</td></tr>`}).join('')||'<tr><td colspan="5" class="empty">이달 기록 없음</td></tr>'}</table></div>
+  <h2>최근 12개월</h2>
+  <div class="tbl"><table><tr><th>월</th><th>수입 / 지출</th><th class="n">수입</th><th class="n">지출</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
+  ${ms.map(x=>`<tr><td>${x.k.replace('-','.')}</td><td style="min-width:160px"><span class="bar" style="width:${x.income/mx*140}px;background:#16a34a"></span><br><span class="bar" style="width:${x.expense/mx*140}px;background:#dc2626"></span></td><td class="n">${money(x.income)}</td><td class="n">${money(x.expense)}</td><td class="n ${x.net<0?'neg':''}">${money(x.net)}</td><td class="n inv">${money(x.invest_in-x.invest_out)}</td></tr>`).reverse().join('')}</table></div>
+  <p class="note">투자·대출은 매출이 아니라서 순이익에 넣지 않고 현금 흐름에만 반영합니다. 직원 급여는 직원 관리의 지급 기록이 자동으로 지출에 들어갑니다.</p>`;
+  $('#ym').onchange=e=>{F.ym=e.target.value;render()};$('#add').onclick=()=>entryForm();
+}
+
+function filtered(){return all().filter(r=>(F.ym==='all'||inMonth(r,F.ym))&&(F.type==='all'||r.type===F.type)&&(F.project==='all'||(r.project||'—')===F.project))}
+function vLedger(){
+  const rows=filtered(), s=sums(rows), projs=[...new Set([...PROJECTS,...all().map(r=>r.project).filter(Boolean)])];
+  $('#view').innerHTML=`<div class="row"><h1>장부</h1><div class="sp"></div><button class="btn sec" id="csv">CSV 내보내기</button><button class="btn" id="add">+ 기록 추가</button></div>
+  <div class="filters" style="margin:14px 0">
+   <select id="fm"><option value="all">전체 기간</option>${[...new Set(all().map(r=>r.entry_date.slice(0,7)).concat([today().slice(0,7)]))].sort().reverse().map(m=>`<option value="${m}" ${F.ym===m?'selected':''}>${m.replace('-','년 ')}월</option>`).join('')}</select>
+   <select id="ft"><option value="all">모든 종류</option>${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${F.type===k?'selected':''}>${v}</option>`).join('')}</select>
+   <select id="fp"><option value="all">모든 프로젝트</option>${projs.map(p=>`<option ${F.project===p?'selected':''}>${esc(p)}</option>`).join('')}</select>
+  </div>
+  <div class="row muted" style="font-size:13px;margin-bottom:10px">${rows.length}건 · 수입 <b class="pos">${money(s.income)}</b> · 지출 <b class="neg">${money(s.expense)}</b> · 투자 받음 <b class="inv">${money(s.invest_in)}</b></div>
+  <div class="tbl"><table><tr><th>날짜</th><th>종류</th><th>상대방</th><th>프로젝트</th><th>분류</th><th>방법</th><th>메모</th><th class="n">금액</th><th></th></tr>
+  ${rows.map(r=>`<tr class="${r.auto?'auto':'click'}" data-id="${r.id}"><td>${fmtD(r.entry_date)}</td><td><span class="pill t-${r.type}">${TYPES[r.type]}</span></td><td>${esc(r.counterparty)||'—'}</td><td>${esc(r.project)||'—'}</td><td>${esc(r.category)||'—'}</td><td>${esc(r.method)||'—'}</td><td class="muted" style="max-width:220px">${esc(r.memo)}</td><td class="n ${['income','invest_in','loan_in'].includes(r.type)?'pos':'neg'}">${['income','invest_in','loan_in'].includes(r.type)?'+':'−'}${money(r.amount)}</td><td>${r.receipt_path?`<button class="btn sec sm" data-rc="${esc(r.receipt_path)}">📎</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">기록 없음</td></tr>'}</table></div>
+  <p class="note">회색 줄 = 직원 관리의 급여 지급 기록 (수정은 직원 관리에서).</p>`;
+  $('#fm').onchange=e=>{F.ym=e.target.value;render()};$('#ft').onchange=e=>{F.type=e.target.value;render()};$('#fp').onchange=e=>{F.project=e.target.value;render()};
+  $('#add').onclick=()=>entryForm();$('#csv').onclick=()=>csv(rows);
+  document.querySelectorAll('tr.click').forEach(t=>t.onclick=()=>entryForm(E.find(x=>x.id===t.dataset.id)));
+  document.querySelectorAll('[data-rc]').forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const{data,error}=await SB.storage.from('fin-receipts').createSignedUrl(b.dataset.rc,300);if(error)return toast(error.message);window.open(data.signedUrl,'_blank')});
+}
+
+function vInv(){
+  const rows=all().filter(r=>r.type.startsWith('invest')||r.type.startsWith('loan'));
+  const g={};rows.forEach(r=>{const key=(r.counterparty||'—')+'|'+(r.project||'—')+'|'+(r.type.startsWith('loan')?'loan':'invest');(g[key]=g[key]||{name:r.counterparty||'—',project:r.project||'—',kind:r.type.startsWith('loan')?'대출':'투자',inn:0,out:0,last:''});const x=g[key];if(r.type.endsWith('_in'))x.inn+=Number(r.amount);else x.out+=Number(r.amount);if(r.entry_date>x.last)x.last=r.entry_date});
+  $('#view').innerHTML=`<div class="row"><h1>투자·대출</h1><div class="sp"></div><button class="btn" id="add">+ 기록 추가</button></div>
+  <h2>투자자·대여자별 잔액</h2>
+  <div class="tbl"><table><tr><th>이름</th><th>프로젝트</th><th>구분</th><th class="n">받은 금액</th><th class="n">돌려준 금액</th><th class="n">잔액</th><th>최근</th></tr>
+  ${Object.values(g).map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(x.project)}</td><td>${x.kind}</td><td class="n inv">${money(x.inn)}</td><td class="n">${money(x.out)}</td><td class="n"><b>${money(x.inn-x.out)}</b></td><td>${fmtD(x.last)}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">투자·대출 기록 없음</td></tr>'}</table></div>
+  <h2>내역</h2>
+  <div class="tbl"><table><tr><th>날짜</th><th>종류</th><th>이름</th><th>프로젝트</th><th>메모</th><th class="n">금액</th></tr>
+  ${rows.map(r=>`<tr class="click" data-id="${r.id}"><td>${fmtD(r.entry_date)}</td><td><span class="pill t-${r.type}">${TYPES[r.type]}</span></td><td>${esc(r.counterparty)}</td><td>${esc(r.project)}</td><td class="muted">${esc(r.memo)}</td><td class="n">${money(r.amount)}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">없음</td></tr>'}</table></div>
+  <p class="note">투자 조건(지분 %, 수익 배분, 상환 조건)은 메모에 적고 계약서는 📎로 첨부해 두세요.</p>`;
+  $('#add').onclick=()=>entryForm({type:'invest_in'});
+  document.querySelectorAll('tr.click').forEach(t=>t.onclick=()=>entryForm(E.find(x=>x.id===t.dataset.id)));
+}
+
+function csv(rows){
+  const h=['date','type','counterparty','project','category','method','memo','amount','source'];
+  const lines=[h.join(',')].concat(rows.map(r=>[r.entry_date,TYPES[r.type],r.counterparty,r.project,r.category,r.method,r.memo,Number(r.amount).toFixed(2),r.auto?'payroll':'ledger'].map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')));
+  const b=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`kukpo-ledger-${F.ym}.csv`;a.click();
+}
+
+function entryForm(r){
+  r=r||{};const isEdit=!!r.id;const t=r.type||'income';
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.innerHTML=`<form class="modal"><h3>${isEdit?'기록 수정':'기록 추가'}</h3><div class="form">
+   <div><label>날짜 *</label><input name="entry_date" type="date" required value="${r.entry_date||today()}"></div>
+   <div><label>종류 *</label><select name="type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${k===t?'selected':''}>${v}</option>`).join('')}</select></div>
+   <div><label>금액 ($) *</label><input name="amount" type="number" step="0.01" min="0" required value="${r.amount??''}"></div>
+   <div><label>상대방 (누구에게서/누구에게)</label><input name="counterparty" value="${esc(r.counterparty||'')}" placeholder="예: Howard Kim"></div>
+   <div><label>프로젝트</label><input name="project" list="pl" value="${esc(r.project||'Kukpo Holdings')}"><datalist id="pl">${PROJECTS.map(p=>`<option>${p}</option>`).join('')}</datalist></div>
+   <div><label>분류</label><input name="category" list="cl" value="${esc(r.category||'')}"><datalist id="cl"></datalist></div>
+   <div><label>받은/보낸 방법</label><input name="method" list="ml" value="${esc(r.method||'')}"><datalist id="ml"><option>Check</option><option>Wire</option><option>ACH</option><option>Zelle</option><option>Cash</option><option>Card</option></datalist></div>
+   <div><label>증빙 (체크·인보이스·계약서)</label><input name="file" type="file" accept="image/*,application/pdf">${r.receipt_path?'<div class="note">첨부 있음 — 새로 올리면 교체</div>':''}</div>
+  </div><div style="margin-top:12px"><label>메모 (투자 조건 등)</label><textarea name="memo">${esc(r.memo||'')}</textarea></div>
+  <div class="row" style="margin-top:18px">${isEdit?'<button type="button" class="btn del" id="mDel">삭제</button>':''}<div class="sp"></div><button type="button" class="btn sec" id="mX">취소</button><button class="btn">저장</button></div></form>`;
+  document.body.appendChild(bg);
+  const setCats=()=>{bg.querySelector('#cl').innerHTML=(CATS[bg.querySelector('[name=type]').value]||[]).map(c=>`<option>${c}</option>`).join('')};setCats();
+  bg.querySelector('[name=type]').onchange=setCats;
+  const close=()=>bg.remove();bg.querySelector('#mX').onclick=close;bg.onclick=e=>{if(e.target===bg)close()};
+  if(isEdit)bg.querySelector('#mDel').onclick=async()=>{if(!confirm('삭제할까요?'))return;const{error}=await SB.from('fin_entries').delete().eq('id',r.id);if(error)return toast(error.message);close();await refresh('삭제했습니다')};
+  bg.querySelector('form').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const file=fd.get('file');fd.delete('file');
+    const row=Object.fromEntries(fd);for(const k in row)if(row[k]==='')row[k]=null;row.updated_at=new Date().toISOString();
+    if(file&&file.size){if(file.size>10*1024*1024)return toast('파일은 10MB 이하');const path=`${crypto.randomUUID()}/${file.name.replace(/[^\w.\-]/g,'_')}`;const up=await SB.storage.from('fin-receipts').upload(path,file);if(up.error)return toast('첨부 실패: '+up.error.message);row.receipt_path=path}
+    const q=isEdit?SB.from('fin_entries').update(row).eq('id',r.id):SB.from('fin_entries').insert(row);const{error}=await q;if(error)return toast('저장 실패: '+error.message);close();await refresh('저장했습니다')};
+}
+async function refresh(m){await load();render();if(m)toast(m)}
+
+async function boot(){
+  const{data:{session}}=await SB.auth.getSession();
+  if(!session){$('#login').classList.remove('hidden');$('#app').classList.add('hidden');return}
+  const{data:ok}=await SB.rpc('emp_is_admin');
+  if(!ok){await SB.auth.signOut();$('#lErr').textContent='접근 권한이 없는 계정입니다.';$('#login').classList.remove('hidden');return}
+  $('#login').classList.add('hidden');$('#app').classList.remove('hidden');$('#whoEmail').textContent=session.user.email;
+  await load();render();
+}
+$('#loginForm').onsubmit=async e=>{e.preventDefault();$('#lErr').textContent='';const{error}=await SB.auth.signInWithPassword({email:$('#lEmail').value.trim(),password:$('#lPw').value});if(error){$('#lErr').textContent='이메일 또는 비밀번호가 맞지 않습니다.';return}boot()};
+$('#outBtn').onclick=async()=>{await SB.auth.signOut();location.reload()};
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+boot();
+</script>
+</body>
+</html>
