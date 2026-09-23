@@ -40,6 +40,7 @@ tr.auto td{color:#64748b;background:#fcfcfd}
 .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
 .t-income{background:#dcfce7;color:var(--ok)}.t-expense{background:#fee2e2;color:var(--bad)}
 .t-invest_in,.t-invest_out{background:#ede9fe;color:var(--inv)}.t-loan_in,.t-loan_out{background:#cffafe;color:var(--loan)}
+.t-loan_give,.t-loan_collect{background:#fef3c7;color:#92400e}
 .pos{color:var(--ok)}.neg{color:var(--bad)}.inv{color:var(--inv)}
 .muted{color:var(--muted)}
 label{display:block;font-size:12px;color:#475569;margin-bottom:4px;font-weight:500}
@@ -85,24 +86,26 @@ const SB=supabase.createClient('https://wgohvustiekmyfdihibk.supabase.co','sb_pu
 const $=s=>document.querySelector(s);
 const esc=s=>(s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>(n<0?'-':'')+'$'+Math.abs(Number(n||0)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const TYPES={income:'수입',expense:'지출',invest_in:'투자 받음',invest_out:'투자 반환·배당',loan_in:'대출 받음',loan_out:'대출 상환'};
+const TYPES={income:'수입',expense:'지출',invest_in:'투자 받음',invest_out:'투자 반환·배당',loan_in:'대출 받음',loan_out:'대출 상환',loan_give:'직원 대여 (빌려줌)',loan_collect:'대여금 회수'};
 const PROJECTS=['Kukpo Holdings','KtownLawyer.com','Kukpo Social','Center for Pain','Mira MRI','Western Chiro','All Nations Corona ADHC','RingVid'];
-const CATS={income:['서비스료','마케팅 서비스','관리비','컨설팅','소프트웨어 판매','기타 수입'],expense:['급여','광고·마케팅','소프트웨어·구독','임대료','장비','법률·회계','식비·교통','기타 지출'],invest_in:['지분 투자','출자금'],invest_out:['배당·분배','투자금 반환'],loan_in:['대여금'],loan_out:['상환']};
+const CATS={income:['서비스료','마케팅 서비스','관리비','컨설팅','소프트웨어 판매','기타 수입'],expense:['급여','광고·마케팅','소프트웨어·구독','임대료','장비','법률·회계','식비·교통','기타 지출'],invest_in:['지분 투자','출자금'],invest_out:['배당·분배','투자금 반환'],loan_in:['대여금'],loan_out:['상환'],loan_give:['직원 대여금','가불'],loan_collect:['대여금 상환 수령','급여 공제']};
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const fmtD=s=>s?s.replaceAll('-','.'):'—';
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
-let E=[],PAY=[],view='dash',F={ym:today().slice(0,7),type:'all',project:'all'};
+let E=[],PAY=[],EMPS=[],view='dash',F={ym:today().slice(0,7),type:'all',project:'all'};
 
 async function load(){
   const [a,b,c]=await Promise.all([SB.from('fin_entries').select('*').order('entry_date',{ascending:false}),SB.from('emp_payments').select('*').order('paid_on',{ascending:false}),SB.from('emp_employees').select('id,name,company')]);
   const err=[a,b,c].find(x=>x.error); if(err){toast('불러오기 오류: '+err.error.message);return}
-  E=a.data;
+  E=a.data; EMPS=c.data;
   const emp=Object.fromEntries(c.data.map(e=>[e.id,e]));
   PAY=b.data.map(p=>({id:'pay_'+p.id,auto:true,entry_date:p.paid_on,type:'expense',amount:Number(p.amount),counterparty:emp[p.employee_id]?.name||'—',project:emp[p.employee_id]?.company||'Kukpo Holdings',category:p.kind==='bonus'?'급여 (보너스)':'급여',method:p.method,memo:(p.note||'')+' · 직원 관리에서 자동'}));
 }
 const all=()=>[...E,...PAY].sort((a,b)=>a.entry_date<b.entry_date?1:-1);
 const inMonth=(r,ym)=>r.entry_date.startsWith(ym);
-function sums(rows){const s={income:0,expense:0,invest_in:0,invest_out:0,loan_in:0,loan_out:0};rows.forEach(r=>s[r.type]+=Number(r.amount));s.net=s.income-s.expense;s.cash=s.net+s.invest_in-s.invest_out+s.loan_in-s.loan_out;return s}
+function sums(rows){const s={income:0,expense:0,invest_in:0,invest_out:0,loan_in:0,loan_out:0,loan_give:0,loan_collect:0};rows.forEach(r=>s[r.type]+=Number(r.amount));s.net=s.income-s.expense;s.cash=s.net+s.invest_in-s.invest_out+s.loan_in-s.loan_out-s.loan_give+s.loan_collect;return s}
+const empLoanBal=()=>{const s=sums(E);return s.loan_give-s.loan_collect};
+const empName=id=>(EMPS.find(e=>e.id===id)||{}).name||'';
 
 function render(){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));({dash:vDash,ledger:vLedger,inv:vInv})[view]()}
 function go(v){view=v;render();scrollTo(0,0)}
@@ -119,14 +122,14 @@ function vDash(){
   <div class="grid kpis">${k('수입',m.income,'매출·서비스료','pos')}${k('지출',m.expense,'급여 포함','neg')}${k('영업 순이익',m.net,'수입 − 지출',m.net<0?'neg':'pos')}
   ${k('투자 받음',m.invest_in,'매출 아님 (자본)','inv')}${k('투자 반환·배당',m.invest_out,'','inv')}${k('현금 흐름',m.cash,'투자·대출 포함 순증감',m.cash<0?'neg':'')}</div>
   <h2>${yr}년 누적</h2>
-  <div class="grid kpis">${k('수입',y.income,'','pos')}${k('지출',y.expense,'','neg')}${k('영업 순이익',y.net,'',y.net<0?'neg':'pos')}${k('투자 받음 (순)',y.invest_in-y.invest_out,'받은 투자 − 반환','inv')}${k('대출 잔액 (순)',y.loan_in-y.loan_out,'','')}</div>
+  <div class="grid kpis">${k('수입',y.income,'','pos')}${k('지출',y.expense,'','neg')}${k('영업 순이익',y.net,'',y.net<0?'neg':'pos')}${k('투자 받음 (순)',y.invest_in-y.invest_out,'받은 투자 − 반환','inv')}${k('대출 잔액 (순)',y.loan_in-y.loan_out,'','')}${k('직원 대여금 잔액',empLoanBal(),'빌려준 돈 − 회수 (전체 기간)','')}</div>
   <h2>${+ym.slice(5)}월 프로젝트별</h2>
   <div class="tbl"><table><tr><th>프로젝트</th><th class="n">수입</th><th class="n">지출</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
   ${projs.map(p=>{const s=sums(rows.filter(r=>inMonth(r,ym)&&(r.project||'—')===p));return `<tr><td>${esc(p)}</td><td class="n pos">${money(s.income)}</td><td class="n neg">${money(s.expense)}</td><td class="n">${money(s.net)}</td><td class="n inv">${money(s.invest_in-s.invest_out)}</td></tr>`}).join('')||'<tr><td colspan="5" class="empty">이달 기록 없음</td></tr>'}</table></div>
   <h2>최근 12개월</h2>
   <div class="tbl"><table><tr><th>월</th><th>수입 / 지출</th><th class="n">수입</th><th class="n">지출</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
   ${ms.map(x=>`<tr><td>${x.k.replace('-','.')}</td><td style="min-width:160px"><span class="bar" style="width:${x.income/mx*140}px;background:#16a34a"></span><br><span class="bar" style="width:${x.expense/mx*140}px;background:#dc2626"></span></td><td class="n">${money(x.income)}</td><td class="n">${money(x.expense)}</td><td class="n ${x.net<0?'neg':''}">${money(x.net)}</td><td class="n inv">${money(x.invest_in-x.invest_out)}</td></tr>`).reverse().join('')}</table></div>
-  <p class="note">투자·대출은 매출이 아니라서 순이익에 넣지 않고 현금 흐름에만 반영합니다. 직원 급여는 직원 관리의 지급 기록이 자동으로 지출에 들어갑니다.</p>`;
+  <p class="note">투자·대출은 매출이 아니라서 순이익에 넣지 않고 현금 흐름에만 반영합니다. 직원 급여는 직원 관리의 지급 기록이 자동으로 지출에 들어갑니다. 직원에게 빌려준 돈(대여금)도 지출이 아니라 받을 돈이라서 순이익에서 빠지고, 직원 관리의 해당 직원 페이지에도 같이 표시됩니다.</p>`;
   $('#ym').onchange=e=>{F.ym=e.target.value;render()};$('#add').onclick=()=>entryForm();
 }
 
@@ -141,8 +144,8 @@ function vLedger(){
   </div>
   <div class="row muted" style="font-size:13px;margin-bottom:10px">${rows.length}건 · 수입 <b class="pos">${money(s.income)}</b> · 지출 <b class="neg">${money(s.expense)}</b> · 투자 받음 <b class="inv">${money(s.invest_in)}</b></div>
   <div class="tbl"><table><tr><th>날짜</th><th>종류</th><th>상대방</th><th>프로젝트</th><th>분류</th><th>방법</th><th>메모</th><th class="n">금액</th><th></th></tr>
-  ${rows.map(r=>`<tr class="${r.auto?'auto':'click'}" data-id="${r.id}"><td>${fmtD(r.entry_date)}</td><td><span class="pill t-${r.type}">${TYPES[r.type]}</span></td><td>${esc(r.counterparty)||'—'}</td><td>${esc(r.project)||'—'}</td><td>${esc(r.category)||'—'}</td><td>${esc(r.method)||'—'}</td><td class="muted" style="max-width:220px">${esc(r.memo)}</td><td class="n ${(['income','invest_in','loan_in'].includes(r.type)?1:-1)*r.amount>=0?'pos':'neg'}">${(['income','invest_in','loan_in'].includes(r.type)?1:-1)*r.amount>=0?'+':'−'}${money(Math.abs(r.amount))}${r.amount<0?' <span class="muted">(환불)</span>':''}</td><td>${r.receipt_path?`<button class="btn sec sm" data-rc="${esc(r.receipt_path)}">📎</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">기록 없음</td></tr>'}</table></div>
-  <p class="note">회색 줄 = 직원 관리의 급여 지급 기록 (수정은 직원 관리에서).</p>`;
+  ${rows.map(r=>`<tr class="${r.auto?'auto':'click'}" data-id="${r.id}"><td>${fmtD(r.entry_date)}</td><td><span class="pill t-${r.type}">${TYPES[r.type]}</span></td><td>${esc(r.counterparty)||'—'}</td><td>${esc(r.project)||'—'}</td><td>${esc(r.category)||'—'}</td><td>${esc(r.method)||'—'}</td><td class="muted" style="max-width:220px">${esc(r.memo)}</td><td class="n ${(['income','invest_in','loan_in','loan_collect'].includes(r.type)?1:-1)*r.amount>=0?'pos':'neg'}">${(['income','invest_in','loan_in','loan_collect'].includes(r.type)?1:-1)*r.amount>=0?'+':'−'}${money(Math.abs(r.amount))}${r.amount<0?' <span class="muted">(환불)</span>':''}</td><td>${r.receipt_path?`<button class="btn sec sm" data-rc="${esc(r.receipt_path)}">📎</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">기록 없음</td></tr>'}</table></div>
+  <p class="note">회색 줄 = 직원 관리의 급여 지급 기록 (수정은 직원 관리에서). 직원 대여금은 직원 관리 → 직원 → 대여금 탭에서도 같이 보입니다.</p>`;
   $('#fm').onchange=e=>{F.ym=e.target.value;render()};$('#ft').onchange=e=>{F.type=e.target.value;render()};$('#fp').onchange=e=>{F.project=e.target.value;render()};
   $('#add').onclick=()=>entryForm();$('#csv').onclick=()=>csv(rows);
   document.querySelectorAll('tr.click').forEach(t=>t.onclick=()=>entryForm(E.find(x=>x.id===t.dataset.id)));
@@ -150,12 +153,18 @@ function vLedger(){
 }
 
 function vInv(){
-  const rows=all().filter(r=>r.type.startsWith('invest')||r.type.startsWith('loan'));
+  const rows=all().filter(r=>['invest_in','invest_out','loan_in','loan_out'].includes(r.type));
+  const eloans=E.filter(r=>r.type==='loan_give'||r.type==='loan_collect');
+  const eg={};eloans.forEach(r=>{const key=r.employee_id||('n:'+(r.counterparty||'—'));(eg[key]=eg[key]||{name:empName(r.employee_id)||r.counterparty||'—',project:r.project||'—',give:0,col:0,last:''});const x=eg[key];if(r.type==='loan_give')x.give+=Number(r.amount);else x.col+=Number(r.amount);if(r.entry_date>x.last)x.last=r.entry_date});
   const g={};rows.forEach(r=>{const key=(r.counterparty||'—')+'|'+(r.project||'—')+'|'+(r.type.startsWith('loan')?'loan':'invest');(g[key]=g[key]||{name:r.counterparty||'—',project:r.project||'—',kind:r.type.startsWith('loan')?'대출':'투자',inn:0,out:0,last:''});const x=g[key];if(r.type.endsWith('_in'))x.inn+=Number(r.amount);else x.out+=Number(r.amount);if(r.entry_date>x.last)x.last=r.entry_date});
   $('#view').innerHTML=`<div class="row"><h1>투자·대출</h1><div class="sp"></div><button class="btn" id="add">+ 기록 추가</button></div>
   <h2>투자자·대여자별 잔액</h2>
   <div class="tbl"><table><tr><th>이름</th><th>프로젝트</th><th>구분</th><th class="n">받은 금액</th><th class="n">돌려준 금액</th><th class="n">잔액</th><th>최근</th></tr>
   ${Object.values(g).map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(x.project)}</td><td>${x.kind}</td><td class="n inv">${money(x.inn)}</td><td class="n">${money(x.out)}</td><td class="n"><b>${money(x.inn-x.out)}</b></td><td>${fmtD(x.last)}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">투자·대출 기록 없음</td></tr>'}</table></div>
+  <h2>직원 대여금</h2>
+  <div class="tbl"><table><tr><th>직원</th><th>소속</th><th class="n">빌려준 돈</th><th class="n">받은 돈</th><th class="n">남은 잔액</th><th>최근</th></tr>
+  ${Object.values(eg).map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(x.project)}</td><td class="n neg">${money(x.give)}</td><td class="n pos">${money(x.col)}</td><td class="n"><b>${money(x.give-x.col)}</b></td><td>${fmtD(x.last)}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">직원 대여금 없음</td></tr>'}</table></div>
+  <p class="note">직원 관리 → 직원 → 대여금 탭과 같은 기록입니다. 어느 쪽에서 넣어도 양쪽에 다 보입니다.</p>
   <h2>내역</h2>
   <div class="tbl"><table><tr><th>날짜</th><th>종류</th><th>이름</th><th>프로젝트</th><th>메모</th><th class="n">금액</th></tr>
   ${rows.map(r=>`<tr class="click" data-id="${r.id}"><td>${fmtD(r.entry_date)}</td><td><span class="pill t-${r.type}">${TYPES[r.type]}</span></td><td>${esc(r.counterparty)}</td><td>${esc(r.project)}</td><td class="muted">${esc(r.memo)}</td><td class="n">${money(r.amount)}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">없음</td></tr>'}</table></div>
@@ -178,6 +187,7 @@ function entryForm(r){
    <div><label>종류 *</label><select name="type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${k===t?'selected':''}>${v}</option>`).join('')}</select></div>
    <div><label>금액 ($) *</label><input name="amount" type="number" step="0.01" required value="${r.amount??''}"></div>
    <div><label>상대방 (누구에게서/누구에게)</label><input name="counterparty" value="${esc(r.counterparty||'')}" placeholder="예: Howard Kim"></div>
+   <div><label>직원 연결 (대여금·급여일 때)</label><select name="employee_id"><option value="">— 연결 안 함</option>${EMPS.map(e=>`<option value="${e.id}" ${e.id===r.employee_id?'selected':''}>${esc(e.name)} (${esc(e.company||'')})</option>`).join('')}</select></div>
    <div><label>프로젝트</label><input name="project" list="pl" value="${esc(r.project||'Kukpo Holdings')}"><datalist id="pl">${PROJECTS.map(p=>`<option>${p}</option>`).join('')}</datalist></div>
    <div><label>분류</label><input name="category" list="cl" value="${esc(r.category||'')}"><datalist id="cl"></datalist></div>
    <div><label>받은/보낸 방법</label><input name="method" list="ml" value="${esc(r.method||'')}"><datalist id="ml"><option>Check</option><option>Wire</option><option>ACH</option><option>Zelle</option><option>Cash</option><option>Card</option></datalist></div>
@@ -187,6 +197,7 @@ function entryForm(r){
   document.body.appendChild(bg);
   const setCats=()=>{bg.querySelector('#cl').innerHTML=(CATS[bg.querySelector('[name=type]').value]||[]).map(c=>`<option>${c}</option>`).join('')};setCats();
   bg.querySelector('[name=type]').onchange=setCats;
+  bg.querySelector('[name=employee_id]').onchange=ev=>{const e=EMPS.find(x=>x.id===ev.target.value);if(!e)return;const cp=bg.querySelector('[name=counterparty]'),pj=bg.querySelector('[name=project]');if(!cp.value)cp.value=e.name;if(e.company&&(!pj.value||pj.value==='Kukpo Holdings'))pj.value=e.company};
   const close=()=>bg.remove();bg.querySelector('#mX').onclick=close;bg.onclick=e=>{if(e.target===bg)close()};
   if(isEdit)bg.querySelector('#mDel').onclick=async()=>{if(!confirm('삭제할까요?'))return;const{error}=await SB.from('fin_entries').delete().eq('id',r.id);if(error)return toast(error.message);close();await refresh('삭제했습니다')};
   bg.querySelector('form').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const file=fd.get('file');fd.delete('file');
