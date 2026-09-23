@@ -124,7 +124,7 @@ const hrs = (a,b) => { if(!a||!b) return 0; const [h1,m1]=a.split(':').map(Numbe
 const t12 = t => { if(!t) return ''; let [h,m]=t.split(':').map(Number); const ap=h<12?'오전':'오후'; h=h%12||12; return `${ap} ${h}:${String(m).padStart(2,'0')}` };
 
 async function load(){
-  const [e,r,s,p,pt,cl,ab,aj] = await Promise.all([
+  const [e,r,s,p,pt,cl,ab,aj,ln] = await Promise.all([
     SB.from('emp_employees').select('*').order('start_date'),
     SB.from('emp_pay_rates').select('*').order('effective_from'),
     SB.from('emp_schedules').select('*').order('effective_from'),
@@ -132,9 +132,10 @@ async function load(){
     SB.from('emp_patients').select('*').order('created_at',{ascending:false}),
     SB.from('emp_closures').select('*').order('closed_on'),
     SB.from('emp_absences').select('*').order('absent_on'),
-    SB.from('emp_hour_adjustments').select('*').order('work_date')]);
+    SB.from('emp_hour_adjustments').select('*').order('work_date'),
+    SB.from('fin_entries').select('*').in('type',['loan_give','loan_collect']).order('entry_date',{ascending:false})]);
   const err = [e,r,s,p,pt,cl,ab,aj].find(x=>x.error); if(err){toast('불러오기 오류: '+err.error.message); return}
-  S={emps:e.data,rates:r.data,scheds:s.data,pays:p.data,pts:pt.data,closed:cl.data,abs:ab.data,adj:aj.data};
+  S={emps:e.data,rates:r.data,scheds:s.data,pays:p.data,pts:pt.data,closed:cl.data,abs:ab.data,adj:aj.data,loans:(ln&&ln.data)||[]};
 }
 const empName = id => (S.emps.find(e=>e.id===id)||{}).name || '—';
 const eff = (list,id,date) => list.filter(x=>x.employee_id===id && x.effective_from<=date).at(-1);
@@ -159,6 +160,9 @@ function expected(emp, from, to){
   return {days,hours,amt};
 }
 const monthRange = ym => { const [y,m]=ym.split('-').map(Number); return [`${ym}-01`, ymd(new Date(y,m,0))] };
+const loansOf = id => (S.loans||[]).filter(l=>l.employee_id===id);
+const loanBal = id => loansOf(id).reduce((a,l)=>a+(l.type==='loan_give'?1:-1)*Number(l.amount),0);
+const LOANT = {loan_give:'빌려줌 (대여)',loan_collect:'회수 (상환 받음)'};
 const paidIn = (id,from,to,kind) => S.pays.filter(p=>p.employee_id===id && p.paid_on>=from && p.paid_on<=to && (!kind||p.kind===kind)).reduce((a,p)=>a+Number(p.amount),0);
 
 function alerts(){
@@ -167,6 +171,8 @@ function alerts(){
     if(e.employment_type==='1099' && !e.w9_received) out.push(`<b>${esc(e.name)}</b> — W-9 아직 안 받음`);
     if(!S.rates.some(r=>r.employee_id===e.id)) out.push(`<b>${esc(e.name)}</b> — 보수 조건이 입력 안 됨`);
     const y = paidIn(e.id,`${yr}-01-01`,`${yr}-12-31`);
+    const lb=loanBal(e.id);
+    if(lb>0.005) out.push(`<b>${esc(e.name)}</b> — 대여금 잔액 ${money(lb)} (회수 필요 · 재무 장부와 연동)`);
     if(e.employment_type==='1099' && y>=2000) out.push(`<b>${esc(e.name)}</b> — ${yr}년 지급 ${money(y)} (연 $2,000 이상 → 1099-NEC 대상, ${Number(yr)+1}년 1월 31일까지)`);
   }
   return out;
@@ -218,7 +224,8 @@ function vEmp(){
   const e=S.emps.find(x=>x.id===cur); if(!e) return go('emps');
   const pays=S.pays.filter(p=>p.employee_id===e.id), rates=S.rates.filter(r=>r.employee_id===e.id), sch=S.scheds.filter(s=>s.employee_id===e.id), pts=S.pts.filter(p=>p.employee_id===e.id);
   const tot=pays.reduce((a,p)=>a+Number(p.amount),0);
-  const tabs=[['info','기본 정보'],['pay','보수 · 스케줄'],['paid',`지급 내역 (${pays.length})`],['pts',`담당 환자 (${pts.length})`]];
+  const loans=loansOf(e.id), lbal=loanBal(e.id);
+  const tabs=[['info','기본 정보'],['pay','보수 · 스케줄'],['paid',`지급 내역 (${pays.length})`],['loan',`대여금${lbal>0.005?' · '+money(lbal):''}`],['pts',`담당 환자 (${pts.length})`]];
   let body='';
   if(curTab==='info') body=`<div class="card"><dl class="dl">
     <dt>이름</dt><dd>${esc(e.name)}</dd><dt>전화</dt><dd>${esc(e.phone)||'—'}</dd><dt>이메일</dt><dd>${esc(e.email)||'—'}</dd>
@@ -239,6 +246,10 @@ function vEmp(){
   if(curTab==='paid') body=`<div class="row"><div><span class="muted">총지급</span> <b style="font-size:18px;color:var(--navy)">${money(tot)}</b></div><div class="sp"></div><button class="btn sm" id="addPay">+ 지급 기록</button></div><div style="height:10px"></div>
     <div class="tbl"><table><tr><th>지급일</th><th>종류</th><th class="n">금액</th><th>방법</th><th>대상 기간</th><th>메모</th><th></th></tr>
     ${pays.map(p=>`<tr class="click" data-pay="${p.id}"><td>${fmtD(p.paid_on)}</td><td>${KIND[p.kind]}</td><td class="n">${money(p.amount)}</td><td>${esc(p.method)||'—'}</td><td class="muted">${p.period_start?fmtD(p.period_start)+' ~ '+fmtD(p.period_end):'—'}</td><td class="muted">${esc(p.note)}</td><td class="n"><button class="btn del sm" data-del="emp_payments" data-id="${p.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">지급 기록 없음</td></tr>'}</table></div>`;
+  if(curTab==='loan') body=`<div class="row"><div><span class="muted">남은 대여금</span> <b style="font-size:18px;color:${lbal>0.005?'var(--bad)':'var(--ok)'}">${money(lbal)}</b></div><div class="sp"></div><button class="btn sm sec" id="addCol">+ 상환 받음</button><button class="btn sm" id="addLoan">+ 빌려줌</button></div>
+    <p class="muted" style="font-size:12px">재무(장부)와 같은 기록입니다. 여기서 넣어도 재무 장부에 바로 뜨고, 재무에서 넣어도 여기에 뜹니다. 대여금은 급여가 아니라서 지급 내역·1099 합계에는 들어가지 않습니다.</p>
+    <div class="tbl"><table><tr><th>날짜</th><th>구분</th><th class="n">금액</th><th>방법</th><th>메모</th><th class="n">잔액</th><th></th></tr>
+    ${(()=>{let run=0;return loans.slice().sort((a,b)=>a.entry_date<b.entry_date?-1:1).map(l=>{run+=(l.type==='loan_give'?1:-1)*Number(l.amount);return `<tr><td>${fmtD(l.entry_date)}</td><td>${LOANT[l.type]}</td><td class="n" style="color:${l.type==='loan_give'?'var(--bad)':'var(--ok)'}">${l.type==='loan_give'?'−':'+'}${money(l.amount)}</td><td>${esc(l.method)||'—'}</td><td class="muted">${esc(l.memo)}</td><td class="n">${money(run)}</td><td class="n"><button class="btn del sm" data-del="fin_entries" data-id="${l.id}">삭제</button></td></tr>`}).reverse().join('')})()||'<tr><td colspan="7" class="empty">대여금 기록 없음</td></tr>'}</table></div>`;
   if(curTab==='pts') body=`<div class="row"><span class="muted">${esc(e.name)} 님이 데려와서 관리하는 환자</span><div class="sp"></div><button class="btn sm" id="addPt">+ 환자 추가</button></div><div style="height:10px"></div>${ptTable(pts,false)}`;
   $('#view').innerHTML=`<div class="row"><button class="btn sec sm" id="back">← 직원 목록</button></div>
     <div class="row" style="margin-top:12px"><h1 style="margin:0">${esc(e.name)}</h1><span class="pill ${STATUS[e.status][1]}">${STATUS[e.status][0]}</span><span class="muted">${esc(e.company)} · ${esc(e.role)}</span></div>
@@ -249,6 +260,8 @@ function vEmp(){
   $('#addRate')&&($('#addRate').onclick=()=>rateForm(e));
   $('#addSch')&&($('#addSch').onclick=()=>schForm(e));
   $('#addPay')&&($('#addPay').onclick=()=>payForm(e));
+  $('#addLoan')&&($('#addLoan').onclick=()=>loanForm(e,'loan_give'));
+  $('#addCol')&&($('#addCol').onclick=()=>loanForm(e,'loan_collect',lbal));
   document.querySelectorAll('[data-pay]').forEach(r=>r.onclick=()=>payForm(e,S.pays.find(p=>p.id===r.dataset.pay)));
   $('#addPt')&&($('#addPt').onclick=()=>ptForm(null,e.id));
   bindRows();
@@ -443,6 +456,18 @@ function payForm(e,d={}){
     ${fld('method','지급 방법',d.method||'','text','placeholder="체크 / Zelle / 현금"')}${fld('period_start','대상 기간 시작',d.period_start,'date')}${fld('period_end','대상 기간 끝',d.period_end,'date')}</div><div style="margin-top:12px">${fld('note','메모',d.note||'')}</div>`,
     fd=>save('emp_payments',{...fd,employee_id:e.id},d.id),
     d.id?async()=>{const{error}=await SB.from('emp_payments').delete().eq('id',d.id);if(error)return toast(error.message);await log('delete',{table:'emp_payments',id:d.id});await refresh('삭제했습니다')}:null);
+}
+function loanForm(e,type,suggest){
+  const give=type==='loan_give';
+  modal(`${esc(e.name)} — ${give?'대여금 (빌려줌)':'대여금 상환 받음'}`,`<div class="form">${fld('entry_date','날짜 *',today(),'date','required')}${fld('amount','금액 ($) *',give?'':(suggest?Number(suggest).toFixed(2):''),'number','step="0.01" min="0" required')}
+    ${fld('method','방법','','text','placeholder="체크 / Zelle / 현금 / 급여 공제"')}</div><div style="margin-top:12px">${fld('memo','메모',give?'직원 대여금':'대여금 상환')}</div>`,
+    async fd=>{
+      const row={entry_date:fd.entry_date,amount:fd.amount,method:fd.method,memo:fd.memo,type,category:give?'직원 대여금':'대여금 상환 수령',counterparty:e.name,project:e.company||'Kukpo Holdings',employee_id:e.id,updated_at:new Date().toISOString()};
+      const {error}=await SB.from('fin_entries').insert(row);
+      if(error){toast('저장 실패: '+error.message);return false}
+      await log('insert',{table:'fin_entries',type,employee:e.name,amount:fd.amount});
+      await refresh('저장했습니다 · 재무 장부에도 반영됨');
+    });
 }
 function ptForm(p,empId){
   p=p||{employee_id:empId,status:'new'};
