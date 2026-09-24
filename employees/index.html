@@ -110,7 +110,7 @@ const esc = s => (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt
 const money = n => '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const DAYS = ['일','월','화','수','목','금','토'];
 const KIND = {wage:'급여',bonus:'보너스',reimbursement:'환급',other:'기타'};
-const PAYTYPE = {hourly:'시급',monthly:'월급',per_project:'건당/프로젝트',other:'기타'};
+const PAYTYPE = {hourly:'시급',daily:'일당 (나온 날만)',monthly:'월급',per_project:'건당/프로젝트',other:'기타'};
 const STATUS = {active:['재직','ok'],leave:['휴직','warn'],terminated:['퇴사','gray']};
 const PST = {new:['신규','info'],treating:['치료 중','ok'],discharged:['치료 종료','gray'],settled:['세틀 완료','ok'],closed:['종결','gray'],dropped:['중단','bad']};
 let S = {emps:[],rates:[],scheds:[],pays:[],pts:[],closed:[],abs:[],adj:[]}, view='dash', cur=null, curTab='info';
@@ -153,6 +153,7 @@ function expected(emp, from, to){
     else { if(!sc || !sc.days.includes(d.getDay()) || S.closed.some(c=>c.closed_on===ds) || S.abs.some(a=>a.employee_id===emp.id&&a.absent_on===ds)) continue; h=hrs(sc.start_time,sc.end_time); }
     days++; hours+=h;
     if(rt && rt.pay_type==='hourly') amt+=h*Number(rt.amount);
+    else if(rt && rt.pay_type==='daily') amt+=Number(rt.amount);
   }
   // 월급제: 그 달 유효한 월급
   const rtEnd = eff(S.rates,emp.id,e);
@@ -335,8 +336,9 @@ function breakdown(emp,from,to){
     else if(cl){ st='Company closed'+(cl.note?' · '+cl.note:''); paid=false; }
     else if(ab){ st='Absent'+(ab.note&&ab.note!=='결근 (무급)'?' · '+ab.note:''); paid=false; }
     else { h=hrs(sc.start_time,sc.end_time); st='Worked'; }
-    const rate=rt&&rt.pay_type==='hourly'?Number(rt.amount):0;
-    out.push({ds,dow:d.getDay(),st,h,rate,amt:paid?h*rate:0,paid});
+    const dayPay=!!(rt&&rt.pay_type==='daily');
+    const rate=rt&&(rt.pay_type==='hourly'||dayPay)?Number(rt.amount):0;
+    out.push({ds,dow:d.getDay(),st,h,rate,dayPay,amt:paid?(dayPay?rate:h*rate):0,paid});
   }
   return out;
 }
@@ -345,12 +347,12 @@ function openStatement(empId,ym){
   const rows=breakdown(e,f,t), ex=expected(e,f,t);
   const EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const [y,m]=ym.split('-').map(Number); const mName=new Date(y,m-1,1).toLocaleString('en-US',{month:'long'});
-  const pays=S.pays.filter(p=>p.employee_id===e.id&&p.paid_on>=f&&p.paid_on<=t).sort((a,b)=>a.paid_on<b.paid_on?-1:1);
-  const wagePaid=pays.filter(p=>p.kind==='wage').reduce((a,p)=>a+Number(p.amount),0);
-  const other=pays.filter(p=>p.kind!=='wage').reduce((a,p)=>a+Number(p.amount),0);
+  const pays=S.pays.filter(p=>p.employee_id===e.id&&p.paid_on>=f&&p.paid_on<=t&&p.kind==='wage').sort((a,b)=>a.paid_on<b.paid_on?-1:1);
+  const wagePaid=pays.reduce((a,p)=>a+Number(p.amount),0);
   const bal=ex.amt-wagePaid;
   const rt=eff(S.rates,e.id,t)||S.rates.filter(x=>x.employee_id===e.id).at(-1);
   const sc=eff(S.scheds,e.id,t)||S.scheds.filter(x=>x.employee_id===e.id).at(-1);
+  const dayPay=!!(rt&&rt.pay_type==='daily');
   const fD=s=>{const d=pd(s);return d.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})};
   let n=0;
   const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Payroll Statement - ${esc(e.name)} - ${mName} ${y}</title>
@@ -381,19 +383,18 @@ tr.off td{color:#9aa3ae}tfoot td{font-weight:700;border-top:1.5px solid #1f3a5f;
 <div class="hd"><div><div class="org">KUKPO HOLDINGS${e.company&&e.company!=='Kukpo Holdings'?' · '+esc(e.company).toUpperCase():''}</div><div class="ttl">Payroll Statement</div></div>
 <div class="per"><b>${mName} ${y}</b><span>${fD(f)} – ${fD(t)}</span></div></div>
 <div class="info">
-<div><dt>Employee</dt><dd>${esc(e.name)}</dd></div><div><dt>Pay Rate</dt><dd>${rt?(rt.pay_type==='hourly'?money(rt.amount)+' / hr':money(rt.amount)+' '+({monthly:'/ month',per_project:'per project',other:''})[rt.pay_type]):'—'}</dd></div>
+<div><dt>Employee</dt><dd>${esc(e.name)}</dd></div><div><dt>Pay Rate</dt><dd>${rt?(rt.pay_type==='hourly'?money(rt.amount)+' / hr':money(rt.amount)+' '+({daily:'/ day',monthly:'/ month',per_project:'per project',other:''})[rt.pay_type]):'—'}</dd></div>
 <div><dt>Company</dt><dd>${esc(e.company)||'—'}</dd></div><div><dt>Schedule</dt><dd>${sc?sc.days.map(d=>EN[d]).join(', ')+' · '+hrs(sc.start_time,sc.end_time)+'h':'—'}</dd></div>
 <div><dt>Role</dt><dd>${esc(e.role)||'—'}</dd></div><div><dt>Classification</dt><dd>${e.employment_type==='1099'?'1099 Contractor':'W-2 Employee'}</dd></div>
 </div>
 <h3>1. Daily Breakdown</h3>
-<table><thead><tr><th>#</th><th>Date</th><th>Day</th><th>Status</th><th class="n">Hours</th><th class="n">Rate</th><th class="n">Amount</th></tr></thead><tbody>
-${rows.map(r=>`<tr class="${r.paid?'':'off'}"><td>${r.paid?++n:'–'}</td><td>${fD(r.ds)}</td><td>${EN[r.dow]}</td><td>${esc(r.st)}</td><td class="n">${r.h.toFixed(2)}</td><td class="n">${r.paid&&r.rate?money(r.rate):'–'}</td><td class="n">${money(r.amt)}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#9aa3ae;padding:14px">No scheduled days</td></tr>'}
-</tbody><tfoot><tr><td colspan="4">TOTAL · ${ex.days} days</td><td class="n">${ex.hours.toFixed(2)}</td><td></td><td class="n">${money(ex.amt)}</td></tr></tfoot></table>
-${pays.length?`<h3>2. Payments This Month</h3><table><thead><tr><th>Date</th><th>Type</th><th>Method</th><th>Note</th><th class="n">Amount</th></tr></thead><tbody>
-${pays.map(p=>`<tr><td>${fD(p.paid_on)}</td><td>${({wage:'Wages',bonus:'Bonus',reimbursement:'Reimbursement',other:'Other'})[p.kind]}</td><td>${esc(p.method)||'–'}</td><td>${esc(p.note)||''}</td><td class="n">${money(p.amount)}</td></tr>`).join('')}</tbody></table>`:''}
+<table><thead><tr><th>#</th><th>Date</th><th>Day</th><th>Status</th>${dayPay?'':'<th class="n">Hours</th>'}<th class="n">${dayPay?'Day Rate':'Rate'}</th><th class="n">Amount</th></tr></thead><tbody>
+${rows.map(r=>`<tr class="${r.paid?'':'off'}"><td>${r.paid?++n:'–'}</td><td>${fD(r.ds)}</td><td>${EN[r.dow]}</td><td>${esc(r.st)}</td>${dayPay?'':`<td class="n">${r.h.toFixed(2)}</td>`}<td class="n">${r.paid&&r.rate?money(r.rate):'–'}</td><td class="n">${money(r.amt)}</td></tr>`).join('')||`<tr><td colspan="${dayPay?6:7}" style="text-align:center;color:#9aa3ae;padding:14px">No scheduled days</td></tr>`}
+</tbody><tfoot><tr><td colspan="4">TOTAL · ${ex.days} days</td>${dayPay?'':`<td class="n">${ex.hours.toFixed(2)}</td>`}<td></td><td class="n">${money(ex.amt)}</td></tr></tfoot></table>
+${pays.length?`<h3>2. Wage Payments This Month</h3><table><thead><tr><th>Date</th><th>Method</th><th>Note</th><th class="n">Amount</th></tr></thead><tbody>
+${pays.map(p=>`<tr><td>${fD(p.paid_on)}</td><td>${esc(p.method)||'–'}</td><td>${esc(p.note)||''}</td><td class="n">${money(p.amount)}</td></tr>`).join('')}</tbody></table>`:''}
 <div class="sum">
 <div><span>Gross Wages</span><b>${money(ex.amt)}</b></div>
-${other?`<div><span>Bonus / Other</span><b>${money(other)}</b></div>`:''}
 <div><span>Wages Paid</span><b>${money(wagePaid)}</b></div>
 <div class="big"><span>${bal>0.005?'Balance Due':'Balance'}</span><span>${money(bal)}</span></div>
 </div>
