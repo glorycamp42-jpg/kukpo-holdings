@@ -378,7 +378,7 @@ tr.off td{color:#9aa3ae}tfoot td{font-weight:700;border-top:1.5px solid #1f3a5f;
 .bar button{background:#fff;color:#1f3a5f;border:0;border-radius:6px;padding:7px 16px;font-weight:600;cursor:pointer}
 @media print{.bar{display:none}.wrap{padding:0}}
 </style></head><body>
-<div class="bar"><button onclick="print()">🖨 Print / Save PDF</button><button onclick="close()">Close</button></div>
+<div class="bar"><button onclick="print()">🖨 Print / Save PDF</button><button onclick="window.close()">Close</button></div>
 <div class="wrap">
 <div class="hd"><div><div class="org">KUKPO HOLDINGS${e.company&&e.company!=='Kukpo Holdings'?' · '+esc(e.company).toUpperCase():''}</div><div class="ttl">Payroll Statement</div></div>
 <div class="per"><b>${mName} ${y}</b><span>${fD(f)} – ${fD(t)}</span></div></div>
