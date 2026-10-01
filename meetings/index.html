@@ -170,7 +170,7 @@ async function loadGoogle(){
   try{
     const [up,old,recs]=await Promise.all([gapi(q(start,end)),gapi(q(past,now)),gapi(MEET+'conferenceRecords?pageSize=25').catch(e=>({error:e}))]);
     const isMeet=e=>e.status!=='cancelled'&&(e.hangoutLink||e.conferenceData?.conferenceSolution?.key?.type==='hangoutsMeet');
-    UP=(up.items||[]).filter(isMeet).filter(e=>new Date(e.end?.dateTime||e.end?.date)>now-0);
+    UP=(up.items||[]).filter(isMeet).sort((x,y)=>new Date(x.start.dateTime||x.start.date)-new Date(y.start.dateTime||y.start.date));
     const byCode={};[...(old.items||[]),...(up.items||[])].filter(isMeet).forEach(e=>{const c=e.conferenceData?.conferenceId;if(c)byCode[c]=e});
     if(recs.error){PAST=[];gErr='지난 회의 기록을 불러오지 못했습니다: '+recs.error.message}
     else{
@@ -218,15 +218,15 @@ function vHome(){
   const openActs=NOTES.reduce((a,n)=>a+(n.actions||[]).filter(x=>!x.done).length,0);
   const done=new Set(NOTES.map(n=>n.conference_record));
   const todo=PAST.filter(p=>!done.has(p.name)).slice(0,8);
-  const evRow=e=>{const s=new Date(e.start.dateTime||e.start.date),en=new Date(e.end.dateTime||e.end.date);const live=s-6e5<=now&&now<en;const n=(e.attendees||[]).filter(a=>!a.resource).length;
+  const evRow=e=>{const s=new Date(e.start.dateTime||e.start.date),en=new Date(e.end.dateTime||e.end.date);const live=s-6e5<=now&&now<en,ended=en<=now;const n=(e.attendees||[]).filter(a=>!a.resource).length;
     const ext=(e.attendees||[]).some(a=>a.email&&!/@kukpoholdings\.com$/i.test(a.email));
     return `<div class="item ${live?'now':''}"><div class="t">${e.start.dateTime?hm(s):'종일'}</div><div class="m"><b>${esc(e.summary||'(제목 없음)')}</b><small>${n?'참석 '+n+'명':'참석자 미지정'}${ext?' · 외부 손님 포함':''}${later.includes(e)?' · '+(s.getMonth()+1)+'/'+s.getDate():''}</small></div>
-    ${live?'<span class="tag live">진행 중</span>':''}<button class="btn sm sec" data-copy="${esc(e.hangoutLink)}">링크 복사</button><a class="btn sm" href="${esc(e.hangoutLink)}" target="_blank" rel="noopener">입장 (Meet)</a></div>`};
+    ${live?'<span class="tag live">진행 중</span>':''}${ended?'<span class="tag">종료</span>':`<button class="btn sm sec" data-copy="${esc(e.hangoutLink)}">링크 복사</button><a class="btn sm" href="${esc(e.hangoutLink)}" target="_blank" rel="noopener">입장 (Meet)</a>`}</div>`};
   $('#view').innerHTML=`${gBanner()}
   <div class="top"><div><div class="sub">${dayLabel(now)}</div><h1>${gOk()&&gLoaded?'오늘 회의 '+today.length+'건':'회의'}</h1></div>
   <div class="row"><button class="btn sec" id="instant">지금 바로 회의</button><button class="btn" id="newMtg">+ 새 회의 예약</button></div></div>
   <div class="grid3">
-    <section class="card list span2"><div class="head"><h2>예정된 회의 (8일)</h2></div>
+    <section class="card list span2"><div class="head"><h2>오늘 · 앞으로 7일 회의</h2></div>
     ${gOk()&&gLoaded?(UP.length?[...today,...later].map(evRow).join(''):'<div class="empty">예정된 Meet 회의가 없습니다. "새 회의 예약"으로 만들어 보세요.</div>'):'<div class="empty">Google을 연결하면 캘린더의 Meet 회의가 여기에 보입니다.</div>'}
     </section>
     <section class="stats"><h2>이번 달</h2><div class="kp">
@@ -286,6 +286,7 @@ function newForm(){
   const close=()=>bg.remove();bg.querySelector('#mX').onclick=close;bg.onclick=e=>{if(e.target===bg)close()};
   bg.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
     const st=new Date(f.date+'T'+f.time),en=new Date(st.getTime()+Number(f.len)*6e4);
+    if(st<Date.now()-5*6e4)return toast('이미 지난 시간입니다. 날짜와 시간(오전/오후)을 확인해 주세요',5000);
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     const att=[...new Set(f.att.split(/[\s,;]+/).map(s=>s.trim()).filter(s=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)))];
     const bad=f.att.split(/[\s,;]+/).map(s=>s.trim()).filter(s=>s&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s));
@@ -295,7 +296,7 @@ function newForm(){
     if(f.rep)ev.recurrence=[f.rep];
     const b=bg.querySelector('#mOk');b.disabled=true;b.innerHTML='<span class="spin"></span> 예약 중';
     try{const r=await gapi(CAL+'?conferenceDataVersion=1&sendUpdates='+(f.send?'all':'none'),{method:'POST',body:JSON.stringify(ev)});
-      close();await loadGoogle();render();toast(r.hangoutLink?'예약했습니다. Meet 링크가 캘린더에 들어갔어요':'예약했습니다');
+      close();await loadGoogle();render();toast((st.getMonth()+1)+'/'+st.getDate()+' '+st.toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'})+' 회의를 예약했습니다'+(r.hangoutLink?' · Meet 링크가 캘린더에 들어갔어요':''),4000);
     }catch(err){b.disabled=false;b.textContent='예약하기';toast('예약 실패: '+err.message,5000)}};
 }
 
