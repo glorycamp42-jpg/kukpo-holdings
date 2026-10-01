@@ -175,8 +175,8 @@ async function loadGoogle(){
     if(recs.error){PAST=[];gErr='지난 회의 기록을 불러오지 못했습니다: '+recs.error.message}
     else{
       const list=(recs.conferenceRecords||[]).filter(r=>r.endTime);
-      const spaces=await Promise.all(list.map(r=>gapi(MEET+r.space).catch(()=>({}))));
-      PAST=list.map((r,i)=>{const code=spaces[i].meetingCode||'';const ev=byCode[code];return{name:r.name,start:r.startTime,end:r.endTime,code,uri:spaces[i].meetingUri||'',emails:(ev?.attendees||[]).filter(a=>a.email&&!a.resource).map(a=>a.email),title:ev?.summary||'제목 없는 회의'+(code?' ('+code+')':'')}});
+      const [spaces,smarts]=await Promise.all([Promise.all(list.map(r=>gapi(MEET+r.space).catch(()=>({})))),Promise.all(list.map(r=>gapi(MEET+r.name+'/smartNotes').catch(()=>({}))))]);
+      PAST=list.map((r,i)=>{const code=spaces[i].meetingCode||'';const ev=byCode[code];return{gemini:(smarts[i].smartNotes||[]).some(s=>s.docsDestination?.document),name:r.name,start:r.startTime,end:r.endTime,code,uri:spaces[i].meetingUri||'',emails:(ev?.attendees||[]).filter(a=>a.email&&!a.resource).map(a=>a.email),title:ev?.summary||'제목 없는 회의'+(code?' ('+code+')':'')}});
     }
     gLoaded=true;
   }catch(e){if(e.message==='need_google'){gLoaded=false;return}gErr=e.message;gLoaded=true}
@@ -237,7 +237,7 @@ function vHome(){
       <div class="n">Google Meet(Workspace 포함)을 그대로 쓰고, 회의록 요약만 이 페이지에서 만듭니다.</div></section>
   </div>
   ${gOk()&&gLoaded?`<section class="card list" style="margin-top:20px"><div class="head"><h2>회의록을 아직 안 만든 지난 회의</h2></div>
-    ${todo.length?todo.map(p=>`<div class="item"><div class="t">${hm(new Date(p.start))}</div><div class="m"><b>${esc(p.title)}</b><small>${shortDay(new Date(p.start))} · ${durTxt(mins(p.start,p.end))}</small></div><button class="btn sm" data-gen="${esc(p.name)}">AI 회의록 만들기</button></div>`).join(''):'<div class="empty">모든 지난 회의에 회의록이 있습니다.</div>'}</section>`:''}
+    ${todo.length?todo.map(p=>`<div class="item"><div class="t">${hm(new Date(p.start))}</div><div class="m"><b>${esc(p.title)}</b><small>${shortDay(new Date(p.start))} · ${durTxt(mins(p.start,p.end))}${p.gemini?' · Gemini 메모 있음':''}</small></div><button class="btn sm" data-gen="${esc(p.name)}">AI 회의록 만들기</button></div>`).join(''):'<div class="empty">모든 지난 회의에 회의록이 있습니다.</div>'}</section>`:''}
   <section class="card list" style="margin-top:20px"><div class="head row"><h2>최근 회의록</h2><div class="sp"></div><a href="#" id="allNotes" style="font-size:14px">전체 보기</a></div>
     ${NOTES.length?`<div class="notes">${NOTES.slice(0,6).map(noteCard).join('')}</div>`:'<div class="empty">아직 회의록이 없습니다.</div>'}</section>`;
   bindBanner();bindCards();
@@ -313,6 +313,13 @@ async function readTranscript(rec){
   do{const r=await gapi(MEET+t.name+'/entries?pageSize=100'+(tok?'&pageToken='+encodeURIComponent(tok):''));(r.transcriptEntries||[]).forEach(x=>out.push(`[${hm(new Date(x.startTime))}] ${nm[x.participant]||'참석자'}: ${x.text}`));tok=r.nextPageToken||''}while(tok&&out.length<5000);
   return out.length?{text:out.join('\n'),url}:null;
 }
+async function readSmart(rec){
+  const ls=(await gapi(MEET+rec+'/smartNotes')).smartNotes||[];
+  const s=ls.find(x=>x.state==='FILE_GENERATED'&&x.docsDestination?.document)||ls.find(x=>x.docsDestination?.document);
+  if(!s)return null;
+  const url=s.docsDestination.exportUri||('https://docs.google.com/document/d/'+s.docsDestination.document);
+  try{const txt=await gapi('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(s.docsDestination.document)+'/export?mimeType=text/plain',{raw:true});return{text:txt.trim(),url}}catch(e){return{text:'',url}}
+}
 async function attendees(rec){
   const parts=(await gapi(MEET+rec+'/participants?pageSize=100')).participants||[];
   const m={};parts.forEach(p=>{const n=p.signedinUser?.displayName||p.anonymousUser?.displayName||p.phoneUser?.displayName||'참석자';const mm=p.earliestStartTime&&p.latestEndTime?mins(p.earliestStartTime,p.latestEndTime):0;m[n]=Math.max(m[n]||0,mm)});
@@ -323,14 +330,15 @@ async function generate(p,btn){
   const lbl=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> 기록 읽는 중'}
   const reset=()=>{if(btn){btn.disabled=false;btn.textContent=lbl}};
   try{
-    const [tr,att,recs]=await Promise.all([readTranscript(p.name),attendees(p.name).catch(()=>[]),gapi(MEET+p.name+'/recordings').catch(()=>({}))]);
-    if(!tr){reset();return toast('이 회의는 대화 기록(전사)이 없습니다. 회의 중 "기록(Transcript)"을 켜야 회의록을 만들 수 있어요',6000)}
+    const [tr,sm,att,recs]=await Promise.all([readTranscript(p.name).catch(()=>null),readSmart(p.name).catch(()=>null),attendees(p.name).catch(()=>[]),gapi(MEET+p.name+'/recordings').catch(()=>({}))]);
+    const src=tr?.text||sm?.text||'';
+    if(!src){reset();return toast('이 회의는 기록이 없습니다. 회의 중 "기록(Transcript)"이나 "Take notes for me(Gemini 메모)"를 켜야 회의록을 만들 수 있어요',6000)}
     if(btn)btn.innerHTML='<span class="spin"></span> AI 정리 중';
     const{data:{session}}=await SB.auth.getSession();
-    const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({transcript:tr.text,title:p.title,date:new Date(p.start).toLocaleString('ko-KR')})});
+    const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({transcript:src,title:p.title,date:new Date(p.start).toLocaleString('ko-KR')})});
     const ai=await r.json();if(!r.ok)throw new Error(ai.error||('HTTP '+r.status));
     const rec=(recs.recordings||[]).find(x=>x.driveDestination?.exportUri);
-    const row={conference_record:p.name,meeting_code:p.code||null,title:p.title,started_at:p.start,ended_at:p.end,attendees:att,summary:ai.summary,decisions:ai.decisions,actions:(ai.actions||[]).map(a=>({task:String(a.task||''),owner:String(a.owner||''),due:String(a.due||''),done:false})),highlights:ai.highlights,transcript:tr.text,transcript_url:tr.url||null,emails:p.emails||[],recording_url:rec?.driveDestination?.exportUri||null,updated_at:new Date().toISOString()};
+    const row={conference_record:p.name,meeting_code:p.code||null,title:p.title,started_at:p.start,ended_at:p.end,attendees:att,summary:ai.summary,decisions:ai.decisions,actions:(ai.actions||[]).map(a=>({task:String(a.task||''),owner:String(a.owner||''),due:String(a.due||''),done:false})),highlights:ai.highlights,transcript:tr?.text||null,transcript_url:tr?.url||null,gemini_notes:sm?.text||null,gemini_url:sm?.url||null,emails:p.emails||[],recording_url:rec?.driveDestination?.exportUri||null,updated_at:new Date().toISOString()};
     const{data,error}=await SB.from('mtg_notes').upsert(row,{onConflict:'conference_record'}).select('id').single();
     if(error)throw new Error(error.message);
     await loadNotes();toast('회의록을 만들었습니다');openNote(data.id);
@@ -351,15 +359,16 @@ function vNote(){
   <div class="grid3"><div class="span2 col">
     <section class="card pad"><div class="sec-h"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>AI 요약</div><p class="summary">${esc(n.summary||'요약 없음')}</p></section>
     <section class="card pad"><h2>결정 사항</h2>${(n.decisions||[]).length?`<ul class="dec">${n.decisions.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="sub">기록된 결정 사항이 없습니다.</p>'}</section>
+    ${n.gemini_notes||n.gemini_url?`<section class="card pad"><div class="row"><h2>Gemini 회의 메모 (Google 자동 작성)</h2><div class="sp"></div>${n.gemini_url?`<a href="${esc(n.gemini_url)}" target="_blank" rel="noopener" style="font-size:14px">Google Docs에서 열기</a>`:''}</div>${n.gemini_notes?`<div style="white-space:pre-wrap;font-size:15px;line-height:1.7;color:var(--body);margin-top:12px;max-height:520px;overflow:auto">${esc(n.gemini_notes)}</div>`:'<p class="sub">메모 내용을 불러오지 못했습니다. 위 링크로 열어 보세요.</p>'}</section>`:''}
     <section class="card pad"><h2>중요 발언</h2>${(n.highlights||[]).length?n.highlights.map(h=>`<div class="tr">${h.time?`<div class="tm">${esc(h.time)}</div>`:''}<div>${h.speaker?`<b>${esc(h.speaker)}</b> — `:''}${esc(h.text||'')}</div></div>`).join(''):'<p class="sub">없음</p>'}
-      <div class="row" style="margin-top:16px">${n.transcript_url?`<a href="${esc(n.transcript_url)}" target="_blank" rel="noopener" style="font-size:14px">전체 대화 기록 (Google Docs)</a>`:''}<button class="btn sm sec" id="showTr">전체 기록 펼치기</button></div>
+      <div class="row" style="margin-top:16px">${n.transcript_url?`<a href="${esc(n.transcript_url)}" target="_blank" rel="noopener" style="font-size:14px">전체 대화 기록 (Google Docs)</a>`:''}${n.transcript?'<button class="btn sm sec" id="showTr">전체 기록 펼치기</button>':''}</div>
       <pre id="trBox" class="hidden" style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.6;background:var(--soft);border-radius:10px;padding:14px;margin:14px 0 0;max-height:480px;overflow:auto">${esc(n.transcript||'')}</pre></section>
   </div><div class="col">
     <section class="card pad"><h2>할 일 ${acts.length}건</h2><div style="margin-top:8px">${acts.length?acts.map((a,i)=>`<label class="act ${a.done?'done':''}"><input type="checkbox" data-act="${i}" ${a.done?'checked':''}><span>${esc(a.task)}<small>${esc([a.owner,a.due].filter(Boolean).join(' · ')||'담당자 미정')}</small></span></label>`).join(''):'<p class="sub">할 일이 없습니다.</p>'}</div></section>
     <section class="card pad"><h2>참석 기록</h2><div style="margin-top:10px">${(n.attendees||[]).length?n.attendees.map(a=>`<div class="att"><span>${esc(a.name)}</span><span class="sub">${a.minutes?durTxt(a.minutes):''}</span></div>`).join(''):'<p class="sub">기록 없음</p>'}</div></section>
     <div class="row"><button class="btn sm sec" id="regen">다시 만들기</button><div class="sp"></div><button class="btn sm del" id="delN">삭제</button></div>
   </div></div>`;
-  $('#showTr').onclick=()=>{$('#trBox').classList.toggle('hidden')};
+  if($('#showTr'))$('#showTr').onclick=()=>{$('#trBox').classList.toggle('hidden')};
   document.querySelectorAll('[data-act]').forEach(c=>c.onchange=async()=>{const a=[...acts];a[+c.dataset.act]={...a[+c.dataset.act],done:c.checked};
     const{error}=await SB.from('mtg_notes').update({actions:a,updated_at:new Date().toISOString()}).eq('id',n.id);if(error){c.checked=!c.checked;return toast(error.message)}
     curNote.actions=a;const x=NOTES.find(z=>z.id===n.id);if(x)x.actions=a;c.closest('.act').classList.toggle('done',c.checked)});
@@ -395,7 +404,7 @@ function vSettings(){
     </ol></section>
     <section class="card pad"><h2>알아 두기</h2><ul class="steps" style="padding-left:18px">
       <li>회의는 Google Meet에서 열립니다. 추가 비용이 없습니다.</li>
-      <li>AI 회의록은 Meet의 <b>기록(Transcript)</b>이 켜진 회의만 만들 수 있습니다. Workspace Business Standard 이상 요금제에서 쓸 수 있습니다.</li>
+      <li>AI 회의록은 Meet의 <b>기록(Transcript)</b> 또는 <b>Take notes for me(Gemini 메모)</b>가 켜진 회의만 만들 수 있습니다. Gemini 메모는 회의록 화면에 그대로 함께 보입니다. Workspace Business Standard 이상 요금제에서 쓸 수 있습니다.</li>
       <li>환자 정보가 오가는 회의는 회의록에 민감 정보가 저장될 수 있으니 주의하세요.</li>
       <li>이 페이지는 Eugene · David 계정만 열 수 있습니다.</li></ul></section></div>`;
   $('#sf').onsubmit=async e=>{e.preventDefault();const v=$('#cid').value.trim();
