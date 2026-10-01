@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#16202E">
+<title>Kukpo 회의</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230B6B5E'/%3E%3Ctext x='32' y='43' font-family='Arial' font-weight='700' font-size='30' fill='white' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+:root{--ink:#16202E;--bg:#F4F3EE;--card:#fff;--line:#E2E1DA;--soft:#EEEDE7;--muted:#5B6575;--body:#2A3444;--acc:#0B6B5E;--acc-d:#084E45;--acc-bg:#F0F7F5;--bad:#B42318;--warn-bg:#FEF6E7;--warn:#8A5A00}
+*{box-sizing:border-box}
+body{margin:0;font-family:"IBM Plex Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+button,input,select,textarea{font:inherit}
+a{color:var(--acc)}a:hover{color:var(--acc-d)}
+.hidden{display:none!important}
+header{background:var(--ink);color:#F4F3EE;padding:0 24px;min-height:64px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:5}
+.logo{width:32px;height:32px;border-radius:8px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+.brand{font-weight:600;font-size:17px;white-space:nowrap}.brand a{color:#F4F3EE;text-decoration:none}.brand span{color:#A9B2BF;font-weight:400;margin-left:6px}
+nav{display:flex;gap:4px;flex:1;overflow-x:auto}
+nav button{background:none;border:0;color:#A9B2BF;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;font-size:14px}
+nav button.on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+.who{font-size:13px;color:#A9B2BF;white-space:nowrap}.who button{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;margin-left:8px;cursor:pointer;font-size:12px}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+h1{margin:4px 0 0;font-size:28px;font-weight:700}
+h2{font-size:15px;font-weight:600;color:var(--muted);margin:0}
+.sub{font-size:14px;color:var(--muted)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.btn{height:44px;padding:0 20px;border-radius:10px;border:0;background:var(--acc);color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--acc-d);color:#fff}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid #C9CDD3;font-weight:500}.btn.sec:hover{background:var(--soft);color:var(--ink)}
+.btn.sm{height:36px;padding:0 14px;font-size:14px}
+.btn.del{background:#fff;color:var(--bad);border:1px solid #F3C4BE;font-weight:500}
+.btn[disabled]{opacity:.55;cursor:default}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.span2{grid-column:span 2}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.pad{padding:22px 24px}
+.list .head{padding:18px 24px 12px}
+.item{display:flex;align-items:center;gap:18px;padding:16px 24px;border-top:1px solid var(--soft)}
+.item.now{background:var(--acc-bg)}
+.item .t{width:76px;font-weight:600;flex-shrink:0}.item.now .t{color:var(--acc)}
+.item .m{flex:1;min-width:0}.item .m b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .m small{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.tag{font-size:12px;color:var(--muted);background:var(--soft);padding:4px 10px;border-radius:999px;white-space:nowrap}
+.tag.live{background:var(--acc);color:#fff}
+.empty{padding:28px 24px;color:var(--muted);text-align:center;border-top:1px solid var(--soft)}
+.stats{background:var(--ink);color:#F4F3EE;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:18px}
+.stats h2{color:#A9B2BF}
+.kp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.kp .v{font-size:30px;font-weight:700}.kp .l{font-size:13px;color:#A9B2BF}.kp .v.ok{color:#7FD3C3}
+.stats .n{font-size:12px;color:#A9B2BF;border-top:1px solid #2C3849;padding-top:12px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 24px 22px}
+.nc{display:block;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:18px;cursor:pointer;background:#fff;text-align:left;width:100%}
+.nc:hover{border-color:#B9C3C0;color:var(--ink)}
+.nc .d{font-size:13px;color:var(--muted)}.nc b{display:block;font-size:16px;margin-top:6px}
+.nc p{font-size:14px;color:#3D4757;margin:10px 0 0;line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nc .a{font-size:13px;color:var(--acc);margin-top:12px;font-weight:600}
+.banner{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--warn-bg);border:1px solid #F1D9A8;color:var(--warn);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:14px}
+.banner b{color:#5C3D00}
+.sec-h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--acc)}
+.summary{margin:12px 0 0;font-size:16px;line-height:1.75;color:var(--body);white-space:pre-line}
+ul.dec{margin:12px 0 0;padding-left:20px;line-height:1.9}
+.tr{display:flex;gap:14px;font-size:15px;line-height:1.6;margin-top:12px}.tr .tm{width:56px;flex-shrink:0;color:var(--muted);font-size:13px;padding-top:2px}
+.act{display:flex;gap:12px;align-items:flex-start;padding:10px 0;line-height:1.5;cursor:pointer;font-size:15px;color:var(--ink);font-weight:400;margin:0}
+.act input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--acc);flex-shrink:0}
+.act small{display:block;font-size:13px;color:var(--muted)}.act.done span{color:var(--muted);text-decoration:line-through}
+.att{display:flex;justify-content:space-between;font-size:14px;padding:6px 0}
+.col{display:flex;flex-direction:column;gap:20px}
+label{display:block;font-size:13px;color:#475569;margin-bottom:6px;font-weight:500}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=time],input[type=search],select,textarea{width:100%;height:44px;padding:0 12px;border:1px solid #C9CDD3;border-radius:10px;background:#fff;color:var(--ink)}
+textarea{height:auto;min-height:80px;padding:10px 12px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.form .full{grid-column:1/-1}
+.chk{display:flex;gap:10px;align-items:center;font-size:14px}.chk input{width:20px;height:20px;accent-color:var(--acc)}
+#login{max-width:400px;margin:12vh auto;padding:0 16px}
+.modal-bg{position:fixed;inset:0;background:rgba(22,32,46,.5);display:flex;align-items:flex-start;justify-content:center;padding:6vh 12px;z-index:20;overflow:auto}
+.modal{background:#fff;border-radius:14px;max-width:620px;width:100%;padding:24px}.modal h3{margin:0 0 16px;font-size:20px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;z-index:30;font-size:14px;max-width:90vw}
+.steps{margin:10px 0 0;padding-left:22px;line-height:1.9;font-size:14px;color:var(--body)}
+code{background:var(--soft);padding:2px 6px;border-radius:5px;font-size:13px}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:s .8s linear infinite;display:inline-block}
+.btn.sec .spin{border-color:#ccc;border-top-color:var(--acc)}
+@keyframes s{to{transform:rotate(360deg)}}
+@media(max-width:900px){.grid3,.notes{grid-template-columns:1fr}.span2{grid-column:auto}.form{grid-template-columns:1fr}}
+@media(max-width:640px){.item .m{flex:1 1 calc(100% - 100px)}.item .m b{white-space:normal}header{flex-wrap:wrap;padding:10px 14px;gap:10px}main{padding:20px 14px 48px}.item{flex-wrap:wrap;gap:10px 14px;padding:14px 16px}.item .t{width:auto}.list .head{padding:16px}.notes{padding:0 16px 16px}.pad{padding:18px}}
+</style>
+</head>
+<body>
+<div id="login" class="hidden">
+  <div style="text-align:center;margin-bottom:18px"><div style="font-size:12px;letter-spacing:.12em;color:var(--muted)">KUKPO HOLDINGS</div>
+  <div style="font-size:24px;font-weight:700;margin-top:4px">회의</div></div>
+  <form class="card pad" id="loginForm">
+    <label for="lEmail">이메일</label><input id="lEmail" type="email" autocomplete="username" required>
+    <div style="height:12px"></div>
+    <label for="lPw">비밀번호</label><input id="lPw" type="password" autocomplete="current-password" required>
+    <div style="height:16px"></div>
+    <button class="btn" style="width:100%">로그인</button>
+    <p id="lErr" style="color:var(--bad);font-size:13px;margin:10px 0 0"></p>
+    <p class="sub" style="font-size:12px;margin:12px 0 0">직원 관리 · 재무와 같은 계정입니다.</p>
+  </form>
+</div>
+<div id="app" class="hidden">
+  <header>
+    <div class="logo">K</div>
+    <div class="brand"><a href="/hub">Kukpo Hub</a><span>/ 회의</span></div>
+    <nav id="nav"><button data-v="home">회의</button><button data-v="notes">회의록</button><button data-v="settings">설정</button></nav>
+    <div class="who"><span id="whoEmail"></span><button id="outBtn">로그아웃</button></div>
+  </header>
+  <main id="view"></main>
+</div>
+<script>
+const SB=supabase.createClient('https://wgohvustiekmyfdihibk.supabase.co','sb_publishable_sZOi0oR6xRHUPv7CEQSjpg_kW-2j6yg');
+const FN_URL='https://wgohvustiekmyfdihibk.supabase.co/functions/v1/mtg-ai';
+const SCOPES=['https://www.googleapis.com/auth/calendar.events','https://www.googleapis.com/auth/meetings.space.created','https://www.googleapis.com/auth/meetings.space.readonly','https://www.googleapis.com/auth/drive.meet.readonly'].join(' ');
+const $=s=>document.querySelector(s);
+const esc=s=>(s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad2=n=>String(n).padStart(2,'0');
+const hm=d=>pad2(d.getHours())+':'+pad2(d.getMinutes());
+const dayLabel=d=>d.toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'});
+const shortDay=d=>{const t=new Date();const y=new Date(t);y.setDate(t.getDate()-1);if(d.toDateString()===t.toDateString())return '오늘 '+hm(d);if(d.toDateString()===y.toDateString())return '어제 '+hm(d);return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+hm(d)};
+const mins=(a,b)=>Math.max(0,Math.round((new Date(b)-new Date(a))/6e4));
+const durTxt=m=>m>=60?Math.floor(m/60)+'시간'+(m%60?' '+m%60+'분':''):m+'분';
+function toast(m,ms=2800){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),ms)}
+
+let ME='',CLIENT_ID='',NOTES=[],view='home',curNote=null;
+let G={token:null,exp:0},tokenClient=null,pendingG=null;
+let UP=[],PAST=[],gLoaded=false,gErr='';
+
+/* ---------- Google ---------- */
+try{const s=JSON.parse(sessionStorage.getItem('mtg_g')||'null');if(s&&s.exp>Date.now()+6e4)G=s}catch(e){}
+const gOk=()=>G.token&&G.exp>Date.now()+6e4;
+function initG(){
+  if(!CLIENT_ID||!window.google?.accounts?.oauth2)return false;
+  if(!tokenClient)tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,hint:ME,callback:r=>{
+    if(r.error){pendingG?.rej(new Error(r.error));pendingG=null;return}
+    G={token:r.access_token,exp:Date.now()+(Number(r.expires_in)||3600)*1000};try{sessionStorage.setItem('mtg_g',JSON.stringify(G))}catch(e){}
+    pendingG?.res();pendingG=null}});
+  return true;
+}
+function connectG(){
+  return new Promise((res,rej)=>{
+    if(!CLIENT_ID)return rej(new Error('no_client'));
+    if(!initG())return rej(new Error('Google 스크립트가 아직 로드되지 않았습니다. 잠시 후 다시 눌러 주세요.'));
+    pendingG={res,rej};tokenClient.requestAccessToken({prompt:G.token?'':'consent'});
+  });
+}
+async function gapi(url,opt={}){
+  if(!gOk())throw new Error('need_google');
+  const r=await fetch(url,{...opt,headers:{Authorization:'Bearer '+G.token,...(opt.body?{'Content-Type':'application/json'}:{}),...(opt.headers||{})}});
+  if(r.status===401){G={token:null,exp:0};try{sessionStorage.removeItem('mtg_g')}catch(e){}throw new Error('need_google')}
+  const t=await r.text();
+  if(!r.ok){let m=t;try{m=JSON.parse(t).error?.message||t}catch(e){}const err=new Error(m.slice(0,300));err.status=r.status;throw err}
+  if(opt.raw)return t;
+  return t?JSON.parse(t):{};
+}
+const CAL='https://www.googleapis.com/calendar/v3/calendars/primary/events';
+const MEET='https://meet.googleapis.com/v2/';
+
+async function loadGoogle(){
+  gErr='';
+  const now=new Date(),start=new Date(now);start.setHours(0,0,0,0);
+  const end=new Date(start);end.setDate(end.getDate()+8);
+  const past=new Date(start);past.setDate(past.getDate()-30);
+  const q=(a,b)=>CAL+'?'+new URLSearchParams({timeMin:a.toISOString(),timeMax:b.toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'100'});
+  try{
+    const [up,old,recs]=await Promise.all([gapi(q(start,end)),gapi(q(past,now)),gapi(MEET+'conferenceRecords?pageSize=25').catch(e=>({error:e}))]);
+    const isMeet=e=>e.status!=='cancelled'&&(e.hangoutLink||e.conferenceData?.conferenceSolution?.key?.type==='hangoutsMeet');
+    UP=(up.items||[]).filter(isMeet).filter(e=>new Date(e.end?.dateTime||e.end?.date)>now-0);
+    const byCode={};[...(old.items||[]),...(up.items||[])].filter(isMeet).forEach(e=>{const c=e.conferenceData?.conferenceId;if(c)byCode[c]=e});
+    if(recs.error){PAST=[];gErr='지난 회의 기록을 불러오지 못했습니다: '+recs.error.message}
+    else{
+      const list=(recs.conferenceRecords||[]).filter(r=>r.endTime);
+      const spaces=await Promise.all(list.map(r=>gapi(MEET+r.space).catch(()=>({}))));
+      PAST=list.map((r,i)=>{const code=spaces[i].meetingCode||'';const ev=byCode[code];return{name:r.name,start:r.startTime,end:r.endTime,code,uri:spaces[i].meetingUri||'',emails:(ev?.attendees||[]).filter(a=>a.email&&!a.resource).map(a=>a.email),title:ev?.summary||'제목 없는 회의'+(code?' ('+code+')':'')}});
+    }
+    gLoaded=true;
+  }catch(e){if(e.message==='need_google'){gLoaded=false;return}gErr=e.message;gLoaded=true}
+}
+
+/* ---------- data ---------- */
+async function loadNotes(){
+  const{data,error}=await SB.from('mtg_notes').select('id,conference_record,meeting_code,title,started_at,ended_at,summary,actions,attendees').order('started_at',{ascending:false}).limit(200);
+  if(error){toast('회의록 불러오기 오류: '+error.message);return}NOTES=data;
+}
+async function loadSettings(){
+  const{data}=await SB.from('mtg_settings').select('k,v');
+  CLIENT_ID=(data||[]).find(x=>x.k==='google_client_id')?.v||'';
+}
+
+/* ---------- views ---------- */
+function render(){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===(view==='note'?'notes':view)));({home:vHome,notes:vNotes,note:vNote,settings:vSettings})[view]()}
+function go(v){view=v;render();scrollTo(0,0)}
+
+function gBanner(){
+  if(!CLIENT_ID)return `<div class="banner"><div style="flex:1"><b>Google 연결 설정이 아직 안 되어 있습니다.</b> 설정에서 Google 클라이언트 ID를 한 번만 넣으면 회의 만들기·기록 불러오기가 켜집니다. 저장된 회의록은 지금도 볼 수 있습니다.</div><button class="btn sm" data-go="settings">설정 열기</button></div>`;
+  if(!gOk())return `<div class="banner"><div style="flex:1"><b>Google 계정 연결이 필요합니다.</b> 회사 Google 계정(${esc(ME)})으로 연결하면 캘린더의 회의와 Meet 기록을 불러옵니다.</div><button class="btn sm" id="gConn">Google 연결</button></div>`;
+  if(gErr)return `<div class="banner"><div style="flex:1">${esc(gErr)}</div><button class="btn sm sec" id="gRe">다시 불러오기</button></div>`;
+  return '';
+}
+function bindBanner(){
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+  const c=$('#gConn');if(c)c.onclick=async()=>{try{await connectG();await loadGoogle();render()}catch(e){toast(e.message==='no_client'?'설정에서 클라이언트 ID를 먼저 넣어 주세요':'Google 연결 실패: '+e.message)}};
+  const r=$('#gRe');if(r)r.onclick=async()=>{await loadGoogle();render()};
+}
+
+function vHome(){
+  const now=new Date();
+  const today=UP.filter(e=>new Date(e.start.dateTime||e.start.date).toDateString()===now.toDateString());
+  const later=UP.filter(e=>!today.includes(e));
+  const ym=now.toISOString().slice(0,7);
+  const mNotes=NOTES.filter(n=>(n.started_at||'').slice(0,7)===ym);
+  const mMin=mNotes.reduce((a,n)=>a+(n.started_at&&n.ended_at?mins(n.started_at,n.ended_at):0),0);
+  const openActs=NOTES.reduce((a,n)=>a+(n.actions||[]).filter(x=>!x.done).length,0);
+  const done=new Set(NOTES.map(n=>n.conference_record));
+  const todo=PAST.filter(p=>!done.has(p.name)).slice(0,8);
+  const evRow=e=>{const s=new Date(e.start.dateTime||e.start.date),en=new Date(e.end.dateTime||e.end.date);const live=s-6e5<=now&&now<en;const n=(e.attendees||[]).filter(a=>!a.resource).length;
+    const ext=(e.attendees||[]).some(a=>a.email&&!/@kukpoholdings\.com$/i.test(a.email));
+    return `<div class="item ${live?'now':''}"><div class="t">${e.start.dateTime?hm(s):'종일'}</div><div class="m"><b>${esc(e.summary||'(제목 없음)')}</b><small>${n?'참석 '+n+'명':'참석자 미지정'}${ext?' · 외부 손님 포함':''}${later.includes(e)?' · '+(s.getMonth()+1)+'/'+s.getDate():''}</small></div>
+    ${live?'<span class="tag live">진행 중</span>':''}<button class="btn sm sec" data-copy="${esc(e.hangoutLink)}">링크 복사</button><a class="btn sm" href="${esc(e.hangoutLink)}" target="_blank" rel="noopener">입장 (Meet)</a></div>`};
+  $('#view').innerHTML=`${gBanner()}
+  <div class="top"><div><div class="sub">${dayLabel(now)}</div><h1>${gOk()&&gLoaded?'오늘 회의 '+today.length+'건':'회의'}</h1></div>
+  <div class="row"><button class="btn sec" id="instant">지금 바로 회의</button><button class="btn" id="newMtg">+ 새 회의 예약</button></div></div>
+  <div class="grid3">
+    <section class="card list span2"><div class="head"><h2>예정된 회의 (8일)</h2></div>
+    ${gOk()&&gLoaded?(UP.length?[...today,...later].map(evRow).join(''):'<div class="empty">예정된 Meet 회의가 없습니다. "새 회의 예약"으로 만들어 보세요.</div>'):'<div class="empty">Google을 연결하면 캘린더의 Meet 회의가 여기에 보입니다.</div>'}
+    </section>
+    <section class="stats"><h2>이번 달</h2><div class="kp">
+      <div><div class="v">${mNotes.length}</div><div class="l">회의록</div></div>
+      <div><div class="v">${durTxt(mMin)}</div><div class="l">회의록 기준 회의 시간</div></div>
+      <div><div class="v">${openActs}</div><div class="l">남은 할 일</div></div>
+      <div><div class="v ok">$0</div><div class="l">추가 비용</div></div></div>
+      <div class="n">Google Meet(Workspace 포함)을 그대로 쓰고, 회의록 요약만 이 페이지에서 만듭니다.</div></section>
+  </div>
+  ${gOk()&&gLoaded?`<section class="card list" style="margin-top:20px"><div class="head"><h2>회의록을 아직 안 만든 지난 회의</h2></div>
+    ${todo.length?todo.map(p=>`<div class="item"><div class="t">${hm(new Date(p.start))}</div><div class="m"><b>${esc(p.title)}</b><small>${shortDay(new Date(p.start))} · ${durTxt(mins(p.start,p.end))}</small></div><button class="btn sm" data-gen="${esc(p.name)}">AI 회의록 만들기</button></div>`).join(''):'<div class="empty">모든 지난 회의에 회의록이 있습니다.</div>'}</section>`:''}
+  <section class="card list" style="margin-top:20px"><div class="head row"><h2>최근 회의록</h2><div class="sp"></div><a href="#" id="allNotes" style="font-size:14px">전체 보기</a></div>
+    ${NOTES.length?`<div class="notes">${NOTES.slice(0,6).map(noteCard).join('')}</div>`:'<div class="empty">아직 회의록이 없습니다.</div>'}</section>`;
+  bindBanner();bindCards();
+  $('#allNotes').onclick=e=>{e.preventDefault();go('notes')};
+  $('#newMtg').onclick=()=>needG(newForm);
+  $('#instant').onclick=e=>needG(()=>instant(e.currentTarget));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);toast('링크를 복사했습니다')}catch(e){prompt('링크',b.dataset.copy)}});
+  document.querySelectorAll('[data-gen]').forEach(b=>b.onclick=()=>generate(PAST.find(p=>p.name===b.dataset.gen),b));
+}
+function noteCard(n){const open=(n.actions||[]).filter(x=>!x.done).length,all=(n.actions||[]).length;const d=n.started_at?new Date(n.started_at):null;
+  return `<button class="nc" data-note="${n.id}"><div class="d">${d?shortDay(d):''}${n.started_at&&n.ended_at?' · '+durTxt(mins(n.started_at,n.ended_at)):''}</div><b>${esc(n.title||'제목 없는 회의')}</b><p>${esc(n.summary||'')}</p><div class="a">${all?(open?'할 일 '+open+'건 남음':'할 일 모두 완료')+' →':'회의록 보기 →'}</div></button>`}
+function bindCards(){document.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>openNote(b.dataset.note))}
+async function needG(fn){
+  if(!CLIENT_ID){toast('설정에서 Google 클라이언트 ID를 먼저 넣어 주세요');return go('settings')}
+  if(!gOk()){try{await connectG();await loadGoogle()}catch(e){return toast('Google 연결 실패: '+e.message)}}
+  fn();
+}
+
+/* ---------- create ---------- */
+async function instant(btn){
+  const w=window.open('about:blank','_blank');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> 만드는 중';
+  const body={config:{accessType:'TRUSTED',artifactConfig:{recordingConfig:{autoRecordingGeneration:'ON'},transcriptionConfig:{autoTranscriptionGeneration:'ON'}}}};
+  try{
+    let sp;try{sp=await gapi(MEET+'spaces',{method:'POST',body:JSON.stringify(body)})}catch(e){if(e.status!==400&&e.status!==403)throw e;sp=await gapi(MEET+'spaces',{method:'POST',body:JSON.stringify({config:{accessType:'TRUSTED'}})});toast('자동 녹화·기록은 이 계정 요금제에서 켤 수 없어, 회의 안에서 직접 켜 주세요',5000)}
+    if(w)w.location=sp.meetingUri;else if(!window.open(sp.meetingUri,'_blank'))location.href=sp.meetingUri;
+    try{await navigator.clipboard.writeText(sp.meetingUri);toast('회의를 열었습니다. 링크도 복사해 두었어요')}catch(e){toast('회의를 열었습니다')}
+  }catch(e){if(w)w.close();toast('회의 만들기 실패: '+e.message,5000)}
+  btn.disabled=false;btn.textContent='지금 바로 회의';
+}
+function newForm(){
+  const d=new Date(Date.now()+36e5);d.setMinutes(d.getMinutes()<30?30:60,0,0);
+  const ds=d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.innerHTML=`<form class="modal"><h3>새 회의 예약</h3><div class="form">
+   <div class="full"><label for="fT">회의 제목 *</label><input type="text" id="fT" name="title" required placeholder="예: 주간 마케팅 회의"></div>
+   <div><label for="fD">날짜 *</label><input type="date" id="fD" name="date" required value="${ds}"></div>
+   <div><label for="fS">시작 시간 *</label><input type="time" id="fS" name="time" required value="${hm(d)}"></div>
+   <div><label for="fL">길이</label><select id="fL" name="len"><option value="15">15분</option><option value="30" selected>30분</option><option value="45">45분</option><option value="60">1시간</option><option value="90">1시간 30분</option><option value="120">2시간</option></select></div>
+   <div><label for="fR">반복</label><select id="fR" name="rep"><option value="">반복 안 함</option><option value="RRULE:FREQ=WEEKLY">매주</option><option value="RRULE:FREQ=WEEKLY;INTERVAL=2">격주</option><option value="RRULE:FREQ=MONTHLY">매월</option></select></div>
+   <div class="full"><label for="fA">참석자 이메일 (쉼표나 줄바꿈으로 구분)</label><textarea id="fA" name="att" placeholder="david@kukpoholdings.com, 외부 손님 이메일도 가능"></textarea></div>
+   <div class="full"><label for="fN">안건 (선택)</label><textarea id="fN" name="desc"></textarea></div>
+   <label class="chk full"><input type="checkbox" name="send" checked> 참석자에게 초대 메일 보내기</label>
+  </div><div class="row" style="margin-top:20px"><div class="sp"></div><button type="button" class="btn sec" id="mX">취소</button><button class="btn" id="mOk">예약하기</button></div></form>`;
+  document.body.appendChild(bg);bg.querySelector('#fT').focus();
+  const close=()=>bg.remove();bg.querySelector('#mX').onclick=close;bg.onclick=e=>{if(e.target===bg)close()};
+  bg.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
+    const st=new Date(f.date+'T'+f.time),en=new Date(st.getTime()+Number(f.len)*6e4);
+    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const att=[...new Set(f.att.split(/[\s,;]+/).map(s=>s.trim()).filter(s=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)))];
+    const bad=f.att.split(/[\s,;]+/).map(s=>s.trim()).filter(s=>s&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s));
+    if(bad.length)return toast('이메일 형식 확인: '+bad.join(', '));
+    const ev={summary:f.title,description:f.desc||undefined,start:{dateTime:st.toISOString(),timeZone:tz},end:{dateTime:en.toISOString(),timeZone:tz},attendees:att.map(email=>({email})),
+      conferenceData:{createRequest:{requestId:crypto.randomUUID(),conferenceSolutionKey:{type:'hangoutsMeet'}}}};
+    if(f.rep)ev.recurrence=[f.rep];
+    const b=bg.querySelector('#mOk');b.disabled=true;b.innerHTML='<span class="spin"></span> 예약 중';
+    try{const r=await gapi(CAL+'?conferenceDataVersion=1&sendUpdates='+(f.send?'all':'none'),{method:'POST',body:JSON.stringify(ev)});
+      close();await loadGoogle();render();toast(r.hangoutLink?'예약했습니다. Meet 링크가 캘린더에 들어갔어요':'예약했습니다');
+    }catch(err){b.disabled=false;b.textContent='예약하기';toast('예약 실패: '+err.message,5000)}};
+}
+
+/* ---------- AI notes ---------- */
+async function readTranscript(rec){
+  const ts=(await gapi(MEET+rec+'/transcripts')).transcripts||[];
+  const t=ts.find(x=>x.state==='FILE_GENERATED')||ts[0];
+  if(!t)return null;
+  const docId=t.docsDestination?.document;const url=t.docsDestination?.exportUri||'';
+  if(docId){try{const txt=await gapi('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(docId)+'/export?mimeType=text/plain',{raw:true});if(txt.trim())return{text:txt,url}}catch(e){}}
+  const parts=(await gapi(MEET+rec+'/participants?pageSize=100')).participants||[];
+  const nm=Object.fromEntries(parts.map(p=>[p.name,p.signedinUser?.displayName||p.anonymousUser?.displayName||p.phoneUser?.displayName||'참석자']));
+  let out=[],tok='';
+  do{const r=await gapi(MEET+t.name+'/entries?pageSize=100'+(tok?'&pageToken='+encodeURIComponent(tok):''));(r.transcriptEntries||[]).forEach(x=>out.push(`[${hm(new Date(x.startTime))}] ${nm[x.participant]||'참석자'}: ${x.text}`));tok=r.nextPageToken||''}while(tok&&out.length<5000);
+  return out.length?{text:out.join('\n'),url}:null;
+}
+async function attendees(rec){
+  const parts=(await gapi(MEET+rec+'/participants?pageSize=100')).participants||[];
+  const m={};parts.forEach(p=>{const n=p.signedinUser?.displayName||p.anonymousUser?.displayName||p.phoneUser?.displayName||'참석자';const mm=p.earliestStartTime&&p.latestEndTime?mins(p.earliestStartTime,p.latestEndTime):0;m[n]=Math.max(m[n]||0,mm)});
+  return Object.entries(m).map(([name,minutes])=>({name,minutes})).sort((a,b)=>b.minutes-a.minutes);
+}
+async function generate(p,btn){
+  if(!p)return;
+  const lbl=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> 기록 읽는 중'}
+  const reset=()=>{if(btn){btn.disabled=false;btn.textContent=lbl}};
+  try{
+    const [tr,att,recs]=await Promise.all([readTranscript(p.name),attendees(p.name).catch(()=>[]),gapi(MEET+p.name+'/recordings').catch(()=>({}))]);
+    if(!tr){reset();return toast('이 회의는 대화 기록(전사)이 없습니다. 회의 중 "기록(Transcript)"을 켜야 회의록을 만들 수 있어요',6000)}
+    if(btn)btn.innerHTML='<span class="spin"></span> AI 정리 중';
+    const{data:{session}}=await SB.auth.getSession();
+    const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({transcript:tr.text,title:p.title,date:new Date(p.start).toLocaleString('ko-KR')})});
+    const ai=await r.json();if(!r.ok)throw new Error(ai.error||('HTTP '+r.status));
+    const rec=(recs.recordings||[]).find(x=>x.driveDestination?.exportUri);
+    const row={conference_record:p.name,meeting_code:p.code||null,title:p.title,started_at:p.start,ended_at:p.end,attendees:att,summary:ai.summary,decisions:ai.decisions,actions:(ai.actions||[]).map(a=>({task:String(a.task||''),owner:String(a.owner||''),due:String(a.due||''),done:false})),highlights:ai.highlights,transcript:tr.text,transcript_url:tr.url||null,emails:p.emails||[],recording_url:rec?.driveDestination?.exportUri||null,updated_at:new Date().toISOString()};
+    const{data,error}=await SB.from('mtg_notes').upsert(row,{onConflict:'conference_record'}).select('id').single();
+    if(error)throw new Error(error.message);
+    await loadNotes();toast('회의록을 만들었습니다');openNote(data.id);
+  }catch(e){reset();toast(e.message==='need_google'?'Google 연결이 끊겼습니다. 다시 연결해 주세요':'회의록 만들기 실패: '+e.message,6000);if(e.message==='need_google')render()}
+}
+
+/* ---------- note detail ---------- */
+async function openNote(id){
+  const{data,error}=await SB.from('mtg_notes').select('*').eq('id',id).single();
+  if(error)return toast(error.message);curNote=data;go('note');
+}
+function vNote(){
+  const n=curNote;if(!n)return go('notes');
+  const d=n.started_at?new Date(n.started_at):null;const acts=n.actions||[];
+  const mail=`mailto:${(n.emails||[]).filter(e=>/^[^@\s"'<>?&]+@[^@\s"'<>?&]+$/.test(e)).join(',')}?subject=${encodeURIComponent('[회의록] '+(n.title||''))}&body=${encodeURIComponent(mailBody(n))}`;
+  $('#view').innerHTML=`<div class="top"><div><div class="sub">${d?d.toLocaleDateString('ko-KR',{month:'long',day:'numeric'})+' '+hm(d)+(n.ended_at?'–'+hm(new Date(n.ended_at)):''):''}${(n.attendees||[]).length?' · 참석 '+n.attendees.length+'명':''}</div><h1>${esc(n.title||'제목 없는 회의')}</h1></div>
+   <div class="row">${n.recording_url?`<a class="btn sec" href="${esc(n.recording_url)}" target="_blank" rel="noopener">녹화 보기</a>`:''}<a class="btn" href="${mail}">참석자에게 메일 보내기</a></div></div>
+  <div class="grid3"><div class="span2 col">
+    <section class="card pad"><div class="sec-h"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>AI 요약</div><p class="summary">${esc(n.summary||'요약 없음')}</p></section>
+    <section class="card pad"><h2>결정 사항</h2>${(n.decisions||[]).length?`<ul class="dec">${n.decisions.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="sub">기록된 결정 사항이 없습니다.</p>'}</section>
+    <section class="card pad"><h2>중요 발언</h2>${(n.highlights||[]).length?n.highlights.map(h=>`<div class="tr">${h.time?`<div class="tm">${esc(h.time)}</div>`:''}<div>${h.speaker?`<b>${esc(h.speaker)}</b> — `:''}${esc(h.text||'')}</div></div>`).join(''):'<p class="sub">없음</p>'}
+      <div class="row" style="margin-top:16px">${n.transcript_url?`<a href="${esc(n.transcript_url)}" target="_blank" rel="noopener" style="font-size:14px">전체 대화 기록 (Google Docs)</a>`:''}<button class="btn sm sec" id="showTr">전체 기록 펼치기</button></div>
+      <pre id="trBox" class="hidden" style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.6;background:var(--soft);border-radius:10px;padding:14px;margin:14px 0 0;max-height:480px;overflow:auto">${esc(n.transcript||'')}</pre></section>
+  </div><div class="col">
+    <section class="card pad"><h2>할 일 ${acts.length}건</h2><div style="margin-top:8px">${acts.length?acts.map((a,i)=>`<label class="act ${a.done?'done':''}"><input type="checkbox" data-act="${i}" ${a.done?'checked':''}><span>${esc(a.task)}<small>${esc([a.owner,a.due].filter(Boolean).join(' · ')||'담당자 미정')}</small></span></label>`).join(''):'<p class="sub">할 일이 없습니다.</p>'}</div></section>
+    <section class="card pad"><h2>참석 기록</h2><div style="margin-top:10px">${(n.attendees||[]).length?n.attendees.map(a=>`<div class="att"><span>${esc(a.name)}</span><span class="sub">${a.minutes?durTxt(a.minutes):''}</span></div>`).join(''):'<p class="sub">기록 없음</p>'}</div></section>
+    <div class="row"><button class="btn sm sec" id="regen">다시 만들기</button><div class="sp"></div><button class="btn sm del" id="delN">삭제</button></div>
+  </div></div>`;
+  $('#showTr').onclick=()=>{$('#trBox').classList.toggle('hidden')};
+  document.querySelectorAll('[data-act]').forEach(c=>c.onchange=async()=>{const a=[...acts];a[+c.dataset.act]={...a[+c.dataset.act],done:c.checked};
+    const{error}=await SB.from('mtg_notes').update({actions:a,updated_at:new Date().toISOString()}).eq('id',n.id);if(error){c.checked=!c.checked;return toast(error.message)}
+    curNote.actions=a;const x=NOTES.find(z=>z.id===n.id);if(x)x.actions=a;c.closest('.act').classList.toggle('done',c.checked)});
+  $('#delN').onclick=async()=>{if(!confirm('이 회의록을 삭제할까요? (Google의 녹화·기록 원본은 지워지지 않습니다)'))return;const{error}=await SB.from('mtg_notes').delete().eq('id',n.id);if(error)return toast(error.message);await loadNotes();go('notes');toast('삭제했습니다')};
+  $('#regen').onclick=e=>{if(!n.conference_record)return;needG(()=>generate({name:n.conference_record,code:n.meeting_code,title:n.title,start:n.started_at,end:n.ended_at,emails:n.emails||[]},e.target))};
+}
+function mailBody(n){
+  const L=[n.title||'',''];L.push('■ 요약',n.summary||'','');
+  if((n.decisions||[]).length){L.push('■ 결정 사항');n.decisions.forEach(x=>L.push('- '+x));L.push('')}
+  if((n.actions||[]).length){L.push('■ 할 일');n.actions.forEach(a=>L.push('- '+a.task+(a.owner?' ('+a.owner+(a.due?', '+a.due:'')+')':a.due?' ('+a.due+')':'')));L.push('')}
+  return L.join('\n').slice(0,1800);
+}
+
+function vNotes(){
+  $('#view').innerHTML=`<div class="top"><div><div class="sub">저장된 회의록 ${NOTES.length}건</div><h1>회의록</h1></div><div style="width:min(320px,100%)"><label for="q" class="hidden">검색</label><input type="search" id="q" placeholder="제목·요약 검색"></div></div>
+  <div class="card" style="padding-top:22px"><div class="notes" id="nl"></div></div>`;
+  const draw=()=>{const q=$('#q').value.trim().toLowerCase();const l=NOTES.filter(n=>!q||(n.title||'').toLowerCase().includes(q)||(n.summary||'').toLowerCase().includes(q));
+    $('#nl').innerHTML=l.length?l.map(noteCard).join(''):'<div class="sub" style="grid-column:1/-1;text-align:center;padding:20px">회의록이 없습니다.</div>';bindCards()};
+  $('#q').oninput=draw;draw();
+}
+
+function vSettings(){
+  $('#view').innerHTML=`<div class="top"><div><div class="sub">한 번만 하면 됩니다</div><h1>설정</h1></div></div>
+  <div class="grid3"><section class="card pad span2"><h2>Google 연결 (클라이언트 ID)</h2>
+    <form id="sf" style="margin-top:14px"><label for="cid">Google OAuth 클라이언트 ID</label><input type="text" id="cid" value="${esc(CLIENT_ID)}" placeholder="1234567890-xxxx.apps.googleusercontent.com">
+    <div class="row" style="margin-top:14px"><button class="btn">저장</button>${gOk()?'<span class="tag">Google 연결됨</span><button type="button" class="btn sm sec" id="gOut">연결 해제</button>':''}</div></form>
+    <ol class="steps">
+      <li><a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud Console</a>에서 eugene@kukpoholdings.com으로 프로젝트를 하나 만듭니다 (이름 예: Kukpo Hub).</li>
+      <li>API 라이브러리에서 <b>Google Calendar API</b>, <b>Google Meet REST API</b>, <b>Google Drive API</b> 3개를 "사용"으로 켭니다.</li>
+      <li>OAuth 동의 화면 → 사용자 유형 <b>내부(Internal)</b> 선택 → 앱 이름 "Kukpo Hub", 이메일 입력 후 저장.</li>
+      <li>사용자 인증 정보 → 사용자 인증 정보 만들기 → <b>OAuth 클라이언트 ID</b> → 유형 "웹 애플리케이션" → 승인된 JavaScript 원본에 <code>https://kukpoholdings.com</code> 와 <code>https://www.kukpoholdings.com</code> 추가 → 만들기.</li>
+      <li>나온 <b>클라이언트 ID</b>를 위 칸에 붙여 넣고 저장합니다. (클라이언트 보안 비밀번호는 필요 없습니다)</li>
+    </ol></section>
+    <section class="card pad"><h2>알아 두기</h2><ul class="steps" style="padding-left:18px">
+      <li>회의는 Google Meet에서 열립니다. 추가 비용이 없습니다.</li>
+      <li>AI 회의록은 Meet의 <b>기록(Transcript)</b>이 켜진 회의만 만들 수 있습니다. Workspace Business Standard 이상 요금제에서 쓸 수 있습니다.</li>
+      <li>환자 정보가 오가는 회의는 회의록에 민감 정보가 저장될 수 있으니 주의하세요.</li>
+      <li>이 페이지는 Eugene · David 계정만 열 수 있습니다.</li></ul></section></div>`;
+  $('#sf').onsubmit=async e=>{e.preventDefault();const v=$('#cid').value.trim();
+    if(v&&!/^[\w-]+\.apps\.googleusercontent\.com$/.test(v))return toast('클라이언트 ID 형식이 아닙니다 (...apps.googleusercontent.com)');
+    const{error}=await SB.from('mtg_settings').upsert({k:'google_client_id',v,updated_at:new Date().toISOString()});if(error)return toast('저장 실패: '+error.message);
+    CLIENT_ID=v;tokenClient=null;toast('저장했습니다');go('home')};
+  const o=$('#gOut');if(o)o.onclick=()=>{try{google.accounts.oauth2.revoke(G.token,()=>{})}catch(e){}G={token:null,exp:0};try{sessionStorage.removeItem('mtg_g')}catch(e){}UP=[];PAST=[];gLoaded=false;render()};
+}
+
+/* ---------- boot ---------- */
+async function boot(){
+  const{data:{session}}=await SB.auth.getSession();
+  if(!session){$('#login').classList.remove('hidden');$('#app').classList.add('hidden');return}
+  const{data:ok}=await SB.rpc('emp_is_admin');
+  if(!ok){await SB.auth.signOut();$('#lErr').textContent='접근 권한이 없는 계정입니다.';$('#login').classList.remove('hidden');return}
+  ME=session.user.email;$('#login').classList.add('hidden');$('#app').classList.remove('hidden');$('#whoEmail').textContent=ME;
+  await Promise.all([loadSettings(),loadNotes()]);
+  if(gOk())await loadGoogle();
+  render();
+}
+$('#loginForm').onsubmit=async e=>{e.preventDefault();$('#lErr').textContent='';const{error}=await SB.auth.signInWithPassword({email:$('#lEmail').value.trim(),password:$('#lPw').value});if(error){$('#lErr').textContent='이메일 또는 비밀번호가 맞지 않습니다.';return}boot()};
+$('#outBtn').onclick=async()=>{try{sessionStorage.removeItem('mtg_g')}catch(e){}await SB.auth.signOut();location.reload()};
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+boot();
+</script>
+</body>
+</html>
