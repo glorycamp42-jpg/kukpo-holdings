@@ -138,7 +138,7 @@ function initG(){
   if(!CLIENT_ID||!window.google?.accounts?.oauth2)return false;
   if(!tokenClient)tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,hint:ME,callback:r=>{
     if(r.error){pendingG?.rej(new Error(r.error));pendingG=null;return}
-    G={token:r.access_token,exp:Date.now()+(Number(r.expires_in)||3600)*1000};try{sessionStorage.setItem('mtg_g',JSON.stringify(G))}catch(e){}
+    G={token:r.access_token,exp:Date.now()+(Number(r.expires_in)||3600)*1000};try{sessionStorage.setItem('mtg_g',JSON.stringify(G));localStorage.setItem('mtg_g_once','1')}catch(e){}
     pendingG?.res();pendingG=null}});
   return true;
 }
@@ -198,7 +198,8 @@ function go(v){view=v;render();scrollTo(0,0)}
 
 function gBanner(){
   if(!CLIENT_ID)return `<div class="banner"><div style="flex:1"><b>Google 연결 설정이 아직 안 되어 있습니다.</b> 설정에서 Google 클라이언트 ID를 한 번만 넣으면 회의 만들기·기록 불러오기가 켜집니다. 저장된 회의록은 지금도 볼 수 있습니다.</div><button class="btn sm" data-go="settings">설정 열기</button></div>`;
-  if(!gOk())return `<div class="banner"><div style="flex:1"><b>Google 계정 연결이 필요합니다.</b> 회사 Google 계정(${esc(ME)})으로 연결하면 캘린더의 회의와 Meet 기록을 불러옵니다.</div><button class="btn sm" id="gConn">Google 연결</button></div>`;
+  if(!gOk()){let once=false;try{once=localStorage.getItem('mtg_g_once')==='1'}catch(e){}
+    return once?`<div class="banner"><div style="flex:1"><b>Google 연결이 만료됐습니다.</b> 보안상 1시간마다, 또는 브라우저를 새로 열 때 다시 연결해야 합니다. 버튼만 누르면 바로 연결됩니다.</div><button class="btn sm" id="gConn">다시 연결</button></div>`:`<div class="banner"><div style="flex:1"><b>Google 계정 연결이 필요합니다.</b> 회사 Google 계정(${esc(ME)})으로 연결하면 캘린더의 회의와 Meet 기록을 불러옵니다.</div><button class="btn sm" id="gConn">Google 연결</button></div>`}
   if(gErr)return `<div class="banner"><div style="flex:1">${esc(gErr)}</div><button class="btn sm sec" id="gRe">다시 불러오기</button></div>`;
   return '';
 }
