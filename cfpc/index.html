@@ -7,7 +7,7 @@
 <title>CFPC 마스터 · Kukpo</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 body{margin:0}
 /* Layout: clinic ledger — drop bar, totals strip, three views (attorney / date / records) over one shared filter row */
@@ -68,7 +68,12 @@ td.d{font-family:var(--font-data);font-variant-numeric:tabular-nums}
 tr.click{cursor:pointer}
 tr.click:hover td{background:var(--accent-soft)}
 tr.open td{background:var(--accent-soft)}
-tr.detail td{background:var(--bg);white-space:normal;padding:0}
+tr.detail > td{background:var(--bg);white-space:normal;padding:0}
+.inner th,.inner td{padding:7px 14px;white-space:nowrap;border-bottom:1px solid var(--line)}
+.inner td.n,.inner th.n{padding-right:18px}
+.inner td:last-child{white-space:normal;min-width:380px}
+.inner tr:hover td{background:var(--surface)}
+strong{font-weight:600}
 .inner{padding:8px 12px 12px}
 .inner table{font-size:12.5px}
 .inner th{position:static}
