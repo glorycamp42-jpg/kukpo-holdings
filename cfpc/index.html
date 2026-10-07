@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>CFPC 마스터 · Kukpo</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0}
+/* Layout: clinic ledger — drop bar, totals strip, three views (attorney / date / records) over one shared filter row */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --sunk:#e9edef; --line:#d5dcdf;
+  --fg:#17242b; --muted:#5b6b73; --accent:#0f6e7a; --accent-soft:#d8ecee;
+  --warn:#9a5b00; --warn-soft:#fbeed6; --good:#2c6e3a; --good-soft:#dcefdf;
+  --font-ui:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --font-data:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11181c; --surface:#182228; --sunk:#0d1316; --line:#2b3a42;
+  --fg:#e3eaed; --muted:#93a4ac; --accent:#5cc3cf; --accent-soft:#163a40;
+  --warn:#f0b65a; --warn-soft:#3a2c14; --good:#7fcf8c; --good-soft:#1c3522; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11181c; --surface:#182228; --sunk:#0d1316; --line:#2b3a42;
+  --fg:#e3eaed; --muted:#93a4ac; --accent:#5cc3cf; --accent-soft:#163a40;
+  --warn:#f0b65a; --warn-soft:#3a2c14; --good:#7fcf8c; --good-soft:#1c3522; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.drop{border:1.5px dashed var(--line);background:var(--surface);border-radius:10px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop p{margin:0}
+.drop strong{font-weight:600}
+.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--surface);padding:8px 14px;border-radius:7px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,.tab:focus-visible,tr.click:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.files{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--font-data);font-size:12px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .l{color:var(--muted);font-size:12px;letter-spacing:.02em}
+.kpi .v{font-family:var(--font-data);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f label{font-size:12px;color:var(--muted)}
+select,input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-width:100%}
+input[type=search]{min-width:200px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tab{font:inherit;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;color:var(--muted);cursor:pointer}
+.tab[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.ptools{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);color:var(--muted);font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;background:var(--surface);color:var(--muted);border:none;padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--surface)}
+.tbl{overflow-x:auto;max-height:70vh;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{position:sticky;top:0;background:var(--sunk);color:var(--muted);font-weight:600;font-size:12px;cursor:pointer;user-select:none;z-index:1}
+th.n,td.n{text-align:right;font-family:var(--font-data);font-variant-numeric:tabular-nums}
+td.d{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--accent-soft)}
+tr.open td{background:var(--accent-soft)}
+tr.detail td{background:var(--bg);white-space:normal;padding:0}
+.inner{padding:8px 12px 12px}
+.inner table{font-size:12.5px}
+.inner th{position:static}
+.bar{height:6px;background:var(--accent);border-radius:3px;min-width:2px}
+.pill{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);margin:1px 2px 1px 0}
+.pill.ok{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.empty{padding:28px;color:var(--muted);text-align:center}
+.foot{color:var(--muted);font-size:12px}
+.steps{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.step{display:flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 5px;cursor:pointer}
+.step .no{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--sunk);font-family:var(--font-data);font-size:12px}
+.step[aria-current=step]{color:var(--accent);border-color:var(--accent)}
+.step[aria-current=step] .no,.step.done .no{background:var(--accent);color:var(--surface)}
+.step:disabled{cursor:not-allowed;opacity:.5}
+.mbody{padding:16px;display:flex;flex-direction:column;gap:14px}
+.mbody h2{font-size:16px;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.presets button{font:inherit;font-size:12.5px;background:var(--sunk);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}
+.checks label{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 10px;cursor:pointer;min-width:0}
+.checks label span.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.checks .cnt{font-family:var(--font-data);font-size:12px;color:var(--muted)}
+.mnav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line)}
+.note{font-size:13px;color:var(--muted);margin:0}
+.preview{border:1px solid var(--line);border-radius:8px;background:#fff;color:#1b1b1b;padding:14px;overflow-x:auto;max-height:55vh;overflow-y:auto}
+.okbox{background:var(--good-soft);color:var(--good);border-radius:8px;padding:10px 12px;font-weight:500}
+.errbox{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-weight:500}
+.wide{width:100%}
+input[type=email],input[type=text]{min-width:260px}
+@media (max-width:600px){input[type=search]{min-width:0;width:100%}.f{flex:1 1 45%}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+#login{max-width:380px;margin:12vh auto;padding-inline:16px}
+#login .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:8px}
+#login input{width:100%}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;z-index:50;font-size:13px}
+.topbar{display:flex;gap:10px;align-items:center;justify-content:flex-end;font-size:12.5px;color:var(--muted)}
+.topbar a,.topbar button{font:inherit;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:none;padding:0}
+</style>
+
+
+</head>
+<body>
+<div id="login" hidden>
+  <div style="text-align:center;margin-bottom:16px"><div style="font-size:12px;letter-spacing:.12em;color:var(--muted)">KUKPO HOLDINGS</div><div style="font-size:22px;font-weight:700;margin-top:4px">CFPC 마스터</div></div>
+  <form class="card" id="loginForm">
+    <label for="lEmail" style="font-size:12px;color:var(--muted)">이메일</label><input id="lEmail" type="email" autocomplete="username" required>
+    <label for="lPw" style="font-size:12px;color:var(--muted)">비밀번호</label><input id="lPw" type="password" autocomplete="current-password" required minlength="8">
+    <button class="btn" id="lBtn" style="width:100%;margin-top:6px">로그인</button>
+    <button class="btn ghost" type="button" id="lSignup" style="width:100%">처음 사용 · 계정 만들기</button>
+    <p id="lErr" style="color:var(--warn);font-size:13px;margin:4px 0 0"></p>
+    <p class="sub" style="font-size:12px;margin:6px 0 0">권한을 받은 사람만 들어올 수 있습니다. Kukpo Hub와 같은 계정입니다.</p>
+  </form>
+</div>
+<div class="wrap" id="app" hidden>
+  <div class="topbar"><a href="/hub/">← Kukpo Hub</a><span id="who"></span><button id="outBtn">로그아웃</button></div>
+  <header>
+    <div>
+      <h1>CFPC 마스터 뷰어</h1>
+      <p class="sub">Center for Pain 마스터 엑셀을 변호사별·날짜별·미지급별로 정리합니다. 권한 있는 사람만 볼 수 있습니다.</p>
+    </div>
+  </header>
+
+  <div class="drop" id="drop">
+    <div>
+      <p><strong>CFPC_Master_*.xlsx 파일을 여기에 끌어다 놓으세요</strong></p>
+      <p class="sub">여러 파일을 한 번에 넣어도 됩니다. 넣은 파일은 회사 서버에 저장되어 권한 있는 사람 모두 같은 화면을 봅니다.</p>
+      <div class="files" id="files"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="pick">파일 선택</button>
+      <button class="btn ghost" id="clear" hidden>모두 지우기</button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" multiple aria-label="CFPC Master 엑셀 파일 올리기" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)" tabindex="-1">
+    </div>
+  </div>
+
+  <div class="banner" id="sampleBanner" hidden></div>
+  <div class="banner" id="errBanner" hidden></div>
+
+  <section class="filters" id="filters">
+    <div class="f"><label for="fFrom">시작일</label><input type="date" id="fFrom"></div>
+    <div class="f"><label for="fTo">종료일</label><input type="date" id="fTo"></div>
+    <div class="f"><label for="fFirm">변호사 / 로펌</label><select id="fFirm"></select></div>
+    <div class="f"><label for="fDoc">의사</label><select id="fDoc"></select></div>
+    <div class="f"><label for="fBill">빌링 상태</label><select id="fBill"></select></div>
+    <div class="f" style="flex:1 1 220px"><label for="fQ">환자명 / ID 검색</label><input type="search" id="fQ" placeholder="예: Kim, SJ0123"></div>
+    <button class="btn ghost" id="reset">필터 초기화</button>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="firm" aria-selected="true">변호사별</button>
+    <button class="tab" role="tab" data-tab="date" aria-selected="false">날짜별</button>
+    <button class="tab" role="tab" data-tab="list" aria-selected="false">전체 기록</button>
+    <button class="tab" role="tab" data-tab="unpaid" aria-selected="false">미지급 빌</button>
+    <button class="tab" role="tab" data-tab="money" aria-selected="false">빌 금액·누락</button>
+    <button class="tab" role="tab" data-tab="alias" aria-selected="false">로펌 이름 정리</button>
+    <button class="tab" role="tab" data-tab="users" aria-selected="false" id="usersTab" hidden>권한</button>
+    <button class="tab" role="tab" data-tab="mail" aria-selected="false">이메일 보내기</button>
+  </nav>
+
+  <section class="panel" id="view"></section>
+  <p class="foot">방문 기록은 ‘Service records’ 시트 기준이고, 변호사·DOI·빌링 상태는 ‘Master’ 시트의 Group ID로 연결합니다. 시술 = Explicit + Epi + TPI + PRP + 확인 필요 주사.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const NOFIRM="(로펌 미기재)";
+
+/* ---------- parsing ---------- */
+const norm=s=>String(s==null?"":s).toLowerCase().replace(/\s+/g," ").trim();
+function toISO(v){
+  if(v==null||v==="")return "";
+  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+"-"+String(v.getMonth()+1).padStart(2,"0")+"-"+String(v.getDate()).padStart(2,"0");
+  if(typeof v==="number"&&v>20000&&v<80000){const d=XLSX.SSF.parse_date_code(v);if(d)return d.y+"-"+String(d.m).padStart(2,"0")+"-"+String(d.d).padStart(2,"0");}
+  const s=String(v).trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(m){let y=+m[3];if(y<100)y+=2000;return y+"-"+m[1].padStart(2,"0")+"-"+m[2].padStart(2,"0");}
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+"-"+m[2]+"-"+m[3];
+  return "";
+}
+const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n};
+const str=v=>v==null?"":(v instanceof Date?toISO(v):String(v).trim());
+
+function findHeader(rows,must){
+  for(let i=0;i<Math.min(rows.length,40);i++){
+    const r=rows[i].map(norm);
+    if(must.every(k=>r.some(c=>c===k||c.includes(k))))return i;
+  }
+  return -1;
+}
+function colMap(header,spec){
+  const h=header.map(norm),out={};
+  for(const [key,alts] of Object.entries(spec)){
+    let idx=-1;
+    for(const a of alts){idx=h.findIndex(c=>c===a);if(idx>=0)break;}
+    if(idx<0)for(const a of alts){idx=h.findIndex(c=>c.includes(a));if(idx>=0)break;}
+    out[key]=idx;
+  }
+  return out;
+}
+function sheetRows(wb,nameTest){
+  const n=wb.SheetNames.find(nameTest);
+  if(!n)return null;
+  return XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:""});
+}
+const SVC={rid:["record id"],gid:["group id"],scope:["scope"],patient:["patient"],sid:["source id"],doctor:["doctor / provider","doctor","provider"],date:["study date","service date","visit date","date of service"],service:["original service","service"],initial:["initial"],fu:["f/u"],explicit:["explicit"],epi:["epi"],tpi:["tpi"],prp:["prp"],surgery:["surgery"],unclear:["unclear inj"],pending:["pending"],firm:["law firm","attorney","lawyer"],bill:["billing status","bill status"]};
+const MST={lastBill:["last bill file date"],balance:["balance on last bill"],epi:["epidural"],tpi:["tpi"],unclear:["unclear inj"],patient:["patient"],sid:["source id"],doctor:["doctor / provider","doctor"],doi:["doi / source date","doi"],firm:["law firm","attorney","lawyer"],last:["last study date"],records:["records"],initial:["initial"],fu:["f/u"],bill:["billing status"],coll:["collection status"],review:["review"],gid:["group id"]};
+
+const money=v=>{if(typeof v==="number")return v;const n=parseFloat(String(v==null?"":v).replace(/[$,\s]/g,""));return isNaN(n)?0:n;};
+const colName=i=>{let s="";i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;};
+/* Master bill-amount columns: header names first (office / injection + amount words), then the column letters from the CFPC package (office in T-Z, injection in AA-AD) */
+function findAmountCols(rows,hi){
+  const h=rows[hi].map(norm);
+  const bad=/count|#|file|date|status|note|review|read|lines?$|rows?$/;
+  const sumCol=i=>{let t=0,n=0;for(let r=hi+1;r<Math.min(rows.length,hi+400);r++){const v=money(rows[r][i]);if(v){t+=v;n++;}}return n?t:0;};
+  const pick=(re,from,to)=>{
+    let best=-1;
+    for(let i=0;i<h.length;i++){if(i<from||i>to)continue;if(re.test(h[i])&&!bad.test(h[i])&&/total|amount|\$|billed|charge|bill/.test(h[i])&&sumCol(i)>0){best=i;if(/total/.test(h[i]))break;}}
+    return best;};
+  let office=pick(/office|bill/,0,h.length),inj=pick(/inj/,0,h.length);
+  if(office===inj)office=-1;
+  if(office<0)office=pick(/./,19,25);
+  if(inj<0)inj=pick(/./,26,29);
+  return {office,inj};
+}
+/* line sheets: Bills (office) and Injection bills */
+function parseLineSheet(rows,kind,fileName,issues){
+  if(!rows)return;
+  let hi=-1;for(let i=0;i<Math.min(rows.length,40);i++){const r=rows[i].map(norm);if(r.some(c=>c==="source id"||c.includes("source id")||c==="patient id")&&r.some(c=>/date|dos/.test(c))){hi=i;break;}}
+  if(hi<0)return;
+  const h=rows[hi].map(norm),find=re=>h.findIndex(c=>re.test(c));
+  const ci={sid:find(/source id|patient id/),pat:find(/^patient$|patient name/),date:find(/service date|dos|date of service|^date|bill date/),amt:-1,gid:find(/group id/),per:find(/in this period/)};
+  for(let i=0;i<h.length;i++){if(/total|amount|charge|billed|\$/.test(h[i])&&!/count|#/.test(h[i])){ci.amt=i;if(/total/.test(h[i]))break;}}
+  const lines=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i];const sid=ci.sid>=0?str(r[ci.sid]):"";if(!sid)continue;
+    const txt=r.map(x=>String(x==null?"":x)).join(" | ");
+    const base={file:fileName,sid,patient:ci.pat>=0?str(r[ci.pat]):"",date:ci.date>=0?toISO(r[ci.date]):"",amount:ci.amt>=0?money(r[ci.amt]):0,gid:ci.gid>=0?str(r[ci.gid]):""};
+    const add=(type,note)=>issues.push(Object.assign({type,note},base));
+    lines.push({kind,file:fileName,gid:base.gid,date:base.date,amount:base.amount,inPeriod:ci.per<0||/^y/i.test(str(r[ci.per]))});
+    if(kind==="inj"){
+      if(/(^|\|\s*)partial/i.test(txt))add("A","청구서 첫 줄 금액만 입력됨");
+      if(/not matched/i.test(txt))add("H","근처 날짜에 방문 기록 없음");
+      if(/(^|\|\s*)archive/i.test(txt))add("G","이관(Archive) 그룹 – 합계에서 제외");
+    }else{
+      if(/no visit on this date/i.test(txt))add("F","빌 날짜에 방문 기록 없음");
+    }
+  }
+  return lines;
+}
+function parseWorkbook(wb,fileName){
+  const visits=[],groups={},issues=[];let amtCols={office:"",inj:""};
+  const m=sheetRows(wb,n=>/^master$/i.test(n.trim()))||sheetRows(wb,n=>/master/i.test(n));
+  if(m){
+    const hi=findHeader(m,["patient","group id"]);
+    if(hi>=0){
+      const c=colMap(m[hi],MST);
+      var amt=findAmountCols(m,hi);
+      for(let i=hi+1;i<m.length;i++){
+        const r=m[i];const gid=str(r[c.gid]);if(!gid)continue;
+        const rowTxt=r.map(x=>String(x==null?"":x)).join(" | ");
+        const injVisits=(c.epi>=0?num(r[c.epi]):0)+(c.tpi>=0?num(r[c.tpi]):0)+(c.unclear>=0?num(r[c.unclear]):0);
+        groups[gid]={patient:str(r[c.patient]),sid:str(r[c.sid]),doctor:str(r[c.doctor]),doi:toISO(r[c.doi]),firm:c.firm>=0?str(r[c.firm]):"",last:toISO(r[c.last]),bill:c.bill>=0?str(r[c.bill]):"",coll:c.coll>=0?str(r[c.coll]):"",review:c.review>=0?str(r[c.review]):"",
+          office:amt.office>=0?money(r[amt.office]):0,inj:amt.inj>=0?money(r[amt.inj]):0,injVisits,
+          pdfOnly:/pdf\s*\/\s*docx\s*only/i.test(rowTxt),noBill:/no bill found/i.test(rowTxt),
+          lastBill:c.lastBill>=0?toISO(r[c.lastBill]):"",balance:c.balance>=0?money(r[c.balance]):0,initial:num(r[c.initial]),fu:num(r[c.fu])};
+      }
+      amtCols={office:amt.office>=0?colName(amt.office)+" "+str(m[hi][amt.office]):"",inj:amt.inj>=0?colName(amt.inj)+" "+str(m[hi][amt.inj]):""};
+    }
+  }
+  const s=sheetRows(wb,n=>/service records/i.test(n));
+  if(s){
+    const hi=findHeader(s,["patient","study date"]);
+    if(hi>=0){
+      const c=colMap(s[hi],SVC);
+      for(let i=hi+1;i<s.length;i++){
+        const r=s[i];const patient=str(r[c.patient]);const date=toISO(r[c.date]);
+        if(!patient||!date)continue;
+        if(c.scope>=0&&/archive/i.test(str(r[c.scope])))continue; /* already transferred to the Collections archive; Master leaves these out too */
+        const gid=str(r[c.gid]);const g=groups[gid]||{};
+        const g2=(v)=>c[v]>=0?num(r[c[v]]):0;
+        visits.push({
+          rid:c.rid>=0?str(r[c.rid]):"",gid,scope:c.scope>=0?str(r[c.scope]):"",patient,sid:str(r[c.sid]),
+          doctor:str(r[c.doctor])||g.doctor||"",date,service:c.service>=0?str(r[c.service]):"",
+          initial:g2("initial"),fu:g2("fu"),proc:g2("explicit")+g2("epi")+g2("tpi")+g2("prp")+g2("unclear"),
+          surgery:g2("surgery"),pending:g2("pending"),
+          firm:(c.firm>=0?str(r[c.firm]):"")||g.firm||"",bill:(c.bill>=0?str(r[c.bill]):"")||g.bill||"",
+          doi:g.doi||"",review:g.review||"",file:fileName
+        });
+      }
+    }
+  }
+  if(!visits.length&&Object.keys(groups).length){
+    /* fallback: no Service records sheet -> one row per Master group on its last study date */
+    for(const [gid,g] of Object.entries(groups)){
+      if(!g.last)continue;
+      visits.push({rid:"M-"+gid,gid,scope:"",patient:g.patient,sid:g.sid,doctor:g.doctor,date:g.last,service:"(Master 요약)",initial:0,fu:0,proc:0,surgery:0,pending:0,firm:g.firm,bill:g.bill,doi:g.doi,review:g.review,file:fileName});
+    }
+  }
+  const lo=parseLineSheet(sheetRows(wb,n=>/^\s*bills\s*$/i.test(n)),"office",fileName,issues)||[];
+  const li=parseLineSheet(sheetRows(wb,n=>/injection\s*bills?/i.test(n)),"inj",fileName,issues)||[];
+  const lines=lo.filter(l=>l.inPeriod&&groups[l.gid]).concat(li.filter(l=>groups[l.gid]));
+  /* Master total columns are formulas (SUMIFS) with no saved values, so totals are rebuilt from the line sheets, the same way the formulas do it */
+  if(lo.length||li.length){
+    for(const g of Object.values(groups)){g.office=0;g.inj=0;}
+    for(const l of lines){const g=groups[l.gid];if(l.kind==="office")g.office+=l.amount;else g.inj+=l.amount;}
+    amtCols={office:lo.length?"Bills 시트 Amount (In this period = Yes)":"",inj:li.length?"Injection bills 시트 Total charge":""};
+  }
+  for(const [gid,g] of Object.entries(groups)){
+    const base={file:fileName,gid,sid:g.sid,patient:g.patient,date:g.last,firm:g.firm,amount:0};
+    if(g.injVisits>0&&!g.inj)issues.push(Object.assign({type:"C",note:"주사 방문 "+g.injVisits+"건, 주사 빌 금액 없음"},base));
+    if(g.pdfOnly)issues.push(Object.assign({type:"D",note:"오피스 빌이 PDF/Word로만 있음"},base));
+    if(g.noBill)issues.push(Object.assign({type:"E",note:"폴더에 오피스 빌 없음"},base));
+  }
+  return {visits,groups,issues,amtCols,lines,groupCount:Object.keys(groups).length};
+}
+
+/* ---------- state ---------- */
+const S={files:[],visits:[],groups:{},issues:[],lines:[],sample:true,issueOpen:null,tab:"firm",gran:"month",sort:{firm:["visits",-1],date:["key",-1],list:["date",-1]},open:null};
+try{const t=localStorage.getItem("cfpc.tab");if(t)S.tab=t;const g=localStorage.getItem("cfpc.gran");if(g)S.gran=g;}catch(e){}
+
+function sampleData(){
+  const firms=["예시 로펌 A","예시 로펌 B","예시 로펌 C","예시 로펌 D"],docs=["Dr. 예시 1","Dr. 예시 2"],bills=["Bill Sent","Bill Sent","Settled, Payment Pending"];
+  const out=[];let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  for(let p=0;p<36;p++){
+    const firm=firms[Math.floor(rnd()*firms.length)],doc=docs[p%2],bill=bills[Math.floor(rnd()*3)];
+    const y=2024+Math.floor(rnd()*3),mo=1+Math.floor(rnd()*(y===2026?9:12));
+    const n=1+Math.floor(rnd()*4);
+    for(let k=0;k<n;k++){
+      const d=new Date(y,mo-1+k,1+Math.floor(rnd()*27));if(d>new Date(2026,8,24))break;
+      const kind=k===0?"initial":(rnd()<.3?"proc":"fu");
+      out.push({rid:"EX-"+p+"-"+k,gid:"EX-"+p,scope:"Active",patient:"예시 환자 "+(p+1),sid:"EX"+(100+p),doctor:doc,date:toISO(d),service:kind==="initial"?"Initial":kind==="proc"?"Ls Inj":"Fup",initial:kind==="initial"?1:0,fu:kind==="fu"?1:0,proc:kind==="proc"?1:0,surgery:0,pending:0,firm,bill,doi:"",review:"",file:"예시"});
+    }
+  }
+  return out;
+}
+
+function sampleMoney(visits){
+  const groups={},issues=[];let seed=11;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  for(const [gid,vs] of groupBy(visits,v=>v.gid)){
+    const inj=vs.filter(v=>v.proc).length,v0=vs[0];
+    const g={file:"예시",patient:v0.patient,sid:v0.sid,firm:v0.firm,last:vs.map(v=>v.date).sort().pop(),office:Math.round((450+rnd()*900)*vs.filter(v=>!v.proc).length/50)*50,inj:inj?Math.round((2500+rnd()*6000)*inj/50)*50:0,injVisits:inj,doctor:v0.doctor,bill:v0.bill,coll:/settled/i.test(v0.bill)?"Settled, Payment Pending":"",doi:""};
+    g.lastBill=g.last;g.balance=g.office;
+    if(inj&&rnd()<.15){g.inj=0;issues.push({type:"C",file:"예시",gid,sid:g.sid,patient:g.patient,date:g.last,firm:g.firm,amount:0,note:"주사 방문 "+inj+"건, 주사 빌 금액 없음"});}
+    if(rnd()<.12)issues.push({type:"A",file:"예시",gid,sid:g.sid,patient:g.patient,date:g.last,firm:g.firm,amount:g.inj||2800,note:"청구서 첫 줄 금액만 입력됨"});
+    if(rnd()<.08)issues.push({type:"F",file:"예시",gid,sid:g.sid,patient:g.patient,date:g.last,firm:g.firm,amount:650,note:"빌 날짜에 방문 기록 없음"});
+    groups["예시|"+gid]=g;
+  }
+  return {groups,issues};
+}
+const gkey=v=>v.file+"|"+v.gid;
+function moneySum(rows){let office=0,inj=0;const seen=new Set();for(const v of rows){const k=gkey(v);if(seen.has(k))continue;seen.add(k);const g=S.groups[k];if(g){office+=g.office||0;inj+=g.inj||0;}}return {office,inj,total:office+inj};}
+const usd=n=>n?"$"+Math.round(n).toLocaleString("en-US"):"–";
+
+/* ---------- file intake ---------- */
+/* files stay on this computer only: kept in this browser's IndexedDB so the page reopens with the last files */
+/* shared storage: files live in Supabase Storage (private bucket cfpc-master), visible only to cfpc_users */
+const IDB={
+  async put(name,buf){
+    const path=name;
+    const up=await SB.storage.from("cfpc-master").upload(path,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),{upsert:true});
+    if(up.error){toast("서버 저장 실패: "+up.error.message);return;}
+    await SB.from("cfpc_files").upsert({name,storage_path:path,size_bytes:buf.byteLength,uploaded_by:ME,uploaded_at:new Date().toISOString()});
+    await SB.from("cfpc_log").insert({action:"upload",detail:{name}});
+  },
+  async all(){
+    const {data,error}=await SB.from("cfpc_files").select("*").order("name");
+    if(error||!data)return [];
+    const out=[];
+    for(const f of data){const d=await SB.storage.from("cfpc-master").download(f.storage_path);if(!d.error&&d.data)out.push({name:f.name,buf:await d.data.arrayBuffer(),meta:f});}
+    return out;
+  },
+  async clear(){
+    const {data}=await SB.from("cfpc_files").select("name,storage_path");
+    if(data&&data.length){await SB.storage.from("cfpc-master").remove(data.map(x=>x.storage_path));await SB.from("cfpc_files").delete().in("name",data.map(x=>x.name));}
+    await SB.from("cfpc_log").insert({action:"clear_files",detail:{}});
+  }};
+async function addFiles(list,fromStore){
+  const err=[];
+  for(const f of list){
+    if(!/\.xlsx?$/i.test(f.name)){err.push(f.name+": 엑셀 파일(.xlsx)만 넣을 수 있습니다.");continue;}
+    try{
+      const buf=f.buf||await f.arrayBuffer();
+      if(!fromStore)IDB.put(f.name,buf);
+      const wb=XLSX.read(buf,{type:"array"});
+      const r=parseWorkbook(wb,f.name);
+      if(!r.visits.length){err.push(f.name+": ‘Service records’ 또는 ‘Master’ 시트에서 환자 기록을 찾지 못했습니다.");continue;}
+      S.files=S.files.filter(x=>x.name!==f.name);
+      S.files.push({name:f.name,visits:r.visits,groups:r.groups,issues:r.issues,amtCols:r.amtCols,lines:r.lines});
+    }catch(e){err.push(f.name+": 파일을 읽지 못했습니다 ("+e.message+").");}
+  }
+  rebuild();
+  const eb=$("#errBanner");eb.hidden=!err.length;eb.innerHTML=err.map(esc).join("<br>");
+}
+function rebuild(){
+  const seen=new Set(),all=[];
+  for(const f of S.files)for(const v of f.visits){
+    const k=v.rid||(v.patient+"|"+v.sid+"|"+v.date+"|"+v.service+"|"+v.doctor);
+    if(seen.has(k))continue;seen.add(k);all.push(v);
+  }
+  S.sample=!S.files.length;
+  S.visits=all;
+  S.groups={};S.issues=[];S.lines=[];
+  for(const f of S.files){for(const [gid,g] of Object.entries(f.groups||{}))S.groups[f.name+"|"+gid]=Object.assign({file:f.name},g);S.issues.push(...(f.issues||[]));S.lines.push(...(f.lines||[]));}
+  applyAliases();
+  $("#sampleBanner").hidden=true;
+  $("#clear").hidden=S.sample;
+  $("#files").innerHTML=S.files.map(f=>`<span class="chip">${esc(f.name)} · ${f.visits.length.toLocaleString()}건</span>`).join("");
+  fillSelects();render();
+}
+function fillSelects(){
+  const opts=(el,vals,all)=>{const cur=el.value;el.innerHTML=`<option value="">${all}</option>`+vals.map(v=>`<option>${esc(v)}</option>`).join("");if(vals.includes(cur))el.value=cur;};
+  const uniq=f=>[...new Set(S.visits.map(f))].sort((a,b)=>a.localeCompare(b));
+  opts($("#fFirm"),uniq(v=>v.firm||NOFIRM),"전체");
+  opts($("#fDoc"),uniq(v=>v.doctor||"-"),"전체");
+  opts($("#fBill"),uniq(v=>v.bill||"-"),"전체");
+}
+
+
+/* ---------- law firm name merging ---------- */
+let ALIAS={};
+const canonFirm=f=>{let x=f,n=0;while(x&&ALIAS[x]&&ALIAS[x]!==x&&n++<5)x=ALIAS[x];return x;};
+function applyAliases(){
+  for(const v of S.visits){if(v.firm0==null)v.firm0=v.firm;v.firm=canonFirm(v.firm0);}
+  for(const g of Object.values(S.groups)){if(g.firm0==null)g.firm0=g.firm;g.firm=canonFirm(g.firm0);}
+  for(const i of S.issues){if(i.firm){if(i.firm0==null)i.firm0=i.firm;i.firm=canonFirm(i.firm0);}}
+}
+const firmKey=n=>norm(n).replace(/\b(the|law|group|firm|offices?|of|and|associates|llp|pc|apc|plc|inc|corp|p\.c\.|injury|attorneys?|lawyers?)\b/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+function aliasSuggestions(){
+  const names=[...new Set(S.visits.map(v=>v.firm0).filter(Boolean))];
+  const cnt={};for(const v of S.visits)cnt[v.firm0]=(cnt[v.firm0]||0)+1;
+  const out=[],seen=new Set();
+  const lev=(a,b)=>{const m=a.length,n=b.length;if(Math.abs(m-n)>3)return 9;let prev=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const cur=[i];for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;}return prev[n];};
+  const tokFreq={};for(const n of names)for(const t of new Set(firmKey(n).split(" ")))tokFreq[t]=(tokFreq[t]||0)+1;
+  for(let i=0;i<names.length;i++)for(let j=i+1;j<names.length;j++){
+    const a=names[i],b=names[j],ka=firmKey(a),kb=firmKey(b);if(!ka||!kb)continue;
+    const ta=ka.split(" "),tb=kb.split(" ");
+    const [sh,lo]=ka.length<=kb.length?[ka,kb]:[kb,ka];
+    const contains=(sh.split(" ").length>=2||sh.length>=8)&&(lo.startsWith(sh+" ")||lo.endsWith(" "+sh)||lo.includes(" "+sh+" "));
+    const strong=ka===kb||contains||(Math.min(ka.length,kb.length)>=6&&ka.slice(0,3)===kb.slice(0,3)&&lev(ka,kb)<=2);
+    const shared=ta.filter(t=>t.length>=5&&tb.includes(t)&&tokFreq[t]<=2);
+    if(!strong&&!shared.length)continue;
+    const [keep,drop]=(cnt[a]||0)>=(cnt[b]||0)?[a,b]:[b,a];
+    const key=[a,b].sort().join("||");if(seen.has(key))continue;seen.add(key);
+    out.push({keep,drop,strong,shared:shared.join(", ")});
+  }
+  return out.sort((x,y)=>(y.strong-x.strong)||x.keep.localeCompare(y.keep));
+}
+let aliasTimer=null;
+function saveAliases(){
+  clearTimeout(aliasTimer);aliasTimer=setTimeout(()=>{SB.from("cfpc_settings").upsert({key:"firmAliases",value:{map:ALIAS},updated_by:ME,updated_at:new Date().toISOString()});},600);
+  applyAliases();fillSelects();render();
+}
+
+/* ---------- filter + aggregate ---------- */
+function filtered(){
+  const from=$("#fFrom").value,to=$("#fTo").value,firm=$("#fFirm").value,doc=$("#fDoc").value,bill=$("#fBill").value,q=norm($("#fQ").value);
+  return S.visits.filter(v=>(!from||v.date>=from)&&(!to||v.date<=to)&&(!firm||(v.firm||NOFIRM)===firm)&&(!doc||(v.doctor||"-")===doc)&&(!bill||(v.bill||"-")===bill)&&(!q||norm(v.patient).includes(q)||norm(v.sid).includes(q)));
+}
+const pkey=v=>v.patient+"|"+v.sid;
+function agg(rows){
+  const pats=new Set(rows.map(pkey));let ini=0,fu=0,proc=0,min="",max="";const bills={};
+  for(const v of rows){ini+=v.initial;fu+=v.fu;proc+=v.proc;if(!min||v.date<min)min=v.date;if(!max||v.date>max)max=v.date;}
+  const pb={};for(const v of rows){pb[pkey(v)]=v.bill||"-";}
+  for(const b of Object.values(pb))bills[b]=(bills[b]||0)+1;
+  const m=moneySum(rows);
+  return {visits:rows.length,patients:pats.size,initial:ini,fu,proc,min,max,bills,office:m.office,inj:m.inj,total:m.total};
+}
+const fmtD=iso=>iso?iso.slice(5,7)+"/"+iso.slice(8,10)+"/"+iso.slice(0,4):"";
+const billPill=(b,n)=>{const cls=/settled|paid|payment/i.test(b)?"ok":/review|missing|pending/i.test(b)?"warn":"";return `<span class="pill ${cls}">${esc(b)}${n!=null?" "+n:""}</span>`;};
+
+/* ---------- render ---------- */
+function render(){
+  const rows=filtered();
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===S.tab));
+  if(!S.files.length&&S.tab!=="users"){$("#filters").hidden=true;$("#view").innerHTML=`<div class="empty"><p style="margin:0 0 6px;font-weight:600;color:var(--fg)">아직 넣은 파일이 없습니다</p><p style="margin:0">위 칸에 CFPC_Master 엑셀 5개(2019-2021 ~ 2026)를 끌어다 놓으세요. 한 번 넣으면 회사 서버에 저장되어, 권한 있는 사람은 어느 컴퓨터에서든 바로 봅니다.</p></div>`;return;}
+  if(!rows.length&&S.tab!=="mail"&&S.tab!=="alias"&&S.tab!=="users"){$("#view").innerHTML=`<div class="empty">조건에 맞는 기록이 없습니다. 필터를 바꾸거나 초기화하세요.</div>`;return;}
+  $("#filters").hidden=S.tab==="mail"||S.tab==="alias"||S.tab==="users";
+  if(S.tab==="mail"){renderMail();return;}
+  if(S.tab==="money"){renderMoney(rows);return;}
+  if(S.tab==="unpaid"){renderUnpaid(rows);return;}
+  if(S.tab==="alias"){renderAlias();return;}
+  if(S.tab==="users"){renderUsers();return;}
+  if(S.tab==="firm")renderFirm(rows);else if(S.tab==="date")renderDate(rows);else renderList(rows);
+}
+function sortRows(arr,key){
+  const [k,d]=S.sort[key];
+  return arr.sort((x,y)=>{const a=x[k],b=y[k];return (typeof a==="number"?a-b:String(a).localeCompare(String(b)))*d;});
+}
+function th(key,k,label,n){const [sk,d]=S.sort[key];return `<th class="${n?"n":""}" data-sort="${key}:${k}">${label}${sk===k?(d>0?" ▲":" ▼"):""}</th>`;}
+
+function groupBy(rows,f){const m=new Map();for(const v of rows){const k=f(v);if(!m.has(k))m.set(k,[]);m.get(k).push(v);}return m;}
+
+function renderFirm(rows){
+  const g=groupBy(rows,v=>v.firm||NOFIRM);
+  let list=[...g].map(([firm,vs])=>({firm,vs,...agg(vs)}));
+  list=sortRows(list,"firm");
+  const max=Math.max(...list.map(x=>x.visits));
+  let h=`<div class="ptools"><span>로펌 ${list.length}곳 · 행을 누르면 환자 목록이 펼쳐집니다</span></div><div class="tbl"><table><thead><tr>
+  ${th("firm","firm","변호사 / 로펌")}${th("firm","patients","환자",1)}${th("firm","visits","방문",1)}<th></th>${th("firm","initial","초진",1)}${th("firm","fu","재진",1)}${th("firm","proc","시술",1)}${th("firm","office","오피스 빌",1)}${th("firm","inj","주사 빌",1)}${th("firm","total","빌 합계",1)}${th("firm","min","첫 방문")}${th("firm","max","최근 방문")}<th>빌링 상태(환자 수)</th></tr></thead><tbody>`;
+  for(const x of list){
+    const open=S.open==="firm:"+x.firm;
+    h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="firm:${esc(x.firm)}"><td><strong>${esc(x.firm)}</strong></td><td class="n">${x.patients}</td><td class="n">${x.visits}</td><td style="width:120px"><div class="bar" style="width:${Math.round(x.visits/max*100)}%"></div></td><td class="n">${x.initial}</td><td class="n">${x.fu}</td><td class="n">${x.proc}</td><td class="n">${usd(x.office)}</td><td class="n">${usd(x.inj)}</td><td class="n"><strong>${usd(x.total)}</strong></td><td class="d">${fmtD(x.min)}</td><td class="d">${fmtD(x.max)}</td><td>${Object.entries(x.bills).sort((a,b)=>b[1]-a[1]).map(([b,n])=>billPill(b,n)).join("")}</td></tr>`;
+    if(open)h+=`<tr class="detail"><td colspan="13">${patientTable(x.vs)}</td></tr>`;
+  }
+  $("#view").innerHTML=h+"</tbody></table></div>";
+}
+function patientTable(vs){
+  const g=groupBy(vs,pkey);
+  const list=[...g].map(([k,v])=>{const a=agg(v);v.sort((p,q)=>p.date.localeCompare(q.date));return {v,a,first:v[0]};}).sort((p,q)=>q.a.max.localeCompare(p.a.max));
+  let h=`<div class="inner"><table><thead><tr><th>환자</th><th>ID</th><th>의사</th><th>DOI</th><th class="n">방문</th><th class="n">빌 합계</th><th>첫 방문</th><th>최근 방문</th><th>빌링</th><th>방문 내역</th></tr></thead><tbody>`;
+  for(const p of list){
+    const docs=[...new Set(p.v.map(x=>x.doctor))].join(", ");
+    h+=`<tr><td>${esc(p.first.patient)}</td><td class="d">${esc(p.first.sid)}</td><td>${esc(docs)}</td><td class="d">${fmtD(p.first.doi)}</td><td class="n">${p.a.visits}</td><td class="n">${usd(p.a.total)}</td><td class="d">${fmtD(p.a.min)}</td><td class="d">${fmtD(p.a.max)}</td><td>${billPill(p.v[p.v.length-1].bill||"-")}</td><td style="white-space:normal;min-width:260px">${p.v.map(x=>`<span class="pill">${fmtD(x.date)} ${esc(x.service)}</span>`).join("")}</td></tr>`;
+  }
+  return h+"</tbody></table></div>";
+}
+
+function periodKey(iso){
+  if(S.gran==="year")return iso.slice(0,4);
+  if(S.gran==="month")return iso.slice(0,7);
+  if(S.gran==="week"){const d=new Date(iso+"T00:00:00");d.setDate(d.getDate()-((d.getDay()+6)%7));return toISO(d);}
+  return iso;
+}
+function periodLabel(k){
+  if(S.gran==="year")return k+"년";
+  if(S.gran==="month")return k.slice(0,4)+"년 "+(+k.slice(5,7))+"월";
+  if(S.gran==="week")return fmtD(k)+" 주";
+  return fmtD(k);
+}
+function renderDate(rows){
+  const g=groupBy(rows,v=>periodKey(v.date));
+  const firstP={};for(const v of rows){const k=gkey(v),p=periodKey(v.date);if(!firstP[k]||p<firstP[k])firstP[k]=p;}
+  const useLines=S.lines.length>0,keys=new Set(rows.map(gkey)),byP={};
+  if(useLines)for(const l of S.lines){if(!l.date||!keys.has(l.file+"|"+l.gid))continue;const p=periodKey(l.date);const o=byP[p]||(byP[p]={office:0,inj:0});o[l.kind==="office"?"office":"inj"]+=l.amount;}
+  let list=[...g].map(([key,vs])=>{const a=agg(vs);if(useLines){const o=byP[key]||{office:0,inj:0};a.office=o.office;a.inj=o.inj;a.total=o.office+o.inj;}else{const mm=moneySum(vs.filter(v=>firstP[gkey(v)]===key));a.office=mm.office;a.inj=mm.inj;a.total=mm.total;}const fc=[...groupBy(vs,v=>v.firm||NOFIRM)].map(([f,x])=>[f,x.length]).sort((p,q)=>q[1]-p[1]);return {key,vs,...a,firms:fc.length,fc};});
+  list=sortRows(list,"date");
+  const max=Math.max(...list.map(x=>x.visits));
+  const seg=[["year","연"],["month","월"],["week","주"],["day","일"]].map(([k,l])=>`<button data-gran="${k}" aria-pressed="${S.gran===k}">${l}</button>`).join("");
+  let h=`<div class="ptools"><span>${list.length}개 기간 · 빌 합계는 ${S.lines.length?"빌에 적힌 진료일(Service date) 기준":"그룹의 첫 방문 기간 기준"} · 행을 누르면 로펌별 환자가 펼쳐집니다</span><span class="seg">${seg}</span></div><div class="tbl"><table><thead><tr>
+  ${th("date","key","기간")}${th("date","visits","방문",1)}<th></th>${th("date","patients","환자",1)}${th("date","initial","초진",1)}${th("date","fu","재진",1)}${th("date","proc","시술",1)}${th("date","total","빌 합계",1)}${th("date","firms","로펌 수",1)}<th>주요 로펌(방문)</th></tr></thead><tbody>`;
+  for(const x of list){
+    const open=S.open==="date:"+x.key;
+    h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="date:${esc(x.key)}"><td><strong>${periodLabel(x.key)}</strong></td><td class="n">${x.visits}</td><td style="width:120px"><div class="bar" style="width:${Math.round(x.visits/max*100)}%"></div></td><td class="n">${x.patients}</td><td class="n">${x.initial}</td><td class="n">${x.fu}</td><td class="n">${x.proc}</td><td class="n">${usd(x.total)}</td><td class="n">${x.firms}</td><td style="white-space:normal;min-width:240px">${x.fc.slice(0,4).map(([f,n])=>`<span class="pill">${esc(f)} ${n}</span>`).join("")}${x.fc.length>4?`<span class="pill">외 ${x.fc.length-4}곳</span>`:""}</td></tr>`;
+    if(open){
+      let inner=`<div class="inner">`;
+      for(const [f,vs] of [...groupBy(x.vs,v=>v.firm||NOFIRM)].sort((p,q)=>q[1].length-p[1].length)){
+        inner+=`<p style="margin:10px 0 4px;font-weight:600">${esc(f)} · ${vs.length}건</p>`+patientTable(vs).replace('<div class="inner">','<div>');
+      }
+      h+=`<tr class="detail"><td colspan="10">${inner}</div></td></tr>`;
+    }
+  }
+  $("#view").innerHTML=h+"</tbody></table></div>";
+}
+
+
+const ISSUE={
+  A:["주사 빌 일부만 입력","스캔에서 청구서 합계가 잘려 첫 줄 금액만 들어감. 실제 금액은 더 큼","서버 합계로 교체 (1순위)"],
+  B:["판독 불가 주사 빌 페이지","스캔이 흐리거나 잘린 페이지. 엑셀 시트에 줄이 없어 여기서는 셀 수 없음","서버 데이터로 새 줄 추가"],
+  C:["주사 방문은 있는데 주사 빌이 없음","Master에 Epidural/TPI/Unclear 방문이 있는데 주사 빌 금액이 0","서버에 있으면 새 줄 추가"],
+  D:["오피스 빌이 PDF/Word로만 있음","금액을 아직 못 읽은 그룹","서버 금액으로 추가"],
+  E:["오피스 빌이 아예 없음","환자 폴더에 빌 파일 없음","서버 금액으로 추가"],
+  F:["빌 날짜와 방문 날짜 불일치","Bills 시트에서 그 날짜 방문 기록이 없는 줄","서버 진료일로 다시 매칭"],
+  G:["이관(Archive) 그룹 주사 빌","Master에 없는 이관 그룹이라 합계에서 빠짐 (정상)","확인만"],
+  H:["방문과 연결 안 된 주사 청구","근처 날짜에 방문 기록이 없음","확인 필요"]
+};
+function renderMoney(rows){
+  const keys=new Set(rows.map(gkey));
+  const inScope=i=>!i.gid||keys.has(i.file+"|"+i.gid)||!S.groups[i.file+"|"+i.gid];
+  const iss=S.issues.filter(inScope);
+  const byFile=[...groupBy(rows,v=>v.file)].map(([file,vs])=>({file,...moneySum(vs),pats:new Set(vs.map(pkey)).size})).sort((a,b)=>a.file.localeCompare(b.file));
+  const tot=byFile.reduce((a,x)=>({office:a.office+x.office,inj:a.inj+x.inj,total:a.total+x.total}),{office:0,inj:0,total:0});
+  const cols=S.files.map(f=>f.amtCols).filter(Boolean)[0];
+  const noAmt=!tot.total;
+  let h=`<div class="mbody"><h2>파일별 빌 금액 (Master 기준)</h2>`;
+  if(noAmt)h+=`<p class="errbox">이 파일에서 빌 금액 열을 찾지 못했습니다. 금액 열(오피스 빌 T~Z, 주사 빌 AA~AD)이 들어간 새 CFPC Master 파일을 넣어 주세요.</p>`;
+  h+=`<div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default">파일</th><th class="n" style="cursor:default">환자</th><th class="n" style="cursor:default">오피스 빌</th><th class="n" style="cursor:default">주사 빌</th><th class="n" style="cursor:default">합계</th></tr></thead><tbody>`;
+  for(const x of byFile)h+=`<tr><td>${esc(x.file)}</td><td class="n">${x.pats.toLocaleString()}</td><td class="n">${usd(x.office)}</td><td class="n">${usd(x.inj)}</td><td class="n"><strong>${usd(x.total)}</strong></td></tr>`;
+  h+=`<tr><td><strong>전체</strong></td><td></td><td class="n"><strong>${usd(tot.office)}</strong></td><td class="n"><strong>${usd(tot.inj)}</strong></td><td class="n"><strong>${usd(tot.total)}</strong></td></tr></tbody></table></div>`;
+  if(cols&&(cols.office||cols.inj))h+=`<p class="note">금액 계산: 오피스 빌 = ${esc(cols.office||"없음")} · 주사 빌 = ${esc(cols.inj||"없음")} (Master 합계 수식과 같은 방식)</p>`;
+  h+=`<p class="note">위 필터(기간·로펌·의사)가 이 표에도 적용됩니다. 같은 그룹은 한 번만 셉니다.</p>`;
+  h+=`<h2 style="margin-top:8px">빠졌거나 불완전한 것</h2><p class="note">서버(Shimon) 데이터가 오면 이 순서대로 채웁니다: A → B·C → D·E → 금액 검증 → F</p><div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default"></th><th style="cursor:default">항목</th><th class="n" style="cursor:default">건수</th><th class="n" style="cursor:default">입력된 금액</th><th style="cursor:default">설명</th><th style="cursor:default">서버 데이터 오면</th></tr></thead><tbody>`;
+  for(const t of Object.keys(ISSUE)){
+    const list=iss.filter(i=>i.type===t),[name,desc,todo]=ISSUE[t];
+    const amt=list.reduce((a,i)=>a+(i.amount||0),0);
+    const open=S.issueOpen===t,can=list.length>0;
+    h+=`<tr class="${can?"click":""}${open?" open":""}" ${can?`tabindex="0" data-issue="${t}"`:""}><td><span class="pill ${t==="G"?"ok":"warn"}">${t}</span></td><td><strong>${name}</strong></td><td class="n">${t==="B"?"–":list.length.toLocaleString()}</td><td class="n">${usd(amt)}</td><td style="white-space:normal;min-width:220px">${desc}</td><td style="white-space:normal;min-width:140px">${todo}</td></tr>`;
+    if(open){
+      const shown=list.slice().sort((a,b)=>(a.file+a.sid).localeCompare(b.file+b.sid)).slice(0,1000);
+      h+=`<tr class="detail"><td colspan="6"><div class="inner"><table><thead><tr><th>파일</th><th>환자 ID</th><th>환자</th><th>날짜</th><th>로펌</th><th class="n">금액</th><th>내용</th></tr></thead><tbody>`+
+        shown.map(i=>{const g=S.groups[i.file+"|"+i.gid]||{};return `<tr><td class="foot">${esc(i.file)}</td><td class="d">${esc(i.sid)}</td><td>${esc(i.patient||g.patient||"")}</td><td class="d">${fmtD(i.date)}</td><td>${esc(i.firm||g.firm||"")}</td><td class="n">${usd(i.amount)}</td><td>${esc(i.note)}</td></tr>`;}).join("")+
+        `</tbody></table>${list.length>1000?`<p class="note">처음 1,000건만 표시</p>`:""}</div></td></tr>`;
+    }
+  }
+  h+=`</tbody></table></div><p class="note">B(판독 불가 페이지)는 엑셀에 줄이 없어서 셀 수 없습니다. 서버 데이터가 오면 채워집니다.</p></div>`;
+  $("#view").innerHTML=h;
+}
+
+
+/* ---------- unpaid bills ---------- */
+const U={age:"180",status:"",firm:"",sort:["balance",-1]};
+try{const a=localStorage.getItem("cfpc.uage");if(a!=null)U.age=a;}catch(e){}
+const TODAY=toISO(new Date());
+const daysSince=iso=>iso?Math.floor((new Date(TODAY+"T00:00:00")-new Date(iso+"T00:00:00"))/864e5):null;
+function unpaidGroups(rows){
+  /* one row per Group ID: the same group can sit in two year files; keep the newest file's record */
+  const keys=new Set(rows.map(gkey)),best={};
+  for(const [k,g] of Object.entries(S.groups)){
+    if(!keys.has(k))continue;
+    const gid=k.slice(k.indexOf("|")+1);
+    if(!best[gid]||g.file>best[gid].file)best[gid]=Object.assign({gid,key:k},g);
+  }
+  const files={};for(const k of Object.keys(S.groups)){const gid=k.slice(k.indexOf("|")+1);(files[gid]=files[gid]||[]).push(S.groups[k].file);}
+  const tot={};for(const [k,g] of Object.entries(S.groups)){const gid=k.slice(k.indexOf("|")+1);tot[gid]=(tot[gid]||0)+(g.office||0)+(g.inj||0);}
+  return Object.values(best).map(g=>{
+    const paid=/paid|disregard|dropped|closed|write.?off/i.test((g.bill||"")+" "+(g.coll||""))&&!/pending/i.test(g.coll||"");
+    const settled=/settled/i.test(g.coll||"");
+    const ref=g.lastBill||g.last;
+    return Object.assign({},g,{paid,settled,days:daysSince(ref),ref,billed:tot[g.gid]||0,files:[...new Set(files[g.gid]||[])].sort()});
+  }).filter(g=>!g.paid);
+}
+function renderUnpaid(rows){
+  let list=unpaidGroups(rows);
+  const minDays=+U.age||0;
+  if(minDays)list=list.filter(g=>g.days!=null&&g.days>=minDays);
+  if(U.status==="settled")list=list.filter(g=>g.settled);
+  if(U.status==="sent")list=list.filter(g=>!g.settled);
+  const byFirm=[...groupBy(list,g=>g.firm||NOFIRM)].map(([firm,gs])=>({firm,n:gs.length,balance:gs.reduce((a,g)=>a+(g.balance||0),0),billed:gs.reduce((a,g)=>a+g.billed,0),settled:gs.filter(g=>g.settled).length,oldest:gs.reduce((m,g)=>Math.max(m,g.days||0),0)})).sort((a,b)=>b.balance-a.balance||b.billed-a.billed);
+  const shown=U.firm?list.filter(g=>(g.firm||NOFIRM)===U.firm):list;
+  const [sk,sd]=U.sort;shown.sort((a,b)=>{const x=a[sk],y=b[sk];return (typeof x==="number"||typeof y==="number"?(x||0)-(y||0):String(x||"").localeCompare(String(y||"")))*sd;});
+  const sumBal=list.reduce((a,g)=>a+(g.balance||0),0),sumBilled=list.reduce((a,g)=>a+g.billed,0);
+  const ages=[["","전체"],["90","90일 이상"],["180","180일 이상"],["365","1년 이상"],["730","2년 이상"]];
+  let h=`<div class="ptools"><span>환자 그룹 <b>${list.length.toLocaleString()}</b>개 · 마지막 빌 잔액 합계 <b>${usd(sumBal)}</b> · 청구 합계 ${usd(sumBilled)}</span>
+  <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="seg">${ages.map(([k,l])=>`<button data-uage="${k}" aria-pressed="${U.age===k}">${l}</button>`).join("")}</span>
+  <span class="seg">${[["","전체 상태"],["settled","합의됨·미지급"],["sent","빌 보냄"]].map(([k,l])=>`<button data-ustat="${k}" aria-pressed="${U.status===k}">${l}</button>`).join("")}</span></span></div>`;
+  h+=`<div class="mbody" style="gap:10px"><p class="note">기준: 마지막 빌 파일 날짜(없으면 마지막 방문일)부터 오늘까지 지난 날수. Paid로 표시된 건은 뺐습니다. <b>합의됨·미지급</b>(Settled, Payment Pending)은 지금 받을 수 있는 돈이라 먼저 연락하세요.</p>
+  <h2>로펌별</h2><div class="tbl" style="max-height:340px"><table><thead><tr><th style="cursor:default">로펌</th><th class="n" style="cursor:default">환자 그룹</th><th class="n" style="cursor:default">합의됨</th><th class="n" style="cursor:default">마지막 빌 잔액</th><th class="n" style="cursor:default">청구 합계</th><th class="n" style="cursor:default">가장 오래된(일)</th><th style="cursor:default"></th></tr></thead><tbody>`;
+  for(const f of byFirm)h+=`<tr class="click${U.firm===f.firm?" open":""}" tabindex="0" data-ufirm="${esc(f.firm)}"><td><strong>${esc(f.firm)}</strong></td><td class="n">${f.n}</td><td class="n">${f.settled||""}</td><td class="n"><strong>${usd(f.balance)}</strong></td><td class="n">${usd(f.billed)}</td><td class="n">${f.oldest.toLocaleString()}</td><td><button class="btn ghost" style="padding:3px 10px;font-size:12px" data-umail="${esc(f.firm)}">독촉 메일</button></td></tr>`;
+  h+=`</tbody></table></div>`;
+  const uth=(k,l,n)=>`<th class="${n?"n":""}" data-usort="${k}">${l}${sk===k?(sd>0?" ▲":" ▼"):""}</th>`;
+  h+=`<h2>${U.firm?esc(U.firm)+" · ":""}환자 그룹 ${shown.length.toLocaleString()}개 ${U.firm?`<button class="btn ghost" style="padding:2px 10px;font-size:12px" data-ufirm="">전체 로펌 보기</button>`:""}</h2>
+  <div class="tbl"><table><thead><tr>${uth("days","지난 날수",1)}${uth("ref","마지막 빌")}${uth("patient","환자")}${uth("sid","ID")}${uth("doctor","의사")}${uth("firm","로펌")}${uth("doi","DOI")}${uth("balance","마지막 빌 잔액",1)}${uth("billed","청구 합계",1)}<th>상태</th><th>파일</th></tr></thead><tbody>`;
+  for(const g of shown.slice(0,1500))h+=`<tr><td class="n">${g.days==null?"–":g.days.toLocaleString()}</td><td class="d">${fmtD(g.ref)}</td><td>${esc(g.patient)}</td><td class="d">${esc(g.sid)}</td><td>${esc(g.doctor)}</td><td>${esc(g.firm||NOFIRM)}</td><td class="d">${fmtD(g.doi)}</td><td class="n"><strong>${usd(g.balance)}</strong></td><td class="n">${usd(g.billed)}</td><td>${g.settled?`<span class="pill warn">합의됨·미지급</span>`:billPill(g.bill||"-")}</td><td class="foot">${esc(g.files.map(f=>f.replace(/^CFPC_Master_|\.xlsx$/g,"")).join(", "))}</td></tr>`;
+  h+=`</tbody></table></div>${shown.length>1500?`<p class="note">처음 1,500개만 표시. 로펌을 눌러 좁혀 보세요.</p>`:""}</div>`;
+  $("#view").innerHTML=h;
+}
+
+/* ---------- alias tab ---------- */
+function renderAlias(){
+  const sug=aliasSuggestions();
+  const active=Object.entries(ALIAS);
+  const cnt={};for(const v of S.visits)cnt[v.firm0]=(cnt[v.firm0]||0)+1;
+  let h=`<div class="mbody"><h2>로펌 이름 정리</h2><p class="note">같은 로펌이 다른 이름으로 적힌 경우 하나로 합칩니다. 합치면 변호사별 표, 미지급 빌, 독촉 메일이 모두 합친 이름으로 묶입니다. 원본 엑셀은 바뀌지 않고, 설정은 모든 사용자에게 같이 적용됩니다.</p>`;
+  h+=`<h3 style="margin:4px 0">합친 이름 (${active.length})</h3>`;
+  if(!active.length)h+=`<p class="note">아직 합친 이름이 없습니다. 아래 추천에서 "합치기"를 누르세요.</p>`;
+  else h+=`<div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default">원래 이름</th><th style="cursor:default">→ 합친 이름</th><th class="n" style="cursor:default">방문</th><th style="cursor:default"></th></tr></thead><tbody>`+active.sort().map(([a,b])=>`<tr><td>${esc(a)}</td><td><strong>${esc(b)}</strong></td><td class="n">${(cnt[a]||0).toLocaleString()}</td><td><button class="btn ghost" style="padding:3px 10px;font-size:12px" data-unalias="${esc(a)}">되돌리기</button></td></tr>`).join("")+`</tbody></table></div>`;
+  const open=sug.filter(x=>!ALIAS[x.drop]&&!ALIAS[x.keep]);
+  h+=`<h3 style="margin:10px 0 4px">비슷한 이름 추천 (${open.length})</h3><p class="note">이름이 거의 같은 것(강함)과 단어 하나가 겹치는 것(약함)입니다. 다른 사무실일 수 있으니 확인하고 합치세요. 방향이 반대면 "반대로"를 누르세요.</p>`;
+  h+=`<div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default">유사도</th><th style="cursor:default">이 이름을</th><th class="n" style="cursor:default">방문</th><th style="cursor:default">이 이름으로 합치기</th><th class="n" style="cursor:default">방문</th><th style="cursor:default"></th></tr></thead><tbody>`;
+  for(const x of open)h+=`<tr><td>${x.strong?`<span class="pill warn">강함</span>`:`<span class="pill">약함 · ${esc(x.shared)}</span>`}</td><td>${esc(x.drop)}</td><td class="n">${(cnt[x.drop]||0).toLocaleString()}</td><td><strong>${esc(x.keep)}</strong></td><td class="n">${(cnt[x.keep]||0).toLocaleString()}</td><td style="white-space:nowrap"><button class="btn" style="padding:3px 10px;font-size:12px" data-alias="${esc(x.drop)}" data-to="${esc(x.keep)}">합치기</button> <button class="btn ghost" style="padding:3px 10px;font-size:12px" data-alias="${esc(x.keep)}" data-to="${esc(x.drop)}">반대로</button></td></tr>`;
+  h+=`</tbody></table></div>`;
+  const names=[...new Set(S.visits.map(v=>v.firm0).filter(Boolean))].sort();
+  h+=`<h3 style="margin:10px 0 4px">직접 합치기</h3><div class="row"><div class="f"><label for="aFrom">이 이름을</label><select id="aFrom">${names.map(n=>`<option>${esc(n)}</option>`).join("")}</select></div><div class="f"><label for="aTo">이 이름으로</label><select id="aTo">${names.map(n=>`<option>${esc(n)}</option>`).join("")}</select></div><button class="btn" data-aliasmanual="1">합치기</button></div></div>`;
+  $("#view").innerHTML=h;
+}
+
+
+/* ---------- access (admins only) ---------- */
+async function renderUsers(){
+  $("#view").innerHTML=`<div class="mbody"><p class="note">불러오는 중…</p></div>`;
+  const [u,l]=await Promise.all([SB.from("cfpc_users").select("*").order("role").order("email"),SB.from("cfpc_log").select("*").order("at",{ascending:false}).limit(30)]);
+  const users=u.data||[],logs=l.data||[];
+  $("#view").innerHTML=`<div class="mbody"><h2>이 페이지를 볼 수 있는 사람</h2><p class="note">여기 있는 이메일로 로그인한 사람만 CFPC 데이터를 볼 수 있습니다. 관리자는 사람 추가·삭제와 파일 전체 삭제를 할 수 있습니다.</p>
+  <div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default">이메일</th><th style="cursor:default">권한</th><th style="cursor:default">추가한 날</th><th style="cursor:default"></th></tr></thead><tbody>${users.map(x=>`<tr><td>${esc(x.email)}</td><td>${x.role==="admin"?`<span class="pill ok">관리자</span>`:`<span class="pill">직원</span>`}</td><td class="d">${fmtD(toISO(new Date(x.added_at)))}</td><td>${x.email.toLowerCase()===ME.toLowerCase()?"":`<button class="btn ghost" style="padding:3px 10px;font-size:12px" data-udel="${esc(x.email)}">빼기</button>`}</td></tr>`).join("")}</tbody></table></div>
+  <div class="row"><div class="f" style="flex:1 1 260px"><label for="uEmail">추가할 이메일</label><input type="email" id="uEmail" class="wide" placeholder="staff@example.com"></div><div class="f"><label for="uRole">권한</label><select id="uRole"><option value="staff">직원</option><option value="admin">관리자</option></select></div><button class="btn" data-uadd="1">추가</button></div>
+  <p class="note">추가된 사람은 hub 로그인 화면에서 <b>처음 사용 · 계정 만들기</b>로 비밀번호를 정하면 들어올 수 있습니다.</p>
+  <h2 style="margin-top:8px">최근 기록</h2><div class="tbl" style="max-height:320px"><table><thead><tr><th style="cursor:default">시간</th><th style="cursor:default">누가</th><th style="cursor:default">무엇</th><th style="cursor:default">내용</th></tr></thead><tbody>${logs.map(x=>`<tr><td class="d">${esc(new Date(x.at).toLocaleString("ko-KR"))}</td><td>${esc(x.who||"")}</td><td>${esc(x.action)}</td><td class="foot">${esc(JSON.stringify(x.detail||{}))}</td></tr>`).join("")||`<tr><td colspan="4" class="foot">기록 없음</td></tr>`}</tbody></table></div></div>`;
+}
+
+function renderList(rows){
+  let list=sortRows(rows.slice(),"list");
+  const LIM=2000,shown=list.slice(0,LIM);
+  let h=`<div class="ptools"><span>${list.length.toLocaleString()}건${list.length>LIM?` · 처음 ${LIM.toLocaleString()}건 표시 (필터로 좁혀 보세요)`:""}</span></div><div class="tbl"><table><thead><tr>
+  ${th("list","date","방문일")}${th("list","patient","환자")}${th("list","sid","ID")}${th("list","doctor","의사")}${th("list","service","서비스")}${th("list","firm","변호사 / 로펌")}${th("list","doi","DOI")}${th("list","bill","빌링")}<th>확인 사항</th>${th("list","file","파일")}</tr></thead><tbody>`;
+  for(const v of shown){
+    h+=`<tr><td class="d">${fmtD(v.date)}</td><td>${esc(v.patient)}</td><td class="d">${esc(v.sid)}</td><td>${esc(v.doctor)}</td><td>${esc(v.service)}</td><td>${esc(v.firm||NOFIRM)}</td><td class="d">${fmtD(v.doi)}</td><td>${billPill(v.bill||"-")}</td><td>${v.review?`<span class="pill warn">${esc(v.review)}</span>`:""}</td><td class="foot">${esc(v.file)}</td></tr>`;
+  }
+  $("#view").innerHTML=h+"</tbody></table></div>";
+}
+
+
+/* ---------- escalating email wizard ---------- */
+const LV={
+ 1:{ko:"1단계 · 정중한 확인",desc:"상태 업데이트를 부드럽게 요청합니다.",days:0,
+    subj:(r)=>`Case Status Request – Center for Pain Patients (${r})`,
+    body:(f)=>[`Dear ${f},`,`We hope you are doing well. Center for Pain has provided treatment to the client(s) listed below, who were referred to our office on a medical lien basis. Our itemized bills and records have been sent to your office.`,`Could you please send us a brief status update on each case (pre-litigation, in litigation, or settled) at your earliest convenience?`,`Thank you for your continued partnership.`]},
+ 2:{ko:"2단계 · 재요청",desc:"두 번째 요청, 10영업일 안에 회신 요청.",
+    subj:(r)=>`Second Request: Case Status Update Needed – Center for Pain (${r})`,
+    body:(f)=>[`Dear ${f},`,`This is our second request for a status update on the cases listed below. We have not yet received a response to our previous inquiry.`,`Please reply within 10 business days with the current status of each case. If any case has settled, or if your office needs anything from us (records, updated bills, or a reduction request), please let us know.`,`Thank you for your prompt attention.`]},
+ 3:{ko:"3단계 · 공식 통지",desc:"메디컬 리엔 상기, 7일 안에 서면 회신 요청.",
+    subj:(r)=>`Formal Notice of Medical Lien – Written Response Requested Within 7 Days (${r})`,
+    body:(f)=>[`Dear ${f},`,`Despite our prior requests, we have not received an update on the cases listed below.`,`Please be reminded that Center for Pain holds a medical lien on each of these matters, and the lien must be satisfied from any settlement, judgment, or award before funds are disbursed.`,`Within 7 days of this notice, please confirm in writing: (1) the current status of each case, (2) that our lien is on file, and (3) the anticipated settlement and payment timeline. For any case that has already settled, please remit payment or advise when payment will be issued.`]},
+ 4:{ko:"4단계 · 최종 통지",desc:"최종 통지, 5영업일 안에 지급 또는 서면 회신. 추심 이관 언급.",
+    subj:(r)=>`FINAL NOTICE – Outstanding Medical Lien Balances – Immediate Response Required (${r})`,
+    body:(f)=>[`Dear ${f},`,`This is our final notice regarding the cases listed below. Our records show no response to our three prior requests.`,`Within 5 business days of this notice, please remit payment for any settled case, or provide a written status for each open case.`,`If we do not hear from your office, these accounts will be escalated for further review, which may include referral for collection. We would much prefer to resolve this directly with your office and appreciate your immediate attention.`]}
+};
+const M={step:1,from:"",to:"",firms:null,bills:null,mode:"auto",level:1,csv:false,sig:{name:"",title:"Billing Department",org:"Center for Pain",phone:"",email:""},status:null,busy:false,confirm:false,progress:"",previewFirm:""};
+const FDB={},hash=s=>{let h=5381;for(const c of s)h=((h*33)^c.charCodeAt(0))>>>0;return "f"+h.toString(16);};
+let db=null;
+async function loadShared(){
+  const [st,fm]=await Promise.all([SB.from("cfpc_settings").select("*"),SB.from("cfpc_firms").select("*")]);
+  for(const r of (st.data||[])){
+    if(r.key==="firmAliases"){ALIAS=Object.assign({},(r.value||{}).map||{});}
+    if(r.key==="signature"){M.sig=Object.assign(M.sig,r.value||{});}
+  }
+  for(const r of (fm.data||[]))FDB[r.name]=r;
+}
+async function saveFirm(name,patch){
+  FDB[name]=Object.assign(FDB[name]||{name,history:[]},patch);
+  const x=FDB[name];const {error}=await SB.from("cfpc_firms").upsert({name,email:x.email||"",history:x.history||[],updated_by:ME,updated_at:new Date().toISOString()});
+  if(error)toast("저장 실패: "+error.message);
+}
+let sigTimer=null;function saveSig(){clearTimeout(sigTimer);sigTimer=setTimeout(()=>{SB.from("cfpc_settings").upsert({key:"signature",value:Object.assign({},M.sig),updated_by:ME,updated_at:new Date().toISOString()});},800);}
+const lastSent=f=>{const h=(FDB[f]&&FDB[f].history)||[];return h.length?h[h.length-1]:null;};
+const nextLevel=f=>{const l=lastSent(f);return l?Math.min(4,l.level+1):1;};
+const levelFor=f=>M.mode==="auto"?nextLevel(f):M.level;
+
+const mailRange=()=>S.visits.filter(v=>(!M.from||v.date>=M.from)&&(!M.to||v.date<=M.to)&&(!M.bills||M.bills.has(v.bill||"-")));
+function mailRows(){const r=mailRange();return M.firms?r.filter(v=>M.firms.has(v.firm||NOFIRM)):r;}
+function rangeText(){return (M.from?fmtD(M.from):"start")+" – "+(M.to?fmtD(M.to):"present");}
+function rangeKo(){return (M.from?fmtD(M.from):"처음")+" ~ "+(M.to?fmtD(M.to):"마지막");}
+function preset(k){
+  const t=new Date(),d=x=>toISO(x);
+  if(k==="lastm"){M.from=d(new Date(t.getFullYear(),t.getMonth()-1,1));M.to=d(new Date(t.getFullYear(),t.getMonth(),0));}
+  if(k==="thism"){M.from=d(new Date(t.getFullYear(),t.getMonth(),1));M.to=d(t);}
+  if(k==="30"){const a=new Date(t);a.setDate(a.getDate()-29);M.from=d(a);M.to=d(t);}
+  if(k==="90"){const a=new Date(t);a.setDate(a.getDate()-89);M.from=d(a);M.to=d(t);}
+  if(k==="year"){M.from=t.getFullYear()+"-01-01";M.to=d(t);}
+  if(k==="all"){M.from="";M.to="";}
+  M.firms=null;
+}
+const emails=s=>String(s||"").split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);
+const validEmail=x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);
+const firmEmailOk=f=>{const e=emails(FDB[f]&&FDB[f].email);return e.length&&e.every(validEmail);};
+function selectedFirms(){return [...groupBy(mailRows(),v=>v.firm||NOFIRM)].sort((a,b)=>b[1].length-a[1].length);}
+
+function caseRows(vs){
+  const g=[...groupBy(vs,v=>pkey(v))].map(([k,x])=>{x.sort((p,q)=>p.date.localeCompare(q.date));return x;});
+  return g.sort((a,b)=>a[0].patient.localeCompare(b[0].patient)).map(x=>({p:x[0].patient,id:x[0].sid,doi:x[0].doi,first:x[0].date,last:x[x.length-1].date,n:x.length,doc:[...new Set(x.map(v=>v.doctor))].join(", "),bill:x[x.length-1].bill||""}));
+}
+const C='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:left;vertical-align:top"';
+const H='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:12px;text-align:left;background:#eef2f3"';
+function emailFor(f,vs){
+  const lv=levelFor(f),T=LV[lv],cs=caseRows(vs),paras=T.body(f);
+  const strong=lv>=3;
+  let h=`<div style="font-family:Arial,Helvetica,sans-serif;color:#1b1b1b;font-size:14px;line-height:1.55">`;
+  if(lv===4)h+=`<p style="margin:0 0 12px;padding:8px 12px;background:#fde8e8;color:#8a1c1c;font-weight:bold">FINAL NOTICE</p>`;
+  let tbl=`<table style="border-collapse:collapse;margin:4px 0 14px"><tr><th ${H}>Patient</th><th ${H}>Acct #</th><th ${H}>DOI</th><th ${H}>Dates of Service</th><th ${H}>Visits</th><th ${H}>Provider</th><th ${H}>Our Status</th></tr>`;
+  for(const c of cs){const red=/settled/i.test(c.bill)&&strong;tbl+=`<tr><td ${C}>${esc(c.p)}</td><td ${C}>${esc(c.id)}</td><td ${C}>${fmtD(c.doi)}</td><td ${C}>${fmtD(c.first)}${c.first!==c.last?" – "+fmtD(c.last):""}</td><td ${C}>${c.n}</td><td ${C}>${esc(c.doc)}</td><td style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:left;${red?"color:#8a1c1c;font-weight:bold":""}">${esc(c.bill||"-")}</td></tr>`;}
+  tbl+=`</table>`;
+  paras.forEach((t,i)=>{h+=`<p style="margin:0 0 12px">${esc(t)}</p>`;if(i===1)h+=tbl;});
+  const sg=M.sig;
+  h+=`<p style="margin:16px 0 0">Sincerely,<br>${[sg.name,sg.title,sg.org,sg.phone,sg.email].filter(x=>x&&x.trim()).map(esc).join("<br>")}</p>`;
+  h+=`<p style="margin:16px 0 0;font-size:11px;color:#6b6b6b">This message contains confidential patient information intended only for the addressee. If you received it in error, please notify the sender and delete it.</p></div>`;
+  const text=paras.join("\n\n")+"\n\n"+cs.map(c=>`${c.p} | ${c.id} | DOI ${fmtD(c.doi)} | DOS ${fmtD(c.first)}${c.first!==c.last?" - "+fmtD(c.last):""} | ${c.n} visits | ${c.bill}`).join("\n")+"\n\nSincerely,\n"+[sg.name,sg.title,sg.org,sg.phone,sg.email].filter(x=>x&&x.trim()).join("\n");
+  const csv="﻿"+[["Patient","Acct #","DOI","First DOS","Last DOS","Visits","Provider","Status"],...cs.map(c=>[c.p,c.id,fmtD(c.doi),fmtD(c.first),fmtD(c.last),c.n,c.doc,c.bill])].map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  return {lv,subject:T.subj(rangeText()),html:h,text,csv,cases:cs.length};
+}
+const b64=s=>{const b=new TextEncoder().encode(s);let o="";for(let i=0;i<b.length;i+=0x8000)o+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(o);};
+
+function renderMail(){
+  const r1=mailRange(),sel=selectedFirms();
+  const ready=sel.filter(([f])=>firmEmailOk(f));
+  const can={1:true,2:r1.length>0,3:sel.length>0,4:sel.length>0};
+  const labels=["기간","로펌·주소","독촉 단계","확인·발송"];
+  let h=`<div class="steps">`+labels.map((l,i)=>`<button class="step${M.step>i+1?" done":""}" data-step="${i+1}" ${M.step===i+1?'aria-current="step"':""} ${can[i+1]?"":"disabled"}><span class="no">${i+1}</span>${l}</button>`).join("")+`</div><div class="mbody">`;
+  if(M.step===1){
+    const allBills=[...new Set(S.visits.map(v=>v.bill||"-"))].sort();
+    h+=`<h2>몇 월 며칠부터 몇 월 며칠까지 방문한 케이스인가요?</h2>
+    <div class="presets">${[["lastm","지난달"],["thism","이번 달"],["30","최근 30일"],["90","최근 90일"],["year","올해"],["all","전체"]].map(([k,l])=>`<button data-preset="${k}">${l}</button>`).join("")}</div>
+    <div class="row"><div class="f"><label for="mFrom">시작일</label><input type="date" id="mFrom" value="${M.from}"></div><div class="f"><label for="mTo">종료일</label><input type="date" id="mTo" value="${M.to}"></div></div>
+    <div class="f"><label>빌링 상태</label><div class="presets">${allBills.map(b=>`<label style="display:flex;gap:5px;align-items:center;font-size:13px"><input type="checkbox" data-bill="${esc(b)}" ${!M.bills||M.bills.has(b)?"checked":""}>${esc(b)}</label>`).join("")}</div></div>
+    <p class="note">${r1.length?`이 조건에 방문 <b>${r1.length.toLocaleString()}</b>건, 환자 <b>${agg(r1).patients.toLocaleString()}</b>명, 로펌 <b>${groupBy(r1,v=>v.firm||NOFIRM).size}</b>곳이 있습니다.`:"조건에 맞는 기록이 없습니다."}</p>`;
+  }else if(M.step===2){
+    const g=[...groupBy(r1,v=>v.firm||NOFIRM)].map(([f,vs])=>[f,vs.length,agg(vs).patients]).sort((a,b)=>b[1]-a[1]);
+    const on=f=>!M.firms||M.firms.has(f);
+    h+=`<h2>보낼 로펌을 고르고 이메일 주소를 확인하세요</h2><p class="note">${esc(rangeKo())} · 주소는 한 번 넣으면 저장돼 다음에 자동으로 채워집니다.</p>
+    <div class="presets"><button data-firms="all">전체 선택</button><button data-firms="none">전체 해제</button><button data-firms="withmail">주소 있는 곳만</button></div>
+    <div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default"></th><th style="cursor:default">로펌</th><th class="n" style="cursor:default">환자</th><th style="cursor:default">마지막 발송</th><th style="cursor:default">이메일 주소</th></tr></thead><tbody>
+    ${g.map(([f,n,p])=>{const l=lastSent(f),fd=FDB[f]||{};return `<tr><td><input type="checkbox" data-firm="${esc(f)}" ${on(f)?"checked":""} aria-label="${esc(f)} 선택"></td><td style="white-space:normal;min-width:160px"><strong>${esc(f)}</strong></td><td class="n">${p}</td><td>${l?`<span class="pill ${l.level>=3?"warn":""}">${l.level}단계 · ${fmtD(l.date)}</span>`:`<span class="pill">없음</span>`}</td><td><input type="email" data-femail="${esc(f)}" value="${esc(fd.email||"")}" placeholder="attorney@lawfirm.com" style="min-width:230px"></td></tr>`;}).join("")}
+    </tbody></table></div>
+    <p class="note">선택 ${sel.length}곳 중 주소가 있는 곳 <b>${ready.length}</b>곳. 주소가 없는 곳은 보내지 않고 건너뜁니다.</p>`;
+  }else if(M.step===3){
+    h+=`<h2>얼마나 강하게 보낼까요?</h2>
+    <div class="checks" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <label style="align-items:flex-start;flex-direction:column;gap:2px;${M.mode==="auto"?"border-color:var(--accent)":""}"><span style="display:flex;gap:8px;align-items:center"><input type="radio" name="lvl" data-mode="auto" ${M.mode==="auto"?"checked":""}><b>자동 (추천)</b></span><span class="note">로펌마다 지난번보다 한 단계 올려 보냅니다. 처음이면 1단계.</span></label>
+      ${[1,2,3,4].map(n=>`<label style="align-items:flex-start;flex-direction:column;gap:2px;${M.mode==="fixed"&&M.level===n?"border-color:var(--accent)":""}"><span style="display:flex;gap:8px;align-items:center"><input type="radio" name="lvl" data-level="${n}" ${M.mode==="fixed"&&M.level===n?"checked":""}><b>${LV[n].ko}</b></span><span class="note">${LV[n].desc}</span></label>`).join("")}
+    </div>
+    <p class="note">이번에 보낼 단계: ${sel.map(([f])=>`<span class="pill ${levelFor(f)>=3?"warn":""}">${esc(f)} → ${levelFor(f)}단계</span>`).join("")}</p>
+    <h2 style="margin-top:6px">서명</h2>
+    <div class="row">${[["name","이름"],["title","직함"],["org","병원명"],["phone","전화"],["email","회신 이메일"]].map(([k,l])=>`<div class="f"><label for="sig_${k}">${l}</label><input type="text" id="sig_${k}" data-sig="${k}" value="${esc(M.sig[k]||"")}"></div>`).join("")}</div>
+    <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mCsv" ${M.csv?"checked":""}> 케이스 목록 CSV 파일도 첨부</label>
+    <p class="note">메일은 변호사에게 가는 것이라 영어로 작성됩니다. 3·4단계 문구는 처음 쓰기 전에 한 번 검토해 주세요.</p>`;
+  }else{
+    if(!M.previewFirm||!sel.some(([f])=>f===M.previewFirm))M.previewFirm=(ready[0]||sel[0]||[""])[0];
+    const pv=sel.find(([f])=>f===M.previewFirm);const em=pv?emailFor(pv[0],pv[1]):null;
+    h+=`<h2>확인하고 보내기</h2>
+    <div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default">로펌</th><th style="cursor:default">받는 주소</th><th style="cursor:default">단계</th><th class="n" style="cursor:default">케이스</th><th style="cursor:default"></th></tr></thead><tbody>
+    ${sel.map(([f,vs])=>{const ok=firmEmailOk(f),lv=levelFor(f);return `<tr${f===M.previewFirm?' class="open"':""}><td>${esc(f)}</td><td>${ok?esc(emails(FDB[f].email).join(", ")):`<span class="pill warn">주소 없음 · 건너뜀</span>`}</td><td><span class="pill ${lv>=3?"warn":""}">${LV[lv].ko}</span></td><td class="n">${caseRows(vs).length}</td><td style="white-space:nowrap"><button class="btn ghost" style="padding:3px 10px;font-size:12px" data-pv="${esc(f)}">미리보기</button> ${ok?`<button class="btn" style="padding:3px 10px;font-size:12px" data-gopen="${esc(f)}">Gmail로 열기</button> <button class="btn ghost" style="padding:3px 10px;font-size:12px" data-gsent="${esc(f)}">보냄으로 기록</button>`:""}</td></tr>`;}).join("")}
+    </tbody></table></div>
+    ${em?`<p class="note"><b>미리보기:</b> ${esc(M.previewFirm)} · 제목: ${esc(em.subject)}</p><div class="preview">${em.html}</div>`:""}`;
+    if(M.progress)h+=`<p class="note">${esc(M.progress)}</p>`;
+    if(M.status)h+=`<p class="${M.status.ok?"okbox":"errbox"}">${esc(M.status.msg)}</p>`;
+    h+=`<p class="note"><b>보내는 방법:</b> 로펌마다 <b>Gmail로 열기</b>를 누르면 메일 본문(표 포함)이 복사되고 Gmail 새 메일 창이 받는 사람·제목이 채워진 채로 열립니다. 본문 칸에 <b>Ctrl+V</b>로 붙여 넣고 보내세요. 보낸 뒤 <b>보냄으로 기록</b>을 누르면 다음번에 한 단계 올라갑니다.</p>`;
+  }
+  h+=`</div><div class="mnav"><div>${M.step>1?`<button class="btn ghost" data-go="${M.step-1}">이전</button>`:""}</div><div style="display:flex;gap:8px;flex-wrap:wrap">`;
+  if(M.step<4)h+=`<button class="btn" data-go="${M.step+1}" ${can[M.step+1]?"":"disabled"}>다음</button>`;
+  else if(M.busy)h+=`<button class="btn" disabled>처리 중…</button>`;
+  else if(M.confirm)h+=`<button class="btn ghost" data-act="cancel">취소</button><button class="btn" data-act="send">네, 보내기</button>`;
+  else h+=`<button class="btn ghost" data-act="copy">미리보기 복사</button>`;
+  h+=`</div></div>`;
+  $("#view").innerHTML=h;
+}
+function errMsg(e){
+  const c=e&&e.code;
+  if(c==="server_not_connected"||c==="needs_reauth")return "Gmail이 연결되어 있지 않습니다. claude.ai 설정 → 커넥터에서 Gmail을 연결한 뒤 다시 누르세요.";
+  if(c==="not_in_manifest")return "이 페이지에 Gmail 사용이 허용되지 않았습니다. 페이지 권한 메뉴에서 Gmail을 허용하세요.";
+  return (e&&e.message)||"처리하지 못했습니다.";
+}
+async function copyHtml(em){
+  try{if(window.ClipboardItem)await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([em.html],{type:"text/html"}),"text/plain":new Blob([em.text],{type:"text/plain"})})]);else await navigator.clipboard.writeText(em.text);return true;}catch(e){return false;}
+}
+async function gmailOpen(f){
+  const pv=selectedFirms().find(([x])=>x===f);if(!pv)return;const em=emailFor(pv[0],pv[1]);
+  const ok=await copyHtml(em);
+  const u="https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(emails(FDB[f].email).join(","))+"&su="+encodeURIComponent(em.subject);
+  window.open(u,"_blank");
+  M.previewFirm=f;M.status=ok?{ok:true,msg:f+": 본문을 복사했습니다. 열린 Gmail 창 본문에 Ctrl+V 하세요."}:{ok:false,msg:"자동 복사가 막혔습니다. 미리보기를 드래그해서 복사하세요."};render();
+}
+async function gmailSent(f){
+  const pv=selectedFirms().find(([x])=>x===f);if(!pv)return;const em=emailFor(pv[0],pv[1]);
+  const hist=((FDB[f]&&FDB[f].history)||[]).concat([{level:em.lv,date:toISO(new Date()),cases:em.cases,range:rangeText(),by:ME}]).slice(-20);
+  await saveFirm(f,{history:hist});await SB.from("cfpc_log").insert({action:"mail_sent",detail:{firm:f,level:em.lv,cases:em.cases}});
+  M.status={ok:true,msg:f+": "+em.lv+"단계 보냄으로 기록했습니다."};render();
+}
+async function mailAct(act){
+  if(act==="ask"){M.confirm=true;M.status=null;render();return;}
+  if(act==="cancel"){M.confirm=false;render();return;}
+  if(act==="copy"){
+    const pv=selectedFirms().find(([f])=>f===M.previewFirm);if(!pv)return;const em=emailFor(pv[0],pv[1]);
+    try{if(window.ClipboardItem)await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([em.html],{type:"text/html"}),"text/plain":new Blob([em.text],{type:"text/plain"})})]);else await navigator.clipboard.writeText(em.text);M.status={ok:true,msg:"미리보기 메일을 복사했습니다. 메일 창에 붙여 넣으세요."};}
+    catch(e){M.status={ok:false,msg:"자동 복사가 막혔습니다. 미리보기 영역을 드래그해서 Ctrl+C로 복사하세요."};}
+    render();return;
+  }
+  const mcp=window.claude&&await window.claude.use("mcp");
+  if(!mcp){M.status={ok:false,msg:"이 화면에서는 Gmail을 쓸 수 없습니다. ‘미리보기 복사’로 붙여 넣어 보내세요."};M.confirm=false;render();return;}
+  const list=selectedFirms().filter(([f])=>firmEmailOk(f));
+  M.busy=true;M.status=null;render();
+  let ok=0;const fails=[];
+  for(let i=0;i<list.length;i++){
+    const [f,vs]=list[i],em=emailFor(f,vs);
+    M.progress=`${i+1} / ${list.length} · ${f}`;render();
+    const input={to:emails(FDB[f].email),subject:em.subject,body:em.text,htmlBody:em.html};
+    if(M.csv)input.attachments=[{content:b64(em.csv),filename:"CFPC_"+f.replace(/[^A-Za-z0-9]+/g,"_")+".csv",mimeType:"text/csv"}];
+    try{
+      await mcp.callTool("Gmail",act==="send"?"send_message":"create_draft",input);ok++;
+      if(act==="send"){const hist=((FDB[f]&&FDB[f].history)||[]).concat([{level:em.lv,date:toISO(new Date()),cases:em.cases,range:rangeText()}]).slice(-20);await saveFirm(f,{history:hist});}
+    }catch(e){fails.push(f+": "+errMsg(e));if(e&&(e.code==="server_not_connected"||e.code==="not_in_manifest"||e.code==="needs_reauth"))break;}
+  }
+  M.busy=false;M.confirm=false;M.progress="";
+  M.status=fails.length?{ok:false,msg:`${ok}곳 완료, ${fails.length}곳 실패 — ${fails.join(" / ")}`}:{ok:true,msg:act==="send"?`${ok}곳에 보냈습니다. 다음에 자동 모드로 보내면 한 단계씩 올라갑니다.`:`${ok}곳 메일을 Gmail 임시보관함에 저장했습니다. 단계 기록은 실제로 보낼 때만 남습니다.`};
+  render();
+}
+/* ---------- events ---------- */
+const drop=$("#drop"),fi=$("#fileInput");
+$("#pick").onclick=()=>fi.click();
+fi.onchange=()=>{addFiles([...fi.files]);fi.value="";};
+["dragenter","dragover"].forEach(e=>document.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(e=>document.addEventListener(e,ev=>{ev.preventDefault();if(e==="drop"||ev.target===document.documentElement)drop.classList.remove("over");}));
+document.addEventListener("drop",ev=>{const f=[...(ev.dataTransfer?.files||[])];if(f.length)addFiles(f);});
+$("#clear").onclick=async()=>{const b=$("#clear");if(!IS_ADMIN){toast("관리자만 지울 수 있습니다");return;}if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="한 번 더 누르면 모든 사람에게서 지워집니다";setTimeout(()=>{b.dataset.armed="";b.textContent="모두 지우기";},4000);return;}b.dataset.armed="";b.textContent="모두 지우기";S.files=[];S.open=null;$("#errBanner").hidden=true;await IDB.clear();rebuild();};
+$("#reset").onclick=()=>{["#fFrom","#fTo","#fFirm","#fDoc","#fBill","#fQ"].forEach(s=>$(s).value="");render();};
+["#fFrom","#fTo","#fFirm","#fDoc","#fBill"].forEach(s=>$(s).addEventListener("change",render));
+$("#fQ").addEventListener("input",render);
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{S.tab=t.dataset.tab;S.open=null;try{localStorage.setItem("cfpc.tab",S.tab)}catch(e){}render();});
+$("#view").addEventListener("click",ev=>{
+  if(S.tab==="unpaid"){
+    const t=ev.target;
+    const um=t.closest("[data-umail]");if(um){M.firms=new Set([um.dataset.umail]);M.from="";M.to="";M.step=2;S.tab="mail";render();return;}
+    const ua=t.closest("[data-uage]");if(ua){U.age=ua.dataset.uage;try{localStorage.setItem("cfpc.uage",U.age)}catch(e){}render();return;}
+    const us=t.closest("[data-ustat]");if(us){U.status=us.dataset.ustat;render();return;}
+    const uso=t.closest("[data-usort]");if(uso){const k=uso.dataset.usort;U.sort=[k,U.sort[0]===k?-U.sort[1]:(/patient|sid|doctor|firm/.test(k)?1:-1)];render();return;}
+    const uf=t.closest("[data-ufirm]");if(uf){U.firm=U.firm===uf.dataset.ufirm?"":uf.dataset.ufirm;render();return;}
+    return;
+  }
+  if(S.tab==="users"){
+    const t=ev.target;
+    const add=t.closest("[data-uadd]");if(add){const e=$("#uEmail").value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast("이메일을 확인하세요");return;}SB.from("cfpc_users").upsert({email:e,role:$("#uRole").value}).then(r=>{if(r.error)toast(r.error.message);else{SB.from("cfpc_log").insert({action:"user_add",detail:{email:e}});toast("추가했습니다");renderUsers();}});return;}
+    const del=t.closest("[data-udel]");if(del){if(del.dataset.armed!=="1"){del.dataset.armed="1";del.textContent="한 번 더";return;}SB.from("cfpc_users").delete().eq("email",del.dataset.udel).then(r=>{if(r.error)toast(r.error.message);else{SB.from("cfpc_log").insert({action:"user_remove",detail:{email:del.dataset.udel}});renderUsers();}});return;}
+    return;
+  }
+  if(S.tab==="alias"){
+    const t=ev.target;
+    const a=t.closest("[data-alias]");if(a){if(a.dataset.alias!==a.dataset.to){ALIAS[a.dataset.alias]=a.dataset.to;saveAliases();}return;}
+    const u=t.closest("[data-unalias]");if(u){delete ALIAS[u.dataset.unalias];saveAliases();return;}
+    if(t.closest("[data-aliasmanual]")){const f=$("#aFrom").value,to=$("#aTo").value;if(f&&to&&f!==to&&canonFirm(to)!==f){ALIAS[f]=to;saveAliases();}return;}
+    return;
+  }
+  const isu=ev.target.closest("[data-issue]");if(isu&&S.tab==="money"){S.issueOpen=S.issueOpen===isu.dataset.issue?null:isu.dataset.issue;render();return;}
+  if(S.tab==="mail"){
+    const t=ev.target;
+    const st=t.closest("[data-step]");if(st&&!st.disabled){M.step=+st.dataset.step;M.confirm=false;M.status=null;render();return;}
+    const go=t.closest("[data-go]");if(go&&!go.disabled){M.step=+go.dataset.go;M.confirm=false;M.status=null;render();return;}
+    const pr=t.closest("[data-preset]");if(pr){preset(pr.dataset.preset);render();return;}
+    const fa=t.closest("[data-firms]");if(fa){const k=fa.dataset.firms;if(k==="all")M.firms=null;else if(k==="none")M.firms=new Set();else M.firms=new Set([...groupBy(mailRange(),v=>v.firm||NOFIRM).keys()].filter(firmEmailOk));render();return;}
+    const pv=t.closest("[data-pv]");if(pv){M.previewFirm=pv.dataset.pv;render();return;}
+    const go2=t.closest("[data-gopen]");if(go2){gmailOpen(go2.dataset.gopen);return;}
+    const gs=t.closest("[data-gsent]");if(gs){gmailSent(gs.dataset.gsent);return;}
+    const ac=t.closest("[data-act]");if(ac&&!ac.disabled){mailAct(ac.dataset.act);return;}
+    return;
+  }
+  const g=ev.target.closest("[data-gran]");if(g){S.gran=g.dataset.gran;S.open=null;try{localStorage.setItem("cfpc.gran",S.gran)}catch(e){}render();return;}
+  const s=ev.target.closest("[data-sort]");if(s){const [key,k]=s.dataset.sort.split(":");const cur=S.sort[key];S.sort[key]=[k,cur[0]===k?-cur[1]:(k==="firm"||k==="patient"||k==="sid"||k==="doctor"||k==="service"||k==="bill"||k==="file"?1:-1)];render();return;}
+  const o=ev.target.closest("tr.click");if(o){S.open=S.open===o.dataset.open?null:o.dataset.open;render();}
+});
+$("#view").addEventListener("change",ev=>{
+  if(S.tab!=="mail")return;const t=ev.target;
+  if(t.id==="mFrom"){M.from=t.value;M.firms=null;render();}
+  else if(t.id==="mTo"){M.to=t.value;M.firms=null;render();}
+  else if(t.dataset.bill!=null){const all=[...new Set(S.visits.map(v=>v.bill||"-"))];if(!M.bills)M.bills=new Set(all);t.checked?M.bills.add(t.dataset.bill):M.bills.delete(t.dataset.bill);if(M.bills.size===all.length)M.bills=null;M.firms=null;render();}
+  else if(t.dataset.firm!=null){const all=[...groupBy(mailRange(),v=>v.firm||NOFIRM).keys()];if(!M.firms)M.firms=new Set(all);t.checked?M.firms.add(t.dataset.firm):M.firms.delete(t.dataset.firm);if(M.firms.size===all.length)M.firms=null;render();}
+  else if(t.dataset.femail!=null){saveFirm(t.dataset.femail,{email:t.value.trim()});render();}
+  else if(t.dataset.mode){M.mode="auto";render();}
+  else if(t.dataset.level){M.mode="fixed";M.level=+t.dataset.level;render();}
+  else if(t.id==="mCsv"){M.csv=t.checked;}
+});
+$("#view").addEventListener("input",ev=>{
+  if(S.tab!=="mail")return;const t=ev.target;
+  if(t.dataset.sig){M.sig[t.dataset.sig]=t.value;saveSig();}
+});
+$("#view").addEventListener("keydown",ev=>{if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches("tr.click,[data-issue],[data-ufirm]")){ev.preventDefault();ev.target.click();}});
+
+window.__cfpc={parseWorkbook,toISO};
+window.__startViewer=async()=>{await loadShared();applyAliases();rebuild();$("#files").innerHTML=`<span class="chip">서버에 저장된 파일 여는 중…</span>`;const fs=await IDB.all();if(fs.length)await addFiles(fs,true);else rebuild();const meta=fs.map(f=>f.meta).filter(Boolean);if(meta.length){const last=meta.sort((a,b)=>b.uploaded_at.localeCompare(a.uploaded_at))[0];$("#files").insertAdjacentHTML("beforeend",`<span class="chip">마지막 업로드: ${esc(last.uploaded_by||"")} · ${fmtD(toISO(new Date(last.uploaded_at)))}</span>`);}};
+})();
+</script>
+<script>
+const SB=supabase.createClient('https://wgohvustiekmyfdihibk.supabase.co','sb_publishable_sZOi0oR6xRHUPv7CEQSjpg_kW-2j6yg');
+let ME="",IS_ADMIN=false;
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600);}
+async function boot(){
+  const {data:{session}}=await SB.auth.getSession();
+  const L=document.getElementById('login'),A=document.getElementById('app');
+  if(!session){L.hidden=false;A.hidden=true;return;}
+  const {data:ok}=await SB.rpc('cfpc_can_access');
+  if(!ok){await SB.auth.signOut();document.getElementById('lErr').textContent='이 계정은 CFPC 페이지 권한이 없습니다. 관리자에게 요청하세요.';L.hidden=false;A.hidden=true;return;}
+  const {data:adm}=await SB.rpc('cfpc_is_admin');IS_ADMIN=!!adm;
+  ME=session.user.email||"";
+  L.hidden=true;A.hidden=false;document.getElementById('who').textContent=ME+(IS_ADMIN?" · 관리자":"");
+  document.getElementById('usersTab').hidden=!IS_ADMIN;
+  document.getElementById('clear').style.display=IS_ADMIN?"":"none";
+  SB.from('cfpc_log').insert({action:'open',detail:{}});
+  window.__startViewer();
+}
+document.getElementById('loginForm').onsubmit=async ev=>{ev.preventDefault();const e=document.getElementById('lErr');e.textContent='';
+  const {error}=await SB.auth.signInWithPassword({email:document.getElementById('lEmail').value.trim(),password:document.getElementById('lPw').value});
+  if(error){e.textContent='이메일 또는 비밀번호가 맞지 않습니다.';return;}boot();};
+document.getElementById('lSignup').onclick=async()=>{const e=document.getElementById('lErr');e.textContent='';
+  const em=document.getElementById('lEmail').value.trim(),pw=document.getElementById('lPw').value;
+  if(!em||pw.length<8){e.textContent='이메일과 8자 이상 비밀번호를 넣고 누르세요.';return;}
+  const {data,error}=await SB.auth.signUp({email:em,password:pw});
+  if(error){e.textContent=/registered/i.test(error.message)?'이미 계정이 있습니다. 로그인을 누르세요.':error.message;return;}
+  if(data.session)boot();else e.textContent='확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인하세요.';};
+document.getElementById('outBtn').onclick=async()=>{await SB.auth.signOut();location.reload();};
+boot();
+</script>
+
+</body>
+</html>
