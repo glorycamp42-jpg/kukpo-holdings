@@ -114,6 +114,36 @@ input[type=email],input[type=text]{min-width:260px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;z-index:50;font-size:13px}
 .topbar{display:flex;gap:10px;align-items:center;justify-content:flex-end;font-size:12.5px;color:var(--muted)}
 .topbar a,.topbar button{font:inherit;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:none;padding:0}
+#printHead{display:none}
+.pbtn{font:inherit;font-size:13px;font-weight:600;margin-left:auto;align-self:center;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:7px;padding:5px 12px;cursor:pointer}
+.dtools{display:flex;justify-content:flex-end;padding:8px 12px 0}
+@page{size:landscape;margin:10mm}
+@media print{
+  html:root:not(#x){--bg:#fff;--surface:#fff;--sunk:#eef1f2;--line:#c4c9cc;--fg:#000;--muted:#333;--accent:#0f6e7a;--accent-soft:#eef6f7;--warn:#7a4600;--warn-soft:#fbeed6;--good:#1e5a2a;--good-soft:#dcefdf;color-scheme:light}
+  body{background:#fff!important;color:#000!important;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  header,.topbar,.drop,.banner,#filters,.tabs,.foot,.ptools,.dtools,.pbtn,#toast,.mnav,.steps,button{display:none!important}
+  .wrap{max-width:none!important;padding:0!important;gap:6px!important}
+  #printHead{display:block!important;border-bottom:2px solid #000;padding:0 0 6px;margin-bottom:6px}
+  #printHead h1{font-size:16px;margin:0}
+  #printHead p{margin:2px 0 0;font-size:11px;color:#333}
+  .panel{border:none!important;overflow:visible!important}
+  .tbl,.preview{max-height:none!important;overflow:visible!important}
+  th{position:static!important}
+  table{font-size:10px!important}
+  th,td,.inner th,.inner td{padding:3px 6px!important}
+  .inner td:last-child{min-width:0!important}
+  .inner{padding:4px 0 8px!important}
+  thead{display:table-header-group}
+  tr{break-inside:avoid}
+  tr.detail,tr.detail>td{break-inside:auto!important}
+  .inner td{white-space:normal!important}
+  .inner td.d,.inner td.n{white-space:nowrap!important}
+  .inner td:last-child{width:42%}
+  .pill{white-space:nowrap;font-size:9.5px!important;padding:0 5px!important;margin:1px 1px 1px 0!important}
+  tr.click:hover td{background:inherit}
+  body.p-one tr.click:not(.open){display:none!important}
+  input,select,textarea{border:none!important;background:transparent!important}
+}
 </style>
 
 
@@ -174,7 +204,9 @@ input[type=email],input[type=text]{min-width:260px}
     <button class="tab" role="tab" data-tab="alias" aria-selected="false">로펌 이름 정리</button>
     <button class="tab" role="tab" data-tab="users" aria-selected="false" id="usersTab" hidden>권한</button>
     <button class="tab" role="tab" data-tab="mail" aria-selected="false">이메일 보내기</button>
+    <button class="pbtn" id="printBtn" type="button" title="지금 보이는 화면 전체를 프린트">🖨 프린트</button>
   </nav>
+  <div id="printHead"></div>
 
   <section class="panel" id="view"></section>
   <p class="foot">방문 기록은 ‘Service records’ 시트 기준이고, 변호사·DOI·빌링 상태는 ‘Master’ 시트의 Group ID로 연결합니다. 시술 = Explicit + Epi + TPI + PRP + 확인 필요 주사.</p>
@@ -523,7 +555,7 @@ function renderFirm(rows){
   for(const x of list){
     const open=S.open==="firm:"+x.firm;
     h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="firm:${esc(x.firm)}"><td><strong>${esc(x.firm)}</strong></td><td class="n">${x.patients}</td><td class="n">${x.visits}</td><td style="width:120px"><div class="bar" style="width:${Math.round(x.visits/max*100)}%"></div></td><td class="n">${x.initial}</td><td class="n">${x.fu}</td><td class="n">${x.proc}</td><td class="n">${usd(x.office)}</td><td class="n">${usd(x.inj)}</td><td class="n"><strong>${usd(x.total)}</strong></td><td class="d">${fmtD(x.min)}</td><td class="d">${fmtD(x.max)}</td><td>${Object.entries(x.bills).sort((a,b)=>b[1]-a[1]).map(([b,n])=>billPill(b,n)).join("")}</td></tr>`;
-    if(open)h+=`<tr class="detail"><td colspan="13">${patientTable(x.vs)}</td></tr>`;
+    if(open)h+=`<tr class="detail"><td colspan="13"><div class="dtools"><button class="pbtn" type="button" data-printone="1">🖨 ${esc(x.firm)} 전체 프린트</button></div>${patientTable(x.vs)}</td></tr>`;
   }
   $("#view").innerHTML=h+"</tbody></table></div>";
 }
@@ -736,6 +768,7 @@ async function loadShared(){
     if(r.key==="signature"){M.sig=Object.assign(M.sig,r.value||{});}
   }
   for(const r of (fm.data||[]))FDB[r.name]=r;
+  applyFirmEmails();
 }
 async function saveFirm(name,patch){
   FDB[name]=Object.assign(FDB[name]||{name,history:[]},patch);
@@ -743,6 +776,30 @@ async function saveFirm(name,patch){
   if(error)toast("저장 실패: "+error.message);
 }
 let sigTimer=null;function saveSig(){clearTimeout(sigTimer);sigTimer=setTimeout(()=>{SB.from("cfpc_settings").upsert({key:"signature",value:Object.assign({},M.sig),updated_by:ME,updated_at:new Date().toISOString()});},800);}
+
+/* ---------- print ---------- */
+const TABNAME={firm:"변호사별",date:"날짜별",list:"전체 기록",unpaid:"미지급 빌",money:"빌 금액·누락",alias:"로펌 이름 정리",users:"권한",mail:"이메일 보내기"};
+function doPrint(one){
+  const sv=id=>{const e=document.getElementById(id);return e?e.value:"";};
+  const selTxt=id=>{const e=document.getElementById(id);return e&&e.value?e.options[e.selectedIndex].text:"";};
+  const f=[];
+  if(sv("fFrom")||sv("fTo"))f.push("기간 "+(sv("fFrom")?fmtD(sv("fFrom")):"처음")+" ~ "+(sv("fTo")?fmtD(sv("fTo")):"끝"));
+  if(selTxt("fFirm"))f.push("로펌 "+selTxt("fFirm"));if(selTxt("fDoc"))f.push("의사 "+selTxt("fDoc"));if(selTxt("fBill"))f.push("빌링 "+selTxt("fBill"));if(sv("fQ"))f.push("검색 “"+sv("fQ")+"”");
+  const firm=one&&S.open&&S.open.startsWith("firm:")?S.open.slice(5):"";
+  const now=new Date(),d=String(now.getMonth()+1).padStart(2,"0")+"/"+String(now.getDate()).padStart(2,"0")+"/"+now.getFullYear();
+  const t=firm?firm+" — 환자 전체":(TABNAME[S.tab]||"");
+  document.getElementById("printHead").innerHTML=`<h1>CFPC 마스터 · ${esc(t)}</h1><p>${esc((firm?"":"")+(f.length?f.join(" · "):"필터 없음 (전체)"))} · 출력일 ${d}</p>`;
+  document.body.classList.toggle("p-one",!!firm);
+  const prevTitle=document.title;document.title="CFPC_"+(firm||TABNAME[S.tab]||"print").replace(/[^\w가-힣]+/g,"_");
+  setTimeout(()=>{try{window.print();}catch(e){const b=document.getElementById("errBanner");if(b){b.textContent="이 화면에서는 프린트 창이 막혀 있습니다. Ctrl+P(맥: ⌘+P)를 눌러 주세요.";b.hidden=false;}}document.title=prevTitle;},50);
+}
+window.addEventListener("afterprint",()=>document.body.classList.remove("p-one"));
+document.getElementById("printBtn").addEventListener("click",()=>doPrint(false));
+document.getElementById("view").addEventListener("click",ev=>{if(ev.target.closest("[data-printone]")){ev.stopPropagation();doPrint(true);}},true);
+/* ---------- attorney emails found in Total Medix Collection (used only when no email is saved yet) ---------- */
+const FIRM_EMAILS={"365 Injury Law": "celinay@365injury.law, megank@365injury.law", "Akhidenor Law PC": "akhidenorlawpc@gmail.com", "Michael Akhidenor": "akhidenorlawpc@gmail.com", "Albert Abkarian": "gisselle@abkarianlaw.com", "Andrew Chin": "alex@achinlaw.com, esther@achinlaw.com", "Andrew Chin and Associates": "alex@achinlaw.com, esther@achinlaw.com", "Apex": "apexlaw.zn@gmail.com, apexlawgroupapc@gmail.com", "APPLS Law": "nfernandez@applslaw.com", "Arno Mehrabi": "jessica@mehrabilawgroup.com, jv@mehrabilawgroup.com", "Bash and Polyachenko": "chelsea@bashpoly.com", "Steven Bash": "chelsea@bashpoly.com", "BD and J Injury": "vlm@bdj.com", "Bilal Law Group": "cl@bilallawgroup.com", "BL Law Group": "rd@bl-lawgroupapc.com, eh@bl-lawgroupapc.com", "Blackhawk Law Group": "frank@blackhawklawgroup.com", "Bo Lee Law Group": "info@bllglaw.com", "Brian Weinberger": "frivera@lawbsw.com, ahan@lawbsw.com", "C and B Law Group, LLP": "irma@cblawgroup.com", "Calvin J Park": "sonia@us-attorney.net", "Carpenter, Zuckerman and Rowley": "roula@cz.law, upalacios@cz.law", "Carpenter and Zuckerman": "roula@cz.law, upalacios@cz.law", "CHH Law, P.C.": "kira@chhllp.com, lucy@chhllp.com", "CK Law": "wendy@cklaw.us, jay@cklaw.us", "CNP": "cnplawgroup@gmail.com", "Compass Law Group": "rm@cmplawgroup.com", "Dag Law Firm": "thelma@daglawapc.com", "Daniel Jung": "myatty323@gmail.com", "Daniel Kim": "cindy.resendiz@dklaw.com, isabella.giancaspro@dklaw.com", "Dunham, Ramirez and Van LLP": "cduarte@rosemeadlawyers.com", "Downtown LA Law Group": "lourdes@downtownlalaw.com", "Edward Y. Lee": "ren@eyllaw.com", "Equitable Law Group": "apark@eqlawgroup.com, tko@eqlawgroup.com", "Eugene Yun": "eugene@yunlaw.com", "Gaslamp Law Group": "cm1@gaslamplaw.com", "GOODFELLAW": "wasayshahidlaw@gmail.com", "Wasay Shahid": "wasayshahidlaw@gmail.com", "Grace H. Cho": "mail@ghclaw.org", "Haleh Shekarchian": "mm@halehshekarchian.com", "Hinden and Breslavsky": "karen@hinden.net, daisy@hinden.net", "Hong and Hong": "frontdesk@hongandhong.com", "Howard B. Kim": "jpark@howardkimlaw.com, echang@howardkimlaw.com", "Howard Choi": "hclaw.jm@gmail.com, hclaw.ak@gmail.com", "Injury Legal Solutions": "ils@injurylegalsolutions.com", "Jacob Emrani": "ana@calljacob.com", "Jay Hong": "venus@lawjh.com", "Jayan Hong": "scho@jhonglawyers.com", "JB Law": "lawofficemain2@gmail.com", "Jeff A. Mann": "jeffmannlaw@att.net", "John C. Ye": "mgutierrez@johnyelaw.com, spark@johnyelaw.com", "Joohan Song": "vhernandez@jsonglaw.com", "Joseph D. Ryan": "spino@jdrlawoffices.com", "Katmissky and Jamsheed": "fernando@kjlawyers.com", "Kaufman Law": "kaufmanlaw.farrah@gmail.com, attorneykaufman@yahoo.com", "Jerry Kaufman Law": "kaufmanlaw.farrah@gmail.com, attorneykaufman@yahoo.com", "Kim, Au": "david@kimaulaw.com, fabian@kimaulaw.com", "Kim, Shapiro, Park and Lee": "ppark@kspllaw.com", "KJ Injury and Accident Lawyers": "guadalupe@kjinjurylaw.com, raul@kjinjurylaw.com", "LA Attorneys": "dianely@laattorneysgroup.com, naomy@laattorneysgroup.com", "Law Office of Wabby and Wabby": "sandramartinez@wabbylaw.com", "Lawrence Kumarasivan": "mimi@thelawofficeoflk.com", "Lebedev, Michael and Helmi Law Office": "avery@lmhlawyers.com", "Martin E. Stearn": "ryanmeslaw@gmail.com", "Martinian and Associates": "andrey.a@martinianlaw.com, gevorg.t@martinianlaw.com", "ME Lawyers": "juliana@emranilawyers.com, steve@melawyers.com", "Michelle Choe": "michelle@michellechoelaw.com, jennifer@michellechoelaw.com", "MVP Law Group": "jaslen@mvplawgroupla.com", "My Accident Lawyers": "farrahlee@myaccidentlawyersusa.com", "New Citi Law": "newcitilaw1@gmail.com", "Noravian Law Firm": "bianka@cnesq.com, jenny@cnesq.com", "Oceanbridge Law Firm": "info@oceanbridgelaw.com", "Pacific Liberty Law": "jamie@pacificlibertylaw.com, aileen@pacificlibertylaw.com", "Pacific Sterling Law": "jsw310@att.net, ciprianolaw13@gmail.com", "Probitas Law Firm": "mimi@probitaslawfirm.com", "Providence Trial Lawyers": "itzel@ptl.legal", "Raja Shahid": "inquiry@legal-lion.com", "Rho Law Group": "juan@rholawgroup.com, crawford@rholawgroup.com", "Richard D. Hoffman": "lit@richarddhoffman.com, millie@richarddhoffman.com", "Robert B. Sarvian": "martha@sarvianlaw.com", "Sanchez Professional Law": "mail@sanchez-plc.com", "Sergei Gladkov": "gladkovlaw@gmail.com", "Stephan Filip PC": "dc@sfalaw.com", "Sweet James Accident Attorneys": "jenniferk@sweetjames.com", "Top Law Group PC": "estela@toplawgrouppc.com, juana@toplawgrouppc.com", "Trimax Law Firm": "michelle@trimaxlaw.com", "Vititoe Law Group": "vititoe378@gmail.com", "Wayne Joyner": "carmen.joynerlaw@gmail.com, suey.joynerlaw@gmail.com", "Westridge Law Group": "john@westridgelaw.com, edna@westridgelaw.com", "Wilshire Law Firm, PLC": "mruiz@wilshirelawfirm.com"};
+function applyFirmEmails(){for(const [n,e] of Object.entries(FIRM_EMAILS)){if(!FDB[n])FDB[n]={name:n,email:e,history:[]};else if(!FDB[n].email)FDB[n].email=e;}}
+applyFirmEmails();
 const lastSent=f=>{const h=(FDB[f]&&FDB[f].history)||[];return h.length?h[h.length-1]:null;};
 const nextLevel=f=>{const l=lastSent(f);return l?Math.min(4,l.level+1):1;};
 const levelFor=f=>M.mode==="auto"?nextLevel(f):M.level;
@@ -809,7 +866,7 @@ function renderMail(){
     h+=`<h2>보낼 로펌을 고르고 이메일 주소를 확인하세요</h2><p class="note">${esc(rangeKo())} · 주소는 한 번 넣으면 저장돼 다음에 자동으로 채워집니다.</p>
     <div class="presets"><button data-firms="all">전체 선택</button><button data-firms="none">전체 해제</button><button data-firms="withmail">주소 있는 곳만</button></div>
     <div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default"></th><th style="cursor:default">로펌</th><th class="n" style="cursor:default">환자</th><th style="cursor:default">마지막 발송</th><th style="cursor:default">이메일 주소</th></tr></thead><tbody>
-    ${g.map(([f,n,p])=>{const l=lastSent(f),fd=FDB[f]||{};return `<tr><td><input type="checkbox" data-firm="${esc(f)}" ${on(f)?"checked":""} aria-label="${esc(f)} 선택"></td><td style="white-space:normal;min-width:160px"><strong>${esc(f)}</strong></td><td class="n">${p}</td><td>${l?`<span class="pill ${l.level>=3?"warn":""}">${l.level}단계 · ${fmtD(l.date)}</span>`:`<span class="pill">없음</span>`}</td><td><input type="email" data-femail="${esc(f)}" value="${esc(fd.email||"")}" placeholder="attorney@lawfirm.com" style="min-width:230px"></td></tr>`;}).join("")}
+    ${g.map(([f,n,p])=>{const l=lastSent(f),fd=FDB[f]||{};return `<tr><td><input type="checkbox" data-firm="${esc(f)}" ${on(f)?"checked":""} aria-label="${esc(f)} 선택"></td><td style="white-space:normal;min-width:160px"><strong>${esc(f)}</strong></td><td class="n">${p}</td><td>${l?`<span class="pill ${l.level>=3?"warn":""}">${l.level}단계 · ${fmtD(l.date)}</span>`:`<span class="pill">없음</span>`}</td><td><input type="email" multiple data-femail="${esc(f)}" value="${esc(fd.email||"")}" placeholder="attorney@lawfirm.com" style="min-width:230px"></td></tr>`;}).join("")}
     </tbody></table></div>
     <p class="note">선택 ${sel.length}곳 중 주소가 있는 곳 <b>${ready.length}</b>곳. 주소가 없는 곳은 보내지 않고 건너뜁니다.</p>`;
   }else if(M.step===3){
