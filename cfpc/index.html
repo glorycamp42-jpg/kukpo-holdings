@@ -114,35 +114,66 @@ input[type=email],input[type=text]{min-width:260px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;z-index:50;font-size:13px}
 .topbar{display:flex;gap:10px;align-items:center;justify-content:flex-end;font-size:12.5px;color:var(--muted)}
 .topbar a,.topbar button{font:inherit;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:none;padding:0}
-#printHead{display:none}
 .pbtn{font:inherit;font-size:13px;font-weight:600;margin-left:auto;align-self:center;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:7px;padding:5px 12px;cursor:pointer}
 .dtools{display:flex;justify-content:flex-end;padding:8px 12px 0}
-@page{size:landscape;margin:10mm}
+#printDoc{display:none}
+@page{size:letter landscape;margin:0.5in 0.5in 0.55in;
+  @bottom-left{content:"Confidential — Protected Health Information";font:8pt Arial,Helvetica,sans-serif;color:#666}
+  @bottom-right{content:"Page " counter(page) " of " counter(pages);font:8pt Arial,Helvetica,sans-serif;color:#666}}
 @media print{
-  html:root:not(#x){--bg:#fff;--surface:#fff;--sunk:#eef1f2;--line:#c4c9cc;--fg:#000;--muted:#333;--accent:#0f6e7a;--accent-soft:#eef6f7;--warn:#7a4600;--warn-soft:#fbeed6;--good:#1e5a2a;--good-soft:#dcefdf;color-scheme:light}
-  body{background:#fff!important;color:#000!important;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  header,.topbar,.drop,.banner,#filters,.tabs,.foot,.ptools,.dtools,.pbtn,#toast,.mnav,.steps,button{display:none!important}
-  .wrap{max-width:none!important;padding:0!important;gap:6px!important}
-  #printHead{display:block!important;border-bottom:2px solid #000;padding:0 0 6px;margin-bottom:6px}
-  #printHead h1{font-size:16px;margin:0}
-  #printHead p{margin:2px 0 0;font-size:11px;color:#333}
-  .panel{border:none!important;overflow:visible!important}
-  .tbl,.preview{max-height:none!important;overflow:visible!important}
-  th{position:static!important}
-  table{font-size:10px!important}
-  th,td,.inner th,.inner td{padding:3px 6px!important}
-  .inner td:last-child{min-width:0!important}
-  .inner{padding:4px 0 8px!important}
-  thead{display:table-header-group}
-  tr{break-inside:avoid}
-  tr.detail,tr.detail>td{break-inside:auto!important}
-  .inner td{white-space:normal!important}
-  .inner td.d,.inner td.n{white-space:nowrap!important}
-  .inner td:last-child{width:42%}
-  .pill{white-space:nowrap;font-size:9.5px!important;padding:0 5px!important;margin:1px 1px 1px 0!important}
-  tr.click:hover td{background:inherit}
-  body.p-one tr.click:not(.open){display:none!important}
-  input,select,textarea{border:none!important;background:transparent!important}
+  body>*:not(#printDoc){display:none!important}
+  html,body{background:#fff!important;color:#111!important;margin:0}
+  #printDoc{display:block!important}
+  .pd{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#111;font-size:9pt;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-lh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5pt solid #1f3a5f;padding-bottom:8pt;margin-bottom:12pt}
+  .pd-org{font-family:Georgia,"Times New Roman",serif;font-size:20pt;font-weight:700;color:#1f3a5f;letter-spacing:.02em;text-transform:uppercase}
+  .pd-dept{font-size:9.5pt;color:#333;margin-top:1pt;letter-spacing:.06em;text-transform:uppercase}
+  .pd-contact{font-size:8.5pt;color:#555;margin-top:2pt}
+  .pd-meta{text-align:right}
+  .pd-title{font-family:Georgia,"Times New Roman",serif;font-size:15pt;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4pt}
+  .pd-meta table{margin-left:auto;border-collapse:collapse;font-size:8.5pt}
+  .pd-meta th{text-align:right;color:#666;font-weight:400;padding:0 8pt 0 0;text-transform:uppercase;letter-spacing:.04em;font-size:7.5pt}
+  .pd-meta td{text-align:right;font-weight:600;padding:0}
+  .pd-to{border-left:3pt solid #1f3a5f;padding:2pt 0 2pt 9pt;margin:0 0 12pt}
+  .pd-lbl{font-size:7.5pt;color:#666;text-transform:uppercase;letter-spacing:.08em}
+  .pd-firm{font-size:13pt;font-weight:700;margin-top:1pt}
+  .pd-att{font-size:8.5pt;color:#444}
+  .pd-sum{display:grid;grid-template-columns:repeat(4,1fr);border:0.75pt solid #c9d1d9;margin:0 0 12pt}
+  .pd-sum>div{padding:6pt 10pt;border-left:0.75pt solid #c9d1d9}
+  .pd-sum>div:first-child{border-left:none}
+  .pd-k{font-size:7.5pt;color:#666;text-transform:uppercase;letter-spacing:.06em}
+  .pd-v{font-size:13pt;font-weight:700;font-variant-numeric:tabular-nums;color:#1f3a5f}
+  .pd-intro{margin:0 0 10pt;font-size:9pt;color:#222;max-width:9in}
+  .pd-h2{font-size:10.5pt;margin:14pt 0 6pt;color:#1f3a5f;text-transform:uppercase;letter-spacing:.05em}
+  .pd-break{break-before:page}
+  .pd-t{width:100%;border-collapse:collapse;font-size:7.5pt;line-height:1.3}
+  .pd-t thead{display:table-header-group}
+  .pd-t tfoot{display:table-row-group}
+  .pd-t th{background:#1f3a5f;color:#fff;font-weight:600;text-align:left;padding:4pt 5pt;font-size:7.5pt;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+  .pd-t td{padding:2.5pt 4pt;border-bottom:0.5pt solid #d5dbe0;vertical-align:top;white-space:normal}
+  .pd-t tbody tr:nth-child(even) td{background:#f4f6f8}
+  .pd-t tbody tr.hl td{background:#fff4e0}
+  .pd-t tr{break-inside:avoid}
+  .pd-t .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pd-t th.n{text-align:right}
+  .pd-t .m{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pd-t .b{font-weight:600}
+  .pd-t .c-no{width:18pt;color:#888;text-align:right;white-space:nowrap}
+  .pd-t th.c-no{color:#fff}
+  .pd-t .sm{font-size:7.5pt;color:#333}
+  .pd-t .svc{font-size:7.5pt;color:#333}
+  .pd-fixed{table-layout:fixed}
+  .pd-fixed td{overflow-wrap:anywhere}
+  .pd-t .svc span{display:inline;margin:0 7pt 0 0}
+  .pd-t .svc b{white-space:nowrap}
+  .pd th{position:static!important}
+  .pd-meta th,.pd-meta td,.pd-sum div{background:none!important;border-bottom:none!important}
+  .pd-t .svc b{font-weight:600;color:#111;font-variant-numeric:tabular-nums}
+  .pd-t tfoot td{border-top:1.25pt solid #1f3a5f;border-bottom:none;font-weight:700;padding-top:5pt;background:#fff}
+  .pd-note{font-size:8pt;color:#555;margin:8pt 0 0}
+  .pd-foot{margin-top:16pt;padding-top:6pt;border-top:0.75pt solid #c9d1d9;font-size:8pt;color:#444;break-inside:avoid}
+  .pd-foot p{margin:0 0 3pt}
+  .pd-conf{font-size:7pt;color:#777}
 }
 </style>
 
@@ -204,9 +235,8 @@ input[type=email],input[type=text]{min-width:260px}
     <button class="tab" role="tab" data-tab="alias" aria-selected="false">로펌 이름 정리</button>
     <button class="tab" role="tab" data-tab="users" aria-selected="false" id="usersTab" hidden>권한</button>
     <button class="tab" role="tab" data-tab="mail" aria-selected="false">이메일 보내기</button>
-    <button class="pbtn" id="printBtn" type="button" title="지금 보이는 화면 전체를 프린트">🖨 프린트</button>
+    <button class="pbtn" id="printBtn" type="button" title="이 탭 내용을 영문 보고서로 프린트 (변호사를 펼쳐 두면 그 로펌 명세서)">🖨 영문 프린트</button>
   </nav>
-  <div id="printHead"></div>
 
   <section class="panel" id="view"></section>
   <p class="foot">방문 기록은 ‘Service records’ 시트 기준이고, 변호사·DOI·빌링 상태는 ‘Master’ 시트의 Group ID로 연결합니다. 시술 = Explicit + Epi + TPI + PRP + 확인 필요 주사.</p>
@@ -526,6 +556,7 @@ const billPill=(b,n)=>{const cls=/settled|paid|payment/i.test(b)?"ok":/review|mi
 /* ---------- render ---------- */
 function render(){
   const rows=filtered();
+  {const pb=document.getElementById("printBtn");if(pb)pb.hidden=["alias","users","mail"].includes(S.tab);}
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===S.tab));
   if(!S.files.length&&S.tab!=="users"){$("#filters").hidden=true;$("#view").innerHTML=`<div class="empty"><p style="margin:0 0 6px;font-weight:600;color:var(--fg)">아직 넣은 파일이 없습니다</p><p style="margin:0">위 칸에 CFPC_Master 엑셀 5개(2019-2021 ~ 2026)를 끌어다 놓으세요. 한 번 넣으면 회사 서버에 저장되어, 권한 있는 사람은 어느 컴퓨터에서든 바로 봅니다.</p></div>`;return;}
   if(!rows.length&&S.tab!=="mail"&&S.tab!=="alias"&&S.tab!=="users"){$("#view").innerHTML=`<div class="empty">조건에 맞는 기록이 없습니다. 필터를 바꾸거나 초기화하세요.</div>`;return;}
@@ -555,7 +586,7 @@ function renderFirm(rows){
   for(const x of list){
     const open=S.open==="firm:"+x.firm;
     h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="firm:${esc(x.firm)}"><td><strong>${esc(x.firm)}</strong></td><td class="n">${x.patients}</td><td class="n">${x.visits}</td><td style="width:120px"><div class="bar" style="width:${Math.round(x.visits/max*100)}%"></div></td><td class="n">${x.initial}</td><td class="n">${x.fu}</td><td class="n">${x.proc}</td><td class="n">${usd(x.office)}</td><td class="n">${usd(x.inj)}</td><td class="n"><strong>${usd(x.total)}</strong></td><td class="d">${fmtD(x.min)}</td><td class="d">${fmtD(x.max)}</td><td>${Object.entries(x.bills).sort((a,b)=>b[1]-a[1]).map(([b,n])=>billPill(b,n)).join("")}</td></tr>`;
-    if(open)h+=`<tr class="detail"><td colspan="13"><div class="dtools"><button class="pbtn" type="button" data-printone="1">🖨 ${esc(x.firm)} 전체 프린트</button></div>${patientTable(x.vs)}</td></tr>`;
+    if(open)h+=`<tr class="detail"><td colspan="13"><div class="dtools"><button class="pbtn" type="button" data-printone="1">🖨 ${esc(x.firm)} 영문 명세서 프린트</button></div>${patientTable(x.vs)}</td></tr>`;
   }
   $("#view").innerHTML=h+"</tbody></table></div>";
 }
@@ -582,13 +613,16 @@ function periodLabel(k){
   if(S.gran==="week")return fmtD(k)+" 주";
   return fmtD(k);
 }
-function renderDate(rows){
+function dateRows(rows){
   const g=groupBy(rows,v=>periodKey(v.date));
   const firstP={};for(const v of rows){const k=gkey(v),p=periodKey(v.date);if(!firstP[k]||p<firstP[k])firstP[k]=p;}
   const useLines=S.lines.length>0,keys=new Set(rows.map(gkey)),byP={};
   if(useLines)for(const l of S.lines){if(!l.date||!keys.has(l.file+"|"+l.gid))continue;const p=periodKey(l.date);const o=byP[p]||(byP[p]={office:0,inj:0});o[l.kind==="office"?"office":"inj"]+=l.amount;}
   let list=[...g].map(([key,vs])=>{const a=agg(vs);if(useLines){const o=byP[key]||{office:0,inj:0};a.office=o.office;a.inj=o.inj;a.total=o.office+o.inj;}else{const mm=moneySum(vs.filter(v=>firstP[gkey(v)]===key));a.office=mm.office;a.inj=mm.inj;a.total=mm.total;}const fc=[...groupBy(vs,v=>v.firm||NOFIRM)].map(([f,x])=>[f,x.length]).sort((p,q)=>q[1]-p[1]);return {key,vs,...a,firms:fc.length,fc};});
-  list=sortRows(list,"date");
+  return list;
+}
+function renderDate(rows){
+  let list=sortRows(dateRows(rows),"date");
   const max=Math.max(...list.map(x=>x.visits));
   const seg=[["year","연"],["month","월"],["week","주"],["day","일"]].map(([k,l])=>`<button data-gran="${k}" aria-pressed="${S.gran===k}">${l}</button>`).join("");
   let h=`<div class="ptools"><span>${list.length}개 기간 · 빌 합계는 ${S.lines.length?"빌에 적힌 진료일(Service date) 기준":"그룹의 첫 방문 기간 기준"} · 행을 누르면 로펌별 환자가 펼쳐집니다</span><span class="seg">${seg}</span></div><div class="tbl"><table><thead><tr>
@@ -673,7 +707,7 @@ function unpaidGroups(rows){
     return Object.assign({},g,{paid,settled,days:daysSince(ref),ref,billed:tot[g.gid]||0,files:[...new Set(files[g.gid]||[])].sort()});
   }).filter(g=>!g.paid);
 }
-function renderUnpaid(rows){
+function unpaidView(rows){
   let list=unpaidGroups(rows);
   const minDays=+U.age||0;
   if(minDays)list=list.filter(g=>g.days!=null&&g.days>=minDays);
@@ -682,6 +716,10 @@ function renderUnpaid(rows){
   const byFirm=[...groupBy(list,g=>g.firm||NOFIRM)].map(([firm,gs])=>({firm,n:gs.length,balance:gs.reduce((a,g)=>a+(g.balance||0),0),billed:gs.reduce((a,g)=>a+g.billed,0),settled:gs.filter(g=>g.settled).length,oldest:gs.reduce((m,g)=>Math.max(m,g.days||0),0)})).sort((a,b)=>b.balance-a.balance||b.billed-a.billed);
   const shown=U.firm?list.filter(g=>(g.firm||NOFIRM)===U.firm):list;
   const [sk,sd]=U.sort;shown.sort((a,b)=>{const x=a[sk],y=b[sk];return (typeof x==="number"||typeof y==="number"?(x||0)-(y||0):String(x||"").localeCompare(String(y||"")))*sd;});
+  return {list,byFirm,shown};
+}
+function renderUnpaid(rows){
+  const {list,byFirm,shown}=unpaidView(rows),[sk,sd]=U.sort;
   const sumBal=list.reduce((a,g)=>a+(g.balance||0),0),sumBilled=list.reduce((a,g)=>a+g.billed,0);
   const ages=[["","전체"],["90","90일 이상"],["180","180일 이상"],["365","1년 이상"],["730","2년 이상"]];
   let h=`<div class="ptools"><span>환자 그룹 <b>${list.length.toLocaleString()}</b>개 · 마지막 빌 잔액 합계 <b>${usd(sumBal)}</b> · 청구 합계 ${usd(sumBilled)}</span>
@@ -777,25 +815,115 @@ async function saveFirm(name,patch){
 }
 let sigTimer=null;function saveSig(){clearTimeout(sigTimer);sigTimer=setTimeout(()=>{SB.from("cfpc_settings").upsert({key:"signature",value:Object.assign({},M.sig),updated_by:ME,updated_at:new Date().toISOString()});},800);}
 
-/* ---------- print ---------- */
-const TABNAME={firm:"변호사별",date:"날짜별",list:"전체 기록",unpaid:"미지급 빌",money:"빌 금액·누락",alias:"로펌 이름 정리",users:"권한",mail:"이메일 보내기"};
-function doPrint(one){
-  const sv=id=>{const e=document.getElementById(id);return e?e.value:"";};
-  const selTxt=id=>{const e=document.getElementById(id);return e&&e.value?e.options[e.selectedIndex].text:"";};
-  const f=[];
-  if(sv("fFrom")||sv("fTo"))f.push("기간 "+(sv("fFrom")?fmtD(sv("fFrom")):"처음")+" ~ "+(sv("fTo")?fmtD(sv("fTo")):"끝"));
-  if(selTxt("fFirm"))f.push("로펌 "+selTxt("fFirm"));if(selTxt("fDoc"))f.push("의사 "+selTxt("fDoc"));if(selTxt("fBill"))f.push("빌링 "+selTxt("fBill"));if(sv("fQ"))f.push("검색 “"+sv("fQ")+"”");
-  const firm=one&&S.open&&S.open.startsWith("firm:")?S.open.slice(5):"";
-  const now=new Date(),d=String(now.getMonth()+1).padStart(2,"0")+"/"+String(now.getDate()).padStart(2,"0")+"/"+now.getFullYear();
-  const t=firm?firm+" — 환자 전체":(TABNAME[S.tab]||"");
-  document.getElementById("printHead").innerHTML=`<h1>CFPC 마스터 · ${esc(t)}</h1><p>${esc((firm?"":"")+(f.length?f.join(" · "):"필터 없음 (전체)"))} · 출력일 ${d}</p>`;
-  document.body.classList.toggle("p-one",!!firm);
-  const prevTitle=document.title;document.title="CFPC_"+(firm||TABNAME[S.tab]||"print").replace(/[^\w가-힣]+/g,"_");
-  setTimeout(()=>{try{window.print();}catch(e){const b=document.getElementById("errBanner");if(b){b.textContent="이 화면에서는 프린트 창이 막혀 있습니다. Ctrl+P(맥: ⌘+P)를 눌러 주세요.";b.hidden=false;}}document.title=prevTitle;},50);
+/* ---------- print: professional English documents ---------- */
+const P_ENFIRM=f=>!f||f===NOFIRM?"(No attorney on file)":f;
+const P_USD=n=>"$"+Math.round(n||0).toLocaleString("en-US");
+const P_MON=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function pPeriod(k){if(S.gran==="year")return k;if(S.gran==="month")return P_MON[+k.slice(5,7)-1]+" "+k.slice(0,4);if(S.gran==="week")return "Week of "+fmtD(k);return fmtD(k);}
+function pToday(){const d=new Date();return String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")+"/"+d.getFullYear();}
+function pFilters(rows){
+  const v=id=>{const e=document.getElementById(id);return e?e.value:"";},t=id=>{const e=document.getElementById(id);return e&&e.value?e.options[e.selectedIndex].text:"";};
+  let lo=v("fFrom"),hi=v("fTo");
+  if(!lo||!hi){let a="",b="";for(const r of rows){if(!a||r.date<a)a=r.date;if(!b||r.date>b)b=r.date;}lo=lo||a;hi=hi||b;}
+  const f=[];if(t("fDoc"))f.push("Provider: "+t("fDoc"));if(t("fBill"))f.push("Billing status: "+t("fBill"));if(v("fQ"))f.push("Search: "+v("fQ"));
+  return {range:lo||hi?fmtD(lo)+" – "+fmtD(hi):"All dates",extra:f.join(" · "),firm:t("fFirm")};
 }
-window.addEventListener("afterprint",()=>document.body.classList.remove("p-one"));
-document.getElementById("printBtn").addEventListener("click",()=>doPrint(false));
-document.getElementById("view").addEventListener("click",ev=>{if(ev.target.closest("[data-printone]")){ev.stopPropagation();doPrint(true);}},true);
+function pHead(title,meta,forFirm){
+  const sg=M.sig||{},org=(sg.org||"Center for Pain").trim(),dept=(sg.title||"Billing Department").trim();
+  const contact=[sg.phone,sg.email].filter(x=>x&&x.trim()).map(esc).join(" &nbsp;|&nbsp; ");
+  let h=`<header class="pd-lh"><div><div class="pd-org">${esc(org)}</div><div class="pd-dept">${esc(dept)}</div>${contact?`<div class="pd-contact">${contact}</div>`:""}</div>
+  <div class="pd-meta"><div class="pd-title">${esc(title)}</div><table>${meta.map(([k,x])=>`<tr><th>${esc(k)}</th><td>${esc(x)}</td></tr>`).join("")}</table></div></header>`;
+  if(forFirm){const em=(FDB[forFirm]&&FDB[forFirm].email)||"";h+=`<section class="pd-to"><div class="pd-lbl">Prepared for</div><div class="pd-firm">${esc(P_ENFIRM(forFirm))}</div><div class="pd-att">Attn: Attorney / Case Manager${em?" &nbsp;·&nbsp; "+esc(em.split(/[,;\s]+/).filter(Boolean).join(", ")):""}</div></section>`;}
+  return h;
+}
+const pSum=items=>`<section class="pd-sum">${items.map(([k,v])=>`<div><div class="pd-k">${esc(k)}</div><div class="pd-v">${esc(v)}</div></div>`).join("")}</section>`;
+function pFoot(note){
+  const sg=M.sig||{},org=(sg.org||"Center for Pain").trim();
+  const c=[sg.name,sg.phone,sg.email].filter(x=>x&&x.trim()).join(", ");
+  return `${note?`<p class="pd-note">${note}</p>`:""}<footer class="pd-foot"><p>For questions regarding this document, please contact the ${esc(org)} Billing Department${c?" ("+esc(c)+")":""}.</p><p class="pd-conf">CONFIDENTIAL — This document contains protected health information and is intended solely for the addressee. If you received it in error, please notify the sender and destroy all copies.</p></footer>`;
+}
+function pPatientRows(vs,showFirm){
+  const list=[...groupBy(vs,pkey)].map(([k,v])=>{v.sort((p,q)=>p.date.localeCompare(q.date));return {v,a:agg(v),f:v[0]};}).sort((p,q)=>p.f.patient.localeCompare(q.f.patient));
+  const cg=showFirm?[3,12,7,11,11,8,0,4,7,8]:[3,13,7,14,8,0,4,7,8];
+  let h=`<table class="pd-t pd-fixed"><colgroup>${cg.map(w=>w?`<col style="width:${w}%">`:"<col>").join("")}</colgroup><thead><tr><th class="c-no">#</th><th>Patient</th><th>Account #</th>${showFirm?"<th>Law Firm</th>":""}<th>Provider</th><th>DOI</th><th>Dates of Service / Services</th><th class="n">Visits</th><th class="n">Billed</th><th>Status</th></tr></thead><tbody>`;
+  let tv=0,tb=0;
+  list.forEach((p,i)=>{tv+=p.a.visits;tb+=p.a.total;
+    h+=`<tr><td class="c-no">${i+1}</td><td class="b">${esc(p.f.patient)}</td><td class="m">${esc(p.f.sid)}</td>${showFirm?`<td>${esc(P_ENFIRM(p.f.firm))}</td>`:""}<td>${esc([...new Set(p.v.map(x=>x.doctor))].join(", "))}</td><td class="m">${fmtD(p.f.doi)}</td><td class="svc">${p.v.map(x=>`<span><b>${fmtD(x.date)}</b> ${esc(x.service)}</span>`).join("")}</td><td class="n">${p.a.visits}</td><td class="n">${p.a.total?P_USD(p.a.total):"–"}</td><td>${esc(p.v[p.v.length-1].bill||"–")}</td></tr>`;});
+  h+=`</tbody><tfoot><tr><td></td><td colspan="${showFirm?6:5}">Total — ${list.length.toLocaleString()} patient${list.length===1?"":"s"}</td><td class="n">${tv.toLocaleString()}</td><td class="n">${P_USD(tb)}</td><td></td></tr></tfoot></table>`;
+  return h;
+}
+function pStatement(firm,vs,fl){
+  const a=agg(vs);
+  return pHead("Statement of Account",[["Date",pToday()],["Dates of Service",fmtD(a.min)+" – "+fmtD(a.max)]],firm)
+   +pSum([["Patients",a.patients.toLocaleString()],["Visits",a.visits.toLocaleString()],["Procedures",a.proc.toLocaleString()],["Total Billed",P_USD(a.total)]])
+   +`<p class="pd-intro">The following is a summary of medical services rendered by ${esc((M.sig&&M.sig.org)||"Center for Pain")} to patients represented by your office, on a medical lien basis. Please review the accounts below and provide a current case status, or remit payment for any matter that has settled.</p>`
+   +pPatientRows(vs,false)+pFoot(fl.extra?"Filters applied: "+esc(fl.extra):"");
+}
+function buildPrint(one){
+  const rows=filtered(),fl=pFilters(rows),d=pToday();let h="",name="CFPC";
+  if(S.tab==="firm"){
+    const g=groupBy(rows,v=>v.firm||NOFIRM);
+    let f=S.open&&S.open.startsWith("firm:")?S.open.slice(5):"";
+    if(!f&&g.size===1)f=[...g.keys()][0];
+    if(f&&g.has(f)){h=pStatement(f,g.get(f),fl);name="Statement_"+f;}
+    else{
+      const list=[...g].map(([firm,vs])=>({firm,...agg(vs)})).sort((x,y)=>y.total-x.total||y.visits-x.visits);
+      const T=agg(rows);
+      h=pHead("Attorney Summary Report",[["Date",d],["Dates of Service",fl.range]])+pSum([["Law Firms",list.length.toLocaleString()],["Patients",T.patients.toLocaleString()],["Visits",T.visits.toLocaleString()],["Total Billed",P_USD(T.total)]])
+      +`<table class="pd-t"><thead><tr><th class="c-no">#</th><th>Law Firm</th><th class="n">Patients</th><th class="n">Visits</th><th class="n">Initial</th><th class="n">Follow-up</th><th class="n">Procedures</th><th class="n">Office Billing</th><th class="n">Injection Billing</th><th class="n">Total Billed</th><th>First DOS</th><th>Last DOS</th></tr></thead><tbody>`
+      +list.map((x,i)=>`<tr><td class="c-no">${i+1}</td><td class="b">${esc(P_ENFIRM(x.firm))}</td><td class="n">${x.patients}</td><td class="n">${x.visits}</td><td class="n">${x.initial}</td><td class="n">${x.fu}</td><td class="n">${x.proc}</td><td class="n">${P_USD(x.office)}</td><td class="n">${P_USD(x.inj)}</td><td class="n b">${P_USD(x.total)}</td><td class="m">${fmtD(x.min)}</td><td class="m">${fmtD(x.max)}</td></tr>`).join("")
+      +`</tbody><tfoot><tr><td></td><td>Total</td><td class="n">${T.patients.toLocaleString()}</td><td class="n">${T.visits.toLocaleString()}</td><td class="n">${T.initial}</td><td class="n">${T.fu}</td><td class="n">${T.proc}</td><td class="n">${P_USD(T.office)}</td><td class="n">${P_USD(T.inj)}</td><td class="n">${P_USD(T.total)}</td><td></td><td></td></tr></tfoot></table>`+pFoot(fl.extra?"Filters applied: "+esc(fl.extra):"");
+      name="Attorney_Summary";
+    }
+  }else if(S.tab==="date"){
+    const list=dateRows(rows).slice().sort((a,b)=>a.key.localeCompare(b.key));const T=agg(rows);
+    h=pHead("Service Activity Report",[["Date",d],["Dates of Service",fl.range],["Grouped by",{year:"Year",month:"Month",week:"Week",day:"Day"}[S.gran]]])+pSum([["Periods",list.length.toLocaleString()],["Patients",T.patients.toLocaleString()],["Visits",T.visits.toLocaleString()],["Total Billed",P_USD(list.reduce((s,x)=>s+x.total,0))]])
+    +`<table class="pd-t"><thead><tr><th>Period</th><th class="n">Visits</th><th class="n">Patients</th><th class="n">Initial</th><th class="n">Follow-up</th><th class="n">Procedures</th><th class="n">Total Billed</th><th class="n">Law Firms</th><th>Top Law Firms (visits)</th></tr></thead><tbody>`
+    +list.map(x=>`<tr><td class="b">${esc(pPeriod(x.key))}</td><td class="n">${x.visits}</td><td class="n">${x.patients}</td><td class="n">${x.initial}</td><td class="n">${x.fu}</td><td class="n">${x.proc}</td><td class="n">${P_USD(x.total)}</td><td class="n">${x.firms}</td><td class="sm">${x.fc.slice(0,3).map(([f,n])=>esc(P_ENFIRM(f))+" ("+n+")").join(", ")}${x.fc.length>3?", +"+(x.fc.length-3)+" more":""}</td></tr>`).join("")+`</tbody></table>`;
+    const op=S.open&&S.open.startsWith("date:")?S.open.slice(5):"";const sel=list.find(x=>x.key===op);
+    if(sel)h+=`<h2 class="pd-h2">${esc(pPeriod(sel.key))} — Patient Detail</h2>`+pPatientRows(sel.vs,true);
+    h+=pFoot(fl.extra?"Filters applied: "+esc(fl.extra):"");name="Service_Activity";
+  }else if(S.tab==="list"){
+    const list=sortRows(rows.slice(),"list"),LIM=5000,sh=list.slice(0,LIM);
+    h=pHead("Service Record Detail",[["Date",d],["Dates of Service",fl.range],["Records",list.length.toLocaleString()]])
+    +`<table class="pd-t"><thead><tr><th class="c-no">#</th><th>Date of Service</th><th>Patient</th><th>Account #</th><th>Provider</th><th>Service</th><th>Law Firm</th><th>DOI</th><th>Billing Status</th></tr></thead><tbody>`
+    +sh.map((v,i)=>`<tr><td class="c-no">${i+1}</td><td class="m">${fmtD(v.date)}</td><td class="b">${esc(v.patient)}</td><td class="m">${esc(v.sid)}</td><td>${esc(v.doctor)}</td><td>${esc(v.service)}</td><td>${esc(P_ENFIRM(v.firm))}</td><td class="m">${fmtD(v.doi)}</td><td>${esc(v.bill||"–")}</td></tr>`).join("")+`</tbody></table>`
+    +pFoot((list.length>LIM?`Showing the first ${LIM.toLocaleString()} of ${list.length.toLocaleString()} records. `:"")+(fl.extra?"Filters applied: "+esc(fl.extra):""));name="Service_Records";
+  }else if(S.tab==="unpaid"){
+    const {list,byFirm,shown}=unpaidView(rows);
+    const st=g=>g.settled?"Settled – Payment Pending":(g.bill||"–");
+    const aging=+U.age?`${(+U.age).toLocaleString()}+ days outstanding`:"All ages";
+    const tbl=(gs,firmCol)=>{let b=0,t=0;const r=gs.map((g,i)=>{b+=g.balance||0;t+=g.billed||0;return `<tr${g.settled?' class="hl"':""}><td class="c-no">${i+1}</td><td class="n">${g.days==null?"–":g.days.toLocaleString()}</td><td class="m">${fmtD(g.ref)}</td><td class="b">${esc(g.patient)}</td><td class="m">${esc(g.sid)}</td>${firmCol?`<td>${esc(P_ENFIRM(g.firm))}</td>`:""}<td>${esc(g.doctor)}</td><td class="m">${fmtD(g.doi)}</td><td class="n b">${g.balance?P_USD(g.balance):"–"}</td><td class="n">${P_USD(g.billed)}</td><td>${esc(st(g))}</td></tr>`;}).join("");
+      return `<table class="pd-t"><thead><tr><th class="c-no">#</th><th class="n">Days Outstanding</th><th>Last Billed</th><th>Patient</th><th>Account #</th>${firmCol?"<th>Law Firm</th>":""}<th>Provider</th><th>DOI</th><th class="n">Balance Due</th><th class="n">Total Billed</th><th>Status</th></tr></thead><tbody>${r}</tbody><tfoot><tr><td></td><td colspan="${firmCol?7:6}">Total — ${gs.length.toLocaleString()} account${gs.length===1?"":"s"}</td><td class="n">${P_USD(b)}</td><td class="n">${P_USD(t)}</td><td></td></tr></tfoot></table>`;};
+    if(U.firm){
+      const gs=shown,bal=gs.reduce((s,g)=>s+(g.balance||0),0),sett=gs.filter(g=>g.settled).length;
+      h=pHead("Statement of Outstanding Balances",[["Date",d],["Aging",aging]],U.firm)+pSum([["Open Accounts",gs.length.toLocaleString()],["Settled – Payment Pending",sett.toLocaleString()],["Oldest (days)",gs.reduce((m,g)=>Math.max(m,g.days||0),0).toLocaleString()],["Balance Due",P_USD(bal)]])
+      +`<p class="pd-intro">Our records show the following accounts for patients represented by your office remain unpaid. Accounts marked “Settled – Payment Pending” have been reported as settled; please remit payment for these at your earliest convenience and provide a current status for all other accounts.</p>`+tbl(gs,false)+pFoot("");name="Outstanding_"+U.firm;
+    }else{
+      const bal=list.reduce((s,g)=>s+(g.balance||0),0);
+      h=pHead("Outstanding Balance Report",[["Date",d],["Aging",aging]])+pSum([["Open Accounts",list.length.toLocaleString()],["Law Firms",byFirm.length.toLocaleString()],["Settled – Payment Pending",list.filter(g=>g.settled).length.toLocaleString()],["Balance Due",P_USD(bal)]])
+      +`<h2 class="pd-h2">Summary by Law Firm</h2><table class="pd-t"><thead><tr><th class="c-no">#</th><th>Law Firm</th><th class="n">Open Accounts</th><th class="n">Settled – Pending</th><th class="n">Balance Due</th><th class="n">Total Billed</th><th class="n">Oldest (days)</th></tr></thead><tbody>`
+      +byFirm.map((f,i)=>`<tr><td class="c-no">${i+1}</td><td class="b">${esc(P_ENFIRM(f.firm))}</td><td class="n">${f.n}</td><td class="n">${f.settled||"–"}</td><td class="n b">${P_USD(f.balance)}</td><td class="n">${P_USD(f.billed)}</td><td class="n">${f.oldest.toLocaleString()}</td></tr>`).join("")+`</tbody></table>`
+      +`<h2 class="pd-h2 pd-break">Account Detail</h2>`+tbl(shown.slice(0,5000),true)+pFoot(shown.length>5000?`Showing the first 5,000 of ${shown.length.toLocaleString()} accounts.`:"");name="Outstanding_Balances";
+    }
+  }else if(S.tab==="money"){
+    const byFile=[...groupBy(rows,v=>v.file)].map(([file,vs])=>({file,...moneySum(vs),pats:new Set(vs.map(pkey)).size})).sort((a,b)=>a.file.localeCompare(b.file));
+    const t=byFile.reduce((a,x)=>({office:a.office+x.office,inj:a.inj+x.inj,total:a.total+x.total,p:a.p+x.pats}),{office:0,inj:0,total:0,p:0});
+    h=pHead("Billing Summary by Source File",[["Date",d],["Dates of Service",fl.range]])+pSum([["Files",byFile.length],["Office Billing",P_USD(t.office)],["Injection Billing",P_USD(t.inj)],["Total Billed",P_USD(t.total)]])
+    +`<table class="pd-t"><thead><tr><th>Source File</th><th class="n">Patients</th><th class="n">Office Billing</th><th class="n">Injection Billing</th><th class="n">Total Billed</th></tr></thead><tbody>`+byFile.map(x=>`<tr><td class="b">${esc(x.file.replace(/\.xlsx$/,""))}</td><td class="n">${x.pats.toLocaleString()}</td><td class="n">${P_USD(x.office)}</td><td class="n">${P_USD(x.inj)}</td><td class="n b">${P_USD(x.total)}</td></tr>`).join("")
+    +`</tbody><tfoot><tr><td>Total</td><td class="n">${t.p.toLocaleString()}</td><td class="n">${P_USD(t.office)}</td><td class="n">${P_USD(t.inj)}</td><td class="n">${P_USD(t.total)}</td></tr></tfoot></table>`+pFoot(fl.extra?"Filters applied: "+esc(fl.extra):"");name="Billing_Summary";
+  }else return null;
+  return {html:`<div class="pd">${h}</div>`,name};
+}
+function doPrint(){
+  const r=buildPrint();if(!r)return;
+  let el=document.getElementById("printDoc");if(!el){el=document.createElement("div");el.id="printDoc";document.body.appendChild(el);}
+  el.innerHTML=r.html;
+  const prev=document.title;document.title=(r.name+"_"+toISO(new Date())).replace(/[^\w\-]+/g,"_");
+  setTimeout(()=>{try{window.print();}catch(e){const b=document.getElementById("errBanner");if(b){b.textContent="이 화면에서는 프린트 창이 막혀 있습니다. Ctrl+P(맥: ⌘+P)를 눌러 주세요.";b.hidden=false;}}setTimeout(()=>{document.title=prev;},500);},60);
+}
+document.getElementById("printBtn").addEventListener("click",()=>doPrint());
+document.getElementById("view").addEventListener("click",ev=>{if(ev.target.closest("[data-printone]")){ev.stopPropagation();doPrint();}},true);
 /* ---------- attorney emails found in Total Medix Collection (used only when no email is saved yet) ---------- */
 const FIRM_EMAILS={"365 Injury Law": "celinay@365injury.law, megank@365injury.law", "Akhidenor Law PC": "akhidenorlawpc@gmail.com", "Michael Akhidenor": "akhidenorlawpc@gmail.com", "Albert Abkarian": "gisselle@abkarianlaw.com", "Andrew Chin": "alex@achinlaw.com, esther@achinlaw.com", "Andrew Chin and Associates": "alex@achinlaw.com, esther@achinlaw.com", "Apex": "apexlaw.zn@gmail.com, apexlawgroupapc@gmail.com", "APPLS Law": "nfernandez@applslaw.com", "Arno Mehrabi": "jessica@mehrabilawgroup.com, jv@mehrabilawgroup.com", "Bash and Polyachenko": "chelsea@bashpoly.com", "Steven Bash": "chelsea@bashpoly.com", "BD and J Injury": "vlm@bdj.com", "Bilal Law Group": "cl@bilallawgroup.com", "BL Law Group": "rd@bl-lawgroupapc.com, eh@bl-lawgroupapc.com", "Blackhawk Law Group": "frank@blackhawklawgroup.com", "Bo Lee Law Group": "info@bllglaw.com", "Brian Weinberger": "frivera@lawbsw.com, ahan@lawbsw.com", "C and B Law Group, LLP": "irma@cblawgroup.com", "Calvin J Park": "sonia@us-attorney.net", "Carpenter, Zuckerman and Rowley": "roula@cz.law, upalacios@cz.law", "Carpenter and Zuckerman": "roula@cz.law, upalacios@cz.law", "CHH Law, P.C.": "kira@chhllp.com, lucy@chhllp.com", "CK Law": "wendy@cklaw.us, jay@cklaw.us", "CNP": "cnplawgroup@gmail.com", "Compass Law Group": "rm@cmplawgroup.com", "Dag Law Firm": "thelma@daglawapc.com", "Daniel Jung": "myatty323@gmail.com", "Daniel Kim": "cindy.resendiz@dklaw.com, isabella.giancaspro@dklaw.com", "Dunham, Ramirez and Van LLP": "cduarte@rosemeadlawyers.com", "Downtown LA Law Group": "lourdes@downtownlalaw.com", "Edward Y. Lee": "ren@eyllaw.com", "Equitable Law Group": "apark@eqlawgroup.com, tko@eqlawgroup.com", "Eugene Yun": "eugene@yunlaw.com", "Gaslamp Law Group": "cm1@gaslamplaw.com", "GOODFELLAW": "wasayshahidlaw@gmail.com", "Wasay Shahid": "wasayshahidlaw@gmail.com", "Grace H. Cho": "mail@ghclaw.org", "Haleh Shekarchian": "mm@halehshekarchian.com", "Hinden and Breslavsky": "karen@hinden.net, daisy@hinden.net", "Hong and Hong": "frontdesk@hongandhong.com", "Howard B. Kim": "jpark@howardkimlaw.com, echang@howardkimlaw.com", "Howard Choi": "hclaw.jm@gmail.com, hclaw.ak@gmail.com", "Injury Legal Solutions": "ils@injurylegalsolutions.com", "Jacob Emrani": "ana@calljacob.com", "Jay Hong": "venus@lawjh.com", "Jayan Hong": "scho@jhonglawyers.com", "JB Law": "lawofficemain2@gmail.com", "Jeff A. Mann": "jeffmannlaw@att.net", "John C. Ye": "mgutierrez@johnyelaw.com, spark@johnyelaw.com", "Joohan Song": "vhernandez@jsonglaw.com", "Joseph D. Ryan": "spino@jdrlawoffices.com", "Katmissky and Jamsheed": "fernando@kjlawyers.com", "Kaufman Law": "kaufmanlaw.farrah@gmail.com, attorneykaufman@yahoo.com", "Jerry Kaufman Law": "kaufmanlaw.farrah@gmail.com, attorneykaufman@yahoo.com", "Kim, Au": "david@kimaulaw.com, fabian@kimaulaw.com", "Kim, Shapiro, Park and Lee": "ppark@kspllaw.com", "KJ Injury and Accident Lawyers": "guadalupe@kjinjurylaw.com, raul@kjinjurylaw.com", "LA Attorneys": "dianely@laattorneysgroup.com, naomy@laattorneysgroup.com", "Law Office of Wabby and Wabby": "sandramartinez@wabbylaw.com", "Lawrence Kumarasivan": "mimi@thelawofficeoflk.com", "Lebedev, Michael and Helmi Law Office": "avery@lmhlawyers.com", "Martin E. Stearn": "ryanmeslaw@gmail.com", "Martinian and Associates": "andrey.a@martinianlaw.com, gevorg.t@martinianlaw.com", "ME Lawyers": "juliana@emranilawyers.com, steve@melawyers.com", "Michelle Choe": "michelle@michellechoelaw.com, jennifer@michellechoelaw.com", "MVP Law Group": "jaslen@mvplawgroupla.com", "My Accident Lawyers": "farrahlee@myaccidentlawyersusa.com", "New Citi Law": "newcitilaw1@gmail.com", "Noravian Law Firm": "bianka@cnesq.com, jenny@cnesq.com", "Oceanbridge Law Firm": "info@oceanbridgelaw.com", "Pacific Liberty Law": "jamie@pacificlibertylaw.com, aileen@pacificlibertylaw.com", "Pacific Sterling Law": "jsw310@att.net, ciprianolaw13@gmail.com", "Probitas Law Firm": "mimi@probitaslawfirm.com", "Providence Trial Lawyers": "itzel@ptl.legal", "Raja Shahid": "inquiry@legal-lion.com", "Rho Law Group": "juan@rholawgroup.com, crawford@rholawgroup.com", "Richard D. Hoffman": "lit@richarddhoffman.com, millie@richarddhoffman.com", "Robert B. Sarvian": "martha@sarvianlaw.com", "Sanchez Professional Law": "mail@sanchez-plc.com", "Sergei Gladkov": "gladkovlaw@gmail.com", "Stephan Filip PC": "dc@sfalaw.com", "Sweet James Accident Attorneys": "jenniferk@sweetjames.com", "Top Law Group PC": "estela@toplawgrouppc.com, juana@toplawgrouppc.com", "Trimax Law Firm": "michelle@trimaxlaw.com", "Vititoe Law Group": "vititoe378@gmail.com", "Wayne Joyner": "carmen.joynerlaw@gmail.com, suey.joynerlaw@gmail.com", "Westridge Law Group": "john@westridgelaw.com, edna@westridgelaw.com", "Wilshire Law Firm, PLC": "mruiz@wilshirelawfirm.com"};
 function applyFirmEmails(){for(const [n,e] of Object.entries(FIRM_EMAILS)){if(!FDB[n])FDB[n]={name:n,email:e,history:[]};else if(!FDB[n].email)FDB[n].email=e;}}
