@@ -308,6 +308,33 @@ function findAmountCols(rows,hi){
   return {office,inj};
 }
 /* line sheets: Bills (office) and Injection bills */
+/* Charge ledger (revised masters, 2026-10-08+): reviewed corrections. Adds each row's "Adjustment USD" to its group, like the Master formulas.
+   Rows with no Group ID (e.g. EXCLUDE_DUPLICATE) are linked through their original Bills / Injection bills row so the correction still counts. */
+function parseLedger(wb,fileName){
+  const n=wb.SheetNames.find(x=>/charge\s*ledger/i.test(x));if(!n)return [];
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:""});
+  let hi=-1;for(let i=0;i<Math.min(rows.length,30);i++){const r=rows[i].map(norm);if(r.includes("charge key")&&r.includes("adjustment usd")){hi=i;break;}}
+  if(hi<0)return [];
+  const h=rows[hi].map(norm),c=k=>h.indexOf(k);
+  const ci={gid:c("group id"),cat:c("category"),scope:c("scope"),per:c("in this period"),sh:c("original sheet"),row:c("original row"),dos:c("original dos"),vdos:c("verified dos"),adj:c("adjustment usd")};
+  const srcCache={};
+  const srcGid=(sheet,row)=>{
+    const sn=wb.SheetNames.find(x=>x.trim().toLowerCase()===String(sheet).trim().toLowerCase());if(!sn||!row)return "";
+    if(!srcCache[sn]){const ws=wb.Sheets[sn],s0=ws["!ref"]?XLSX.utils.decode_range(ws["!ref"]).s.r:0,rr=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});
+      let gi=-1;for(let i=0;i<Math.min(rr.length,30)&&gi<0;i++){gi=rr[i].map(norm).indexOf("group id");}
+      srcCache[sn]={s0,rr,gi};}
+    const o=srcCache[sn],x=o.rr[+row-1-o.s0];return x&&o.gi>=0?str(x[o.gi]):"";
+  };
+  const out=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i],adj=money(r[ci.adj]);if(!adj)continue;
+    if(ci.scope>=0&&/archive/i.test(str(r[ci.scope])))continue;
+    const kind=/inj/i.test(str(r[ci.cat]))?"inj":"office";
+    const gid=str(r[ci.gid])||srcGid(r[ci.sh],r[ci.row]);
+    out.push({kind,file:fileName,gid,date:toISO(r[ci.vdos])||toISO(r[ci.dos]),amount:adj,inPeriod:ci.per<0||/^y/i.test(str(r[ci.per])),ledger:true});
+  }
+  return out;
+}
 function parseLineSheet(rows,kind,fileName,issues){
   if(!rows)return;
   let hi=-1;for(let i=0;i<Math.min(rows.length,40);i++){const r=rows[i].map(norm);if(r.some(c=>c==="source id"||c.includes("source id")||c==="patient id")&&r.some(c=>/date|dos/.test(c))){hi=i;break;}}
@@ -383,12 +410,13 @@ function parseWorkbook(wb,fileName){
   }
   const lo=parseLineSheet(sheetRows(wb,n=>/^\s*bills\s*$/i.test(n)),"office",fileName,issues)||[];
   const li=parseLineSheet(sheetRows(wb,n=>/injection\s*bills?/i.test(n)),"inj",fileName,issues)||[];
-  const lines=lo.filter(l=>l.inPeriod&&groups[l.gid]).concat(li.filter(l=>groups[l.gid]));
+  const led=parseLedger(wb,fileName);
+  const lines=lo.filter(l=>l.inPeriod&&groups[l.gid]).concat(li.filter(l=>groups[l.gid])).concat(led.filter(l=>l.inPeriod&&groups[l.gid]));
   /* Master total columns are formulas (SUMIFS) with no saved values, so totals are rebuilt from the line sheets, the same way the formulas do it */
   if(lo.length||li.length){
     for(const g of Object.values(groups)){g.office=0;g.inj=0;}
     for(const l of lines){const g=groups[l.gid];if(l.kind==="office")g.office+=l.amount;else g.inj+=l.amount;}
-    amtCols={office:lo.length?"Bills 시트 Amount (In this period = Yes)":"",inj:li.length?"Injection bills 시트 Total charge":""};
+    amtCols={office:lo.length?"Bills 시트 Amount (In this period = Yes)"+(led.length?" + Charge ledger 조정":""):"",inj:li.length?"Injection bills 시트 Total charge"+(led.length?" + Charge ledger 조정":""):""};
   }
   for(const [gid,g] of Object.entries(groups)){
     const base={file:fileName,gid,sid:g.sid,patient:g.patient,date:g.last,firm:g.firm,amount:0};
