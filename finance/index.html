@@ -24,7 +24,7 @@ header .who button{background:none;border:1px solid rgba(255,255,255,.35);color:
 main{max-width:1150px;margin:0 auto;padding:22px 16px 60px}
 h1{font-size:20px;margin:0;color:var(--navy)}h2{font-size:15px;margin:24px 0 10px;color:var(--navy)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
-.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .kpi .l{color:var(--muted);font-size:12px}.kpi .v{font-size:21px;font-weight:700;margin-top:4px}.kpi .s{color:var(--muted);font-size:12px;margin-top:2px}
 table{width:100%;border-collapse:collapse;background:#fff}
 th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
@@ -103,7 +103,7 @@ async function load(){
 }
 const all=()=>[...E,...PAY].sort((a,b)=>a.entry_date<b.entry_date?1:-1);
 const inMonth=(r,ym)=>r.entry_date.startsWith(ym);
-function sums(rows){const s={income:0,expense:0,invest_in:0,invest_out:0,loan_in:0,loan_out:0,loan_give:0,loan_collect:0};rows.forEach(r=>s[r.type]+=Number(r.amount));s.net=s.income-s.expense;s.cash=s.net+s.invest_in-s.invest_out+s.loan_in-s.loan_out-s.loan_give+s.loan_collect;return s}
+function sums(rows){const s={income:0,expense:0,invest_in:0,invest_out:0,loan_in:0,loan_out:0,loan_give:0,loan_collect:0,payroll:0};rows.forEach(r=>{s[r.type]+=Number(r.amount);if(r.auto)s.payroll+=Number(r.amount)});s.other=s.expense-s.payroll;s.net=s.income-s.expense;s.cash=s.net+s.invest_in-s.invest_out+s.loan_in-s.loan_out-s.loan_give+s.loan_collect;return s}
 const empLoanBal=()=>{const s=sums(E);return s.loan_give-s.loan_collect};
 const empName=id=>(EMPS.find(e=>e.id===id)||{}).name||'';
 
@@ -119,16 +119,16 @@ function vDash(){
   const k=(l,v,s,c='')=>`<div class="card kpi"><div class="l">${l}</div><div class="v ${c}">${money(v)}</div><div class="s">${s}</div></div>`;
   $('#view').innerHTML=`<div class="row"><h1>대시보드</h1><div class="sp"></div><input type="month" id="ym" value="${ym}" style="width:auto"><button class="btn" id="add">+ 기록 추가</button></div>
   <h2>${+ym.slice(5)}월 요약</h2>
-  <div class="grid kpis">${k('수입',m.income,'매출·서비스료','pos')}${k('지출',m.expense,'급여 포함','neg')}${k('영업 순이익',m.net,'수입 − 지출',m.net<0?'neg':'pos')}
+  <div class="grid kpis">${k('수입',m.income,'매출·서비스료','pos')}${k('급여 지출',m.payroll,'직원 관리 지급 기록 (보너스 포함)','neg')}${k('운영 지출',m.other,'구독·장비·기타','neg')}${k('지출 합계',m.expense,'급여 + 운영','neg')}${k('영업 순이익',m.net,'수입 − 지출',m.net<0?'neg':'pos')}
   ${k('투자 받음',m.invest_in,'매출 아님 (자본)','inv')}${k('투자 반환·배당',m.invest_out,'','inv')}${k('현금 흐름',m.cash,'투자·대출 포함 순증감',m.cash<0?'neg':'')}</div>
   <h2>${yr}년 누적</h2>
-  <div class="grid kpis">${k('수입',y.income,'','pos')}${k('지출',y.expense,'','neg')}${k('영업 순이익',y.net,'',y.net<0?'neg':'pos')}${k('투자 받음 (순)',y.invest_in-y.invest_out,'받은 투자 − 반환','inv')}${k('대출 잔액 (순)',y.loan_in-y.loan_out,'','')}${k('직원 대여금 잔액',empLoanBal(),'빌려준 돈 − 회수 (전체 기간)','')}</div>
+  <div class="grid kpis">${k('수입',y.income,'','pos')}${k('급여 지출',y.payroll,'','neg')}${k('운영 지출',y.other,'','neg')}${k('지출 합계',y.expense,'','neg')}${k('영업 순이익',y.net,'',y.net<0?'neg':'pos')}${k('투자 받음 (순)',y.invest_in-y.invest_out,'받은 투자 − 반환','inv')}${k('대출 잔액 (순)',y.loan_in-y.loan_out,'','')}${k('직원 대여금 잔액',empLoanBal(),'빌려준 돈 − 회수 (전체 기간)','')}</div>
   <h2>${+ym.slice(5)}월 프로젝트별</h2>
-  <div class="tbl"><table><tr><th>프로젝트</th><th class="n">수입</th><th class="n">지출</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
-  ${projs.map(p=>{const s=sums(rows.filter(r=>inMonth(r,ym)&&(r.project||'—')===p));return `<tr><td>${esc(p)}</td><td class="n pos">${money(s.income)}</td><td class="n neg">${money(s.expense)}</td><td class="n">${money(s.net)}</td><td class="n inv">${money(s.invest_in-s.invest_out)}</td></tr>`}).join('')||'<tr><td colspan="5" class="empty">이달 기록 없음</td></tr>'}</table></div>
+  <div class="tbl"><table><tr><th>프로젝트</th><th class="n">수입</th><th class="n">급여</th><th class="n">운영 지출</th><th class="n">지출 합계</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
+  ${projs.map(p=>{const s=sums(rows.filter(r=>inMonth(r,ym)&&(r.project||'—')===p));return `<tr><td>${esc(p)}</td><td class="n pos">${money(s.income)}</td><td class="n neg">${money(s.payroll)}</td><td class="n neg">${money(s.other)}</td><td class="n neg">${money(s.expense)}</td><td class="n">${money(s.net)}</td><td class="n inv">${money(s.invest_in-s.invest_out)}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty">이달 기록 없음</td></tr>'}</table></div>
   <h2>최근 12개월</h2>
-  <div class="tbl"><table><tr><th>월</th><th>수입 / 지출</th><th class="n">수입</th><th class="n">지출</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
-  ${ms.map(x=>`<tr><td>${x.k.replace('-','.')}</td><td style="min-width:160px"><span class="bar" style="width:${x.income/mx*140}px;background:#16a34a"></span><br><span class="bar" style="width:${x.expense/mx*140}px;background:#dc2626"></span></td><td class="n">${money(x.income)}</td><td class="n">${money(x.expense)}</td><td class="n ${x.net<0?'neg':''}">${money(x.net)}</td><td class="n inv">${money(x.invest_in-x.invest_out)}</td></tr>`).reverse().join('')}</table></div>
+  <div class="tbl"><table><tr><th>월</th><th>수입 / 지출</th><th class="n">수입</th><th class="n">급여</th><th class="n">운영 지출</th><th class="n">지출 합계</th><th class="n">순이익</th><th class="n">투자 받음</th></tr>
+  ${ms.map(x=>`<tr><td>${x.k.replace('-','.')}</td><td style="min-width:160px"><span class="bar" style="width:${x.income/mx*140}px;background:#16a34a"></span><br><span class="bar" style="width:${x.expense/mx*140}px;background:#dc2626"></span></td><td class="n">${money(x.income)}</td><td class="n">${money(x.payroll)}</td><td class="n">${money(x.other)}</td><td class="n">${money(x.expense)}</td><td class="n ${x.net<0?'neg':''}">${money(x.net)}</td><td class="n inv">${money(x.invest_in-x.invest_out)}</td></tr>`).reverse().join('')}</table></div>
   <p class="note">투자·대출은 매출이 아니라서 순이익에 넣지 않고 현금 흐름에만 반영합니다. 직원 급여는 직원 관리의 지급 기록이 자동으로 지출에 들어갑니다. 직원에게 빌려준 돈(대여금)도 지출이 아니라 받을 돈이라서 순이익에서 빠지고, 직원 관리의 해당 직원 페이지에도 같이 표시됩니다.</p>`;
   $('#ym').onchange=e=>{F.ym=e.target.value;render()};$('#add').onclick=()=>entryForm();
 }
