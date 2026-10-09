@@ -316,7 +316,7 @@ function parseLedger(wb,fileName){
   let hi=-1;for(let i=0;i<Math.min(rows.length,30);i++){const r=rows[i].map(norm);if(r.includes("charge key")&&r.includes("adjustment usd")){hi=i;break;}}
   if(hi<0)return [];
   const h=rows[hi].map(norm),c=k=>h.indexOf(k);
-  const ci={gid:c("group id"),cat:c("category"),scope:c("scope"),per:c("in this period"),sh:c("original sheet"),row:c("original row"),dos:c("original dos"),vdos:c("verified dos"),adj:c("adjustment usd")};
+  const ci={gid:c("group id"),cat:c("category"),scope:c("scope"),per:c("in this period"),sh:c("original sheet"),row:c("original row"),dos:c("original dos"),vdos:c("verified dos"),adj:c("adjustment usd"),raw:c("raw contribution usd"),adjd:c("adjusted amount usd")};
   const srcCache={};
   const srcGid=(sheet,row)=>{
     const sn=wb.SheetNames.find(x=>x.trim().toLowerCase()===String(sheet).trim().toLowerCase());if(!sn||!row)return "";
@@ -327,11 +327,19 @@ function parseLedger(wb,fileName){
   };
   const out=[];
   for(let i=hi+1;i<rows.length;i++){
-    const r=rows[i],adj=money(r[ci.adj]);if(!adj)continue;
+    const r=rows[i];if(!str(r[0]))continue;
     if(ci.scope>=0&&/archive/i.test(str(r[ci.scope])))continue;
-    const kind=/inj/i.test(str(r[ci.cat]))?"inj":"office";
-    const gid=str(r[ci.gid])||srcGid(r[ci.sh],r[ci.row]);
-    out.push({kind,file:fileName,gid,date:toISO(r[ci.vdos])||toISO(r[ci.dos]),amount:adj,inPeriod:ci.per<0||/^y/i.test(str(r[ci.per])),ledger:true});
+    const cat=str(r[ci.cat]).toLowerCase(),gid=str(r[ci.gid])||srcGid(r[ci.sh],r[ci.row]);
+    const base={file:fileName,gid,date:toISO(r[ci.vdos])||toISO(r[ci.dos]),inPeriod:ci.per<0||/^y/i.test(str(r[ci.per])),ledger:true};
+    if(/surg/.test(cat)){
+      /* 2026-10-09 masters: surgery is pulled out of U/AB (raw contribution) and added once to the total from its adjusted amount */
+      const raw=ci.raw>=0?money(r[ci.raw]):0,adjd=ci.adjd>=0?money(r[ci.adjd]):0;
+      if(raw){const sh=str(r[ci.sh]).toLowerCase();if(sh==="bills"||sh==="injection bills")out.push(Object.assign({kind:sh==="bills"?"office":"inj",amount:-raw},base));}
+      if(adjd)out.push(Object.assign({kind:"inj",amount:adjd,surgery:true},base));
+      continue;
+    }
+    const adj=money(r[ci.adj]);if(!adj)continue;
+    out.push(Object.assign({kind:/inj/.test(cat)?"inj":"office",amount:adj},base));
   }
   return out;
 }
