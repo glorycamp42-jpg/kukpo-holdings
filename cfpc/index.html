@@ -573,9 +573,12 @@ function saveAliases(){
 }
 
 /* ---------- filter + aggregate ---------- */
+/* name search: word order, commas and accents don't matter ("eva pena" finds "Pena, Eva") */
+const fold=x=>norm(x).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[,.\-]/g," ");
+function qMatch(q,v){if(!q)return true;const hay=" "+fold(v.patient)+" "+fold(v.sid)+" ";return fold(q).split(/\s+/).filter(Boolean).every(t=>hay.includes(t));}
 function filtered(){
   const from=$("#fFrom").value,to=$("#fTo").value,firm=$("#fFirm").value,doc=$("#fDoc").value,bill=$("#fBill").value,q=norm($("#fQ").value);
-  return S.visits.filter(v=>(!from||v.date>=from)&&(!to||v.date<=to)&&(!firm||(v.firm||NOFIRM)===firm)&&(!doc||(v.doctor||"-")===doc)&&(!bill||(v.bill||"-")===bill)&&(!q||norm(v.patient).includes(q)||norm(v.sid).includes(q)));
+  return S.visits.filter(v=>(!from||v.date>=from)&&(!to||v.date<=to)&&(!firm||(v.firm||NOFIRM)===firm)&&(!doc||(v.doctor||"-")===doc)&&(!bill||(v.bill||"-")===bill)&&qMatch(q,v));
 }
 const pkey=v=>v.patient+"|"+v.sid;
 function agg(rows){
@@ -620,7 +623,7 @@ function renderFirm(rows){
   let h=`<div class="ptools"><span>로펌 ${list.length}곳 · 행을 누르면 환자 목록이 펼쳐집니다</span></div><div class="tbl"><table><thead><tr>
   ${th("firm","firm","변호사 / 로펌")}${th("firm","patients","환자",1)}${th("firm","visits","방문",1)}<th></th>${th("firm","initial","초진",1)}${th("firm","fu","재진",1)}${th("firm","proc","시술",1)}${th("firm","office","오피스 빌",1)}${th("firm","inj","주사 빌",1)}${th("firm","total","빌 합계",1)}${th("firm","min","첫 방문")}${th("firm","max","최근 방문")}<th>빌링 상태(환자 수)</th></tr></thead><tbody>`;
   for(const x of list){
-    const open=S.open==="firm:"+x.firm;
+    const open=S.open==="firm:"+x.firm||(!!$("#fQ").value.trim()&&list.length<=5);
     h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="firm:${esc(x.firm)}"><td><strong>${esc(x.firm)}</strong></td><td class="n">${x.patients}</td><td class="n">${x.visits}</td><td style="width:120px"><div class="bar" style="width:${Math.round(x.visits/max*100)}%"></div></td><td class="n">${x.initial}</td><td class="n">${x.fu}</td><td class="n">${x.proc}</td><td class="n">${usd(x.office)}</td><td class="n">${usd(x.inj)}</td><td class="n"><strong>${usd(x.total)}</strong></td><td class="d">${fmtD(x.min)}</td><td class="d">${fmtD(x.max)}</td><td>${Object.entries(x.bills).sort((a,b)=>b[1]-a[1]).map(([b,n])=>billPill(b,n)).join("")}</td></tr>`;
     if(open)h+=`<tr class="detail"><td colspan="13"><div class="dtools"><button class="pbtn" type="button" data-printone="1">🖨 ${esc(x.firm)} 영문 명세서 프린트</button></div>${patientTable(x.vs)}</td></tr>`;
   }
@@ -629,7 +632,7 @@ function renderFirm(rows){
 function patientTable(vs){
   const g=groupBy(vs,pkey);
   const list=[...g].map(([k,v])=>{const a=agg(v);v.sort((p,q)=>p.date.localeCompare(q.date));return {v,a,first:v[0]};}).sort((p,q)=>q.a.max.localeCompare(p.a.max));
-  let h=`<div class="inner"><table><thead><tr><th>환자</th><th>ID</th><th>의사</th><th>DOI</th><th class="n">방문</th><th class="n">빌 합계</th><th>첫 방문</th><th>최근 방문</th><th>빌링</th><th>방문 내역</th></tr></thead><tbody>`;
+  let h=`<div class="inner"><table><thead><tr><th>환자</th><th>ID</th><th>의사</th><th>DOI</th><th class="n">방문</th><th class="n">빌 합계</th><th>첫 방문일</th><th>마지막 방문일</th><th>빌링</th><th>방문 내역</th></tr></thead><tbody>`;
   for(const p of list){
     const docs=[...new Set(p.v.map(x=>x.doctor))].join(", ");
     h+=`<tr><td>${esc(p.first.patient)}</td><td class="d">${esc(p.first.sid)}</td><td>${esc(docs)}</td><td class="d">${fmtD(p.first.doi)}</td><td class="n">${p.a.visits}</td><td class="n">${usd(p.a.total)}</td><td class="d">${fmtD(p.a.min)}</td><td class="d">${fmtD(p.a.max)}</td><td>${billPill(p.v[p.v.length-1].bill||"-")}</td><td style="white-space:normal;min-width:260px">${p.v.map(x=>`<span class="pill">${fmtD(x.date)} ${esc(x.service)}</span>`).join("")}</td></tr>`;
@@ -745,7 +748,8 @@ function unpaidGroups(rows){
 }
 function unpaidView(rows){
   let list=unpaidGroups(rows);
-  const minDays=+U.age||0;
+  /* searching by name/ID shows that patient at any age, so the 180-day default never hides a search result */
+  const minDays=$("#fQ").value.trim()?0:(+U.age||0);
   if(minDays)list=list.filter(g=>g.days!=null&&g.days>=minDays);
   if(U.status==="settled")list=list.filter(g=>g.settled);
   if(U.status==="sent")list=list.filter(g=>!g.settled);
@@ -759,7 +763,7 @@ function renderUnpaid(rows){
   const sumBal=list.reduce((a,g)=>a+(g.balance||0),0),sumBilled=list.reduce((a,g)=>a+g.billed,0);
   const ages=[["","전체"],["90","90일 이상"],["180","180일 이상"],["365","1년 이상"],["730","2년 이상"]];
   let h=`<div class="ptools"><span>환자 그룹 <b>${list.length.toLocaleString()}</b>개 · 마지막 빌 잔액 합계 <b>${usd(sumBal)}</b> · 청구 합계 ${usd(sumBilled)}</span>
-  <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="seg">${ages.map(([k,l])=>`<button data-uage="${k}" aria-pressed="${U.age===k}">${l}</button>`).join("")}</span>
+  <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="seg">${ages.map(([k,l])=>`<button data-uage="${k}" aria-pressed="${$("#fQ").value.trim()?k==="":U.age===k}">${l}</button>`).join("")}</span>
   <span class="seg">${[["","전체 상태"],["settled","합의됨·미지급"],["sent","빌 보냄"]].map(([k,l])=>`<button data-ustat="${k}" aria-pressed="${U.status===k}">${l}</button>`).join("")}</span></span></div>`;
   h+=`<div class="mbody" style="gap:10px"><p class="note">기준: 마지막 빌 파일 날짜(없으면 마지막 방문일)부터 오늘까지 지난 날수. Paid로 표시된 건은 뺐습니다. <b>합의됨·미지급</b>(Settled, Payment Pending)은 지금 받을 수 있는 돈이라 먼저 연락하세요.</p>
   <h2>로펌별</h2><div class="tbl" style="max-height:340px"><table><thead><tr><th style="cursor:default">로펌</th><th class="n" style="cursor:default">환자 그룹</th><th class="n" style="cursor:default">합의됨</th><th class="n" style="cursor:default">마지막 빌 잔액</th><th class="n" style="cursor:default">청구 합계</th><th class="n" style="cursor:default">가장 오래된(일)</th><th style="cursor:default"></th></tr></thead><tbody>`;
@@ -928,7 +932,7 @@ function buildPrint(one){
   }else if(S.tab==="unpaid"){
     const {list,byFirm,shown}=unpaidView(rows);
     const st=g=>g.settled?"Settled – Payment Pending":(g.bill||"–");
-    const aging=+U.age?`${(+U.age).toLocaleString()}+ days outstanding`:"All ages";
+    const aging=(+U.age&&!document.getElementById("fQ").value.trim())?`${(+U.age).toLocaleString()}+ days outstanding`:"All ages";
     const tbl=(gs,firmCol)=>{let b=0,t=0;const r=gs.map((g,i)=>{b+=g.balance||0;t+=g.billed||0;return `<tr${g.settled?' class="hl"':""}><td class="c-no">${i+1}</td><td class="n">${g.days==null?"–":g.days.toLocaleString()}</td><td class="m">${fmtD(g.ref)}</td><td class="b">${esc(g.patient)}</td><td class="m">${esc(g.sid)}</td>${firmCol?`<td>${esc(P_ENFIRM(g.firm))}</td>`:""}<td>${esc(g.doctor)}</td><td class="m">${fmtD(g.doi)}</td><td class="n b">${g.balance?P_USD(g.balance):"–"}</td><td class="n">${P_USD(g.billed)}</td><td>${esc(st(g))}</td></tr>`;}).join("");
       return `<table class="pd-t"><thead><tr><th class="c-no">#</th><th class="n">Days Outstanding</th><th>Last Billed</th><th>Patient</th><th>Account #</th>${firmCol?"<th>Law Firm</th>":""}<th>Provider</th><th>DOI</th><th class="n">Balance Due</th><th class="n">Total Billed</th><th>Status</th></tr></thead><tbody>${r}</tbody><tfoot><tr><td></td><td colspan="${firmCol?7:6}">Total — ${gs.length.toLocaleString()} account${gs.length===1?"":"s"}</td><td class="n">${P_USD(b)}</td><td class="n">${P_USD(t)}</td><td></td></tr></tfoot></table>`;};
     if(U.firm){
