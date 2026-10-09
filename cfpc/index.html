@@ -575,11 +575,20 @@ function saveAliases(){
 /* ---------- filter + aggregate ---------- */
 /* name search: word order, commas and accents don't matter ("eva pena" finds "Pena, Eva") */
 const fold=x=>norm(x).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[,.\-]/g," ");
-function qMatch(q,v){if(!q)return true;const hay=" "+fold(v.patient)+" "+fold(v.sid)+" ";return fold(q).split(/\s+/).filter(Boolean).every(t=>hay.includes(t));}
+function qMatch(q,v,fuzzy){if(!q)return true;const hay=" "+fold(v.patient)+" "+fold(v.sid)+" ";const toks=fold(q).split(/\s+/).filter(Boolean);
+  if(!fuzzy)return toks.every(t=>hay.includes(t));
+  const words=hay.trim().split(/\s+/);return toks.every(t=>hay.includes(t)||(t.length>=3&&words.some(w=>near(t,w.slice(0,t.length)))));}
+/* one typo allowed: a swapped, missing, extra or wrong letter */
+function near(a,b){if(a===b)return true;const m=a.length,n=b.length;if(Math.abs(m-n)>1)return false;const d=[];for(let i=0;i<=m;i++){d[i]=[i];for(let j=1;j<=n;j++)d[i][j]=i?0:j;}
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}return d[m][n]<=1;}
 function filtered(){
   const from=$("#fFrom").value,to=$("#fTo").value,firm=$("#fFirm").value,doc=$("#fDoc").value,bill=$("#fBill").value,q=norm($("#fQ").value);
   return S.visits.filter(v=>(!from||v.date>=from)&&(!to||v.date<=to)&&(!firm||(v.firm||NOFIRM)===firm)&&(!doc||(v.doctor||"-")===doc)&&(!bill||(v.bill||"-")===bill)&&qMatch(q,v));
 }
+function filteredQ(){const rows=filtered();const q=$("#fQ").value.trim();if(!q||rows.length)return rows;
+  /* nothing matched exactly: retry allowing one typo per word */
+  const from=$("#fFrom").value,to=$("#fTo").value,firm=$("#fFirm").value,doc=$("#fDoc").value,bill=$("#fBill").value;
+  return S.visits.filter(v=>(!from||v.date>=from)&&(!to||v.date<=to)&&(!firm||(v.firm||NOFIRM)===firm)&&(!doc||(v.doctor||"-")===doc)&&(!bill||(v.bill||"-")===bill)&&qMatch(q,v,true));}
 const pkey=v=>v.patient+"|"+v.sid;
 function agg(rows){
   const pats=new Set(rows.map(pkey));let ini=0,fu=0,proc=0,min="",max="";const bills={};
@@ -594,7 +603,7 @@ const billPill=(b,n)=>{const cls=/settled|paid|payment/i.test(b)?"ok":/review|mi
 
 /* ---------- render ---------- */
 function render(){
-  const rows=filtered();
+  const rows=filteredQ();
   {const pb=document.getElementById("printBtn");if(pb)pb.hidden=["alias","users","mail"].includes(S.tab);}
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===S.tab));
   if(!S.files.length&&S.tab!=="users"){$("#filters").hidden=true;$("#view").innerHTML=`<div class="empty"><p style="margin:0 0 6px;font-weight:600;color:var(--fg)">아직 넣은 파일이 없습니다</p><p style="margin:0">위 칸에 CFPC_Master 엑셀 5개(2019-2021 ~ 2026)를 끌어다 놓으세요. 한 번 넣으면 회사 서버에 저장되어, 권한 있는 사람은 어느 컴퓨터에서든 바로 봅니다.</p></div>`;return;}
@@ -605,6 +614,7 @@ function render(){
   if(S.tab==="unpaid"){renderUnpaid(rows);return;}
   if(S.tab==="alias"){renderAlias();return;}
   if(S.tab==="users"){renderUsers();return;}
+  if($("#fQ").value.trim()&&/^(firm|date|list)$/.test(S.tab)){renderSearch(rows);return;}
   if(S.tab==="firm")renderFirm(rows);else if(S.tab==="date")renderDate(rows);else renderList(rows);
 }
 function sortRows(arr,key){
@@ -615,6 +625,21 @@ function th(key,k,label,n){const [sk,d]=S.sort[key];return `<th class="${n?"n":"
 
 function groupBy(rows,f){const m=new Map();for(const v of rows){const k=f(v);if(!m.has(k))m.set(k,[]);m.get(k).push(v);}return m;}
 
+/* name / ID search: one row per patient (same patient across year files merged); a single match opens straight away */
+function renderSearch(rows){
+  const list=[...groupBy(rows,pkey)].map(([k,v])=>{v.sort((a,b)=>a.date.localeCompare(b.date));return {k,v,a:agg(v),f:v[0]};}).sort((p,q)=>p.f.patient.localeCompare(q.f.patient));
+  const one=list.length===1;
+  let h=`<div class="ptools"><span>검색 결과: 환자 <b>${list.length}</b>명${one?"":" · 이름을 성과 이름 모두 입력하면 한 명만 나옵니다. 행을 누르면 자세히 보입니다"}</span></div><div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default">환자</th><th style="cursor:default">ID</th><th style="cursor:default">로펌</th><th style="cursor:default">의사</th><th style="cursor:default">DOI</th><th class="n" style="cursor:default">방문</th><th class="n" style="cursor:default">빌 합계</th><th class="n" style="cursor:default">마지막 빌 잔액</th><th style="cursor:default">첫 방문일</th><th style="cursor:default">마지막 방문일</th><th style="cursor:default">빌링</th></tr></thead><tbody>`;
+  for(const p of list){
+    const open=one||S.open==="pat:"+p.k;
+    const gs=[...new Set(p.v.map(gkey))].map(k=>S.groups[k]).filter(Boolean);
+    const bal=gs.reduce((m,g)=>Math.max(m,money(g.balance)),0);
+    const firms=[...new Set(p.v.map(x=>x.firm||NOFIRM))].join(", "),docs=[...new Set(p.v.map(x=>x.doctor))].join(", ");
+    h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="pat:${esc(p.k)}"><td><strong>${esc(p.f.patient)}</strong></td><td class="d">${esc(p.f.sid)}</td><td style="white-space:normal">${esc(firms)}</td><td style="white-space:normal">${esc(docs)}</td><td class="d">${fmtD(p.f.doi)}</td><td class="n">${p.a.visits}</td><td class="n">${usd(p.a.total)}</td><td class="n"><strong>${usd(bal)}</strong></td><td class="d">${fmtD(p.a.min)}</td><td class="d">${fmtD(p.a.max)}</td><td>${billPill(p.v[p.v.length-1].bill||"-")}</td></tr>`;
+    if(open)h+=`<tr class="detail"><td colspan="11"><div class="inner"><table><thead><tr><th>방문일</th><th>서비스</th><th>의사</th><th>로펌</th><th>빌링</th><th>파일</th></tr></thead><tbody>${p.v.map(x=>`<tr><td class="d">${fmtD(x.date)}</td><td>${esc(x.service)}</td><td>${esc(x.doctor)}</td><td>${esc(x.firm||NOFIRM)}</td><td>${billPill(x.bill||"-")}</td><td class="foot">${esc(String(x.file||"").replace(/^CFPC_Master_|\.xlsx$/g,"").replace(/_Verified.*$/,""))}</td></tr>`).join("")}</tbody></table></div></td></tr>`;
+  }
+  $("#view").innerHTML=h+"</tbody></table></div>";
+}
 function renderFirm(rows){
   const g=groupBy(rows,v=>v.firm||NOFIRM);
   let list=[...g].map(([firm,vs])=>({firm,vs,...agg(vs)}));
@@ -900,7 +925,7 @@ function pStatement(firm,vs,fl){
    +pPatientRows(vs,false)+pFoot(fl.extra?"Filters applied: "+esc(fl.extra):"");
 }
 function buildPrint(one){
-  const rows=filtered(),fl=pFilters(rows),d=pToday();let h="",name="CFPC";
+  const rows=filteredQ(),fl=pFilters(rows),d=pToday();let h="",name="CFPC";
   if(S.tab==="firm"){
     const g=groupBy(rows,v=>v.firm||NOFIRM);
     let f=S.open&&S.open.startsWith("firm:")?S.open.slice(5):"";
