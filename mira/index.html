@@ -480,6 +480,7 @@ function sampleMoney(visits){
 const gkey=v=>v.file+"|"+v.gid;
 function moneySum(rows){let office=0,inj=0;const seen=new Set();for(const v of rows){const k=gkey(v);if(seen.has(k))continue;seen.add(k);const g=S.groups[k];if(g){office+=g.office||0;inj+=g.inj||0;}}return {office,inj,total:office+inj};}
 const usd=n=>n?"$"+Math.round(n).toLocaleString("en-US"):"–";
+const amtK=n=>n>0?usd(n):`<span class="pill">미정</span>`;
 
 /* ---------- file intake ---------- */
 /* files stay on this computer only: kept in this browser's IndexedDB so the page reopens with the last files */
@@ -646,7 +647,7 @@ function renderSearch(rows){
     const bal=Math.max(0,gs.reduce((m,g)=>Math.max(m,money(g.balance)),0)-paidS);
     const payGid=(gs.slice().sort((a,b)=>String(b.file).localeCompare(String(a.file)))[0]||{}).gid||gids[0]||"";
     const firms=[...new Set(p.v.map(x=>x.firm||NOFIRM))].join(", "),docs=[...new Set(p.v.map(x=>x.doctor))].join(", ");
-    h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="pat:${esc(p.k)}"><td><strong>${esc(p.f.patient)}</strong></td><td class="d">${esc(p.f.sid)}</td><td style="white-space:normal">${esc(firms)}</td><td style="white-space:normal">${esc(docs)}</td><td class="d">${fmtD(p.f.doi)}</td><td class="n">${p.a.visits}</td><td class="n">${usd(p.a.total)}</td><td class="n"><strong>${usd(bal)}</strong>${paidS?`<div class="foot">${gids.map(payLabel).filter(Boolean).join(" · ")}</div>`:""}${payGid?`<div><button class="btn ghost" style="padding:1px 8px;font-size:11.5px;margin-top:3px" data-pay="${esc(payGid)}">${paidS?"입금 수정":"입금 기록"}</button></div>`:""}</td><td class="d">${fmtD(p.a.min)}</td><td class="d">${fmtD(p.a.max)}</td><td>${billPill(p.v[p.v.length-1].bill||"-")}</td></tr>`;
+    h+=`<tr class="click${open?" open":""}" tabindex="0" data-open="pat:${esc(p.k)}"><td><strong>${esc(p.f.patient)}</strong></td><td class="d">${esc(p.f.sid)}</td><td style="white-space:normal">${esc(firms)}</td><td style="white-space:normal">${esc(docs)}</td><td class="d">${fmtD(p.f.doi)}</td><td class="n">${p.a.visits}</td><td class="n">${amtK(p.a.total)}</td><td class="n"><strong>${p.a.total>0?usd(bal):amtK(0)}</strong>${paidS?`<div class="foot">${gids.map(payLabel).filter(Boolean).join(" · ")}</div>`:""}${payGid?`<div><button class="btn ghost" style="padding:1px 8px;font-size:11.5px;margin-top:3px" data-pay="${esc(payGid)}">${paidS?"입금 수정":"입금 기록"}</button></div>`:""}</td><td class="d">${fmtD(p.a.min)}</td><td class="d">${fmtD(p.a.max)}</td><td>${billPill(p.v[p.v.length-1].bill||"-")}</td></tr>`;
     if(open)h+=`<tr class="detail"><td colspan="11"><div class="inner"><table><thead><tr><th>방문일</th><th>서비스</th><th>의사</th><th>로펌</th><th>빌링</th><th>파일</th></tr></thead><tbody>${p.v.map(x=>`<tr><td class="d">${fmtD(x.date)}</td><td>${esc(x.service)}</td><td>${esc(x.doctor)}</td><td>${esc(x.firm||NOFIRM)}</td><td>${billPill(x.bill||"-")}</td><td class="foot">${esc(String(x.file||"").replace(CL.filePrefix,"").replace(/\.xlsx$/,"").replace(/_Verified.*$/,""))}</td></tr>`).join("")}</tbody></table></div></td></tr>`;
   }
   $("#view").innerHTML=h+"</tbody></table></div>";
@@ -781,7 +782,7 @@ function unpaidGroups(rows){
     const ref=g.lastBill||g.last;
     const pr=payInfo(g.gid),orig=money(g.balance);
     const bal=pr.sum?Math.max(0,orig-pr.sum):g.balance;
-    const full=pr.sum>0&&orig>0&&orig-pr.sum<=0.005;
+    const full=pr.closed||(pr.sum>0&&orig>0&&orig-pr.sum<=0.005);
     return Object.assign({},g,{paid:paid||full,settled,days:daysSince(ref),ref,billed:tot[g.gid]||0,files:[...new Set(files[g.gid]||[])].sort(),origBalance:orig,balance:bal,paidSum:pr.sum,lastPaid:pr.last});
   }).filter(g=>!g.paid);
 }
@@ -792,7 +793,7 @@ function unpaidView(rows){
   if(minDays)list=list.filter(g=>g.days!=null&&g.days>=minDays);
   if(U.status==="settled")list=list.filter(g=>g.settled);
   if(U.status==="sent")list=list.filter(g=>!g.settled);
-  const byFirm=[...groupBy(list,g=>g.firm||NOFIRM)].map(([firm,gs])=>({firm,n:gs.length,balance:gs.reduce((a,g)=>a+(g.balance||0),0),billed:gs.reduce((a,g)=>a+g.billed,0),settled:gs.filter(g=>g.settled).length,oldest:gs.reduce((m,g)=>Math.max(m,g.days||0),0)})).sort((a,b)=>b.balance-a.balance||b.billed-a.billed);
+  const byFirm=[...groupBy(list,g=>g.firm||NOFIRM)].map(([firm,gs])=>({firm,n:gs.length,balance:gs.reduce((a,g)=>a+(g.balance||0),0),billed:gs.reduce((a,g)=>a+g.billed,0),unpriced:gs.filter(g=>!(g.origBalance>0)).length,settled:gs.filter(g=>g.settled).length,oldest:gs.reduce((m,g)=>Math.max(m,g.days||0),0)})).sort((a,b)=>b.balance-a.balance||b.billed-a.billed);
   const shown=U.firm?list.filter(g=>(g.firm||NOFIRM)===U.firm):list;
   const [sk,sd]=U.sort;shown.sort((a,b)=>{const x=a[sk],y=b[sk];return (typeof x==="number"||typeof y==="number"?(x||0)-(y||0):String(x||"").localeCompare(String(y||"")))*sd;});
   return {list,byFirm,shown};
@@ -804,24 +805,24 @@ function unpaidDetail(g){
   let h=`<div class="inner"><div class="dtools" style="margin-bottom:6px"><button class="pbtn" type="button" data-printone="1">🖨 이 환자만 영문 프린트</button></div><table><thead><tr><th>날짜</th><th>서비스 / 부위</th><th>의사 / 병원</th><th>로펌</th><th>빌링</th><th>파일</th></tr></thead><tbody>`;
   h+=vs.length?vs.map(v=>`<tr><td class="d">${fmtD(v.date)}</td><td style="white-space:normal">${esc(v.service||"–")}</td><td>${esc(v.doctor)}</td><td>${esc(v.firm||NOFIRM)}</td><td>${billPill(v.bill||"-")}</td><td class="foot">${esc(String(v.file||"").replace(CL.filePrefix,"").replace(/\.xlsx$/,""))}</td></tr>`).join(""):`<tr><td colspan="6" class="foot">방문 기록 없음</td></tr>`;
   h+=`</tbody></table>`;
-  h+=`<p class="note" style="margin:8px 0 0">방문 ${vs.length}건 · DOI ${fmtD(g.doi)||"–"} · 청구 ${usd(g.billed)} · 남은 잔액 <b>${usd(g.balance)}</b>${pi.list.length?" · "+pi.list.map(x=>(x.kind==="adjust"?"감액 ":"입금 ")+fmtD(x.paid_on)+" "+usd(Number(x.amount))).join(", "):""}</p></div>`;
+  h+=`<p class="note" style="margin:8px 0 0">방문 ${vs.length}건 · DOI ${fmtD(g.doi)||"–"} · 청구 ${amtK(g.billed)} · 남은 잔액 <b>${g.origBalance>0?usd(g.balance):amtK(0)}</b>${pi.list.length?" · "+pi.list.map(x=>(x.kind==="adjust"?"감액 ":"입금 ")+fmtD(x.paid_on)+" "+usd(Number(x.amount))).join(", "):""}</p></div>`;
   return h;
 }
 function renderUnpaid(rows){
   const {list,byFirm,shown}=unpaidView(rows),[sk,sd]=U.sort;
   const sumBal=list.reduce((a,g)=>a+(g.balance||0),0),sumBilled=list.reduce((a,g)=>a+g.billed,0);
   const ages=[["","전체"],["90","90일 이상"],["180","180일 이상"],["365","1년 이상"],["730","2년 이상"]];
-  let h=`<div class="ptools"><span>환자 그룹 <b>${list.length.toLocaleString()}</b>개 · 남은 잔액 합계 <b>${usd(sumBal)}</b> · 청구 합계 ${usd(sumBilled)}</span>
+  let h=`<div class="ptools"><span>환자 그룹 <b>${list.length.toLocaleString()}</b>개 · 남은 잔액 합계 <b>${usd(sumBal)}</b> · 청구 합계 ${usd(sumBilled)}${list.some(g=>!(g.origBalance>0))?` · 금액 미정 <b>${list.filter(g=>!(g.origBalance>0)).length.toLocaleString()}</b>건`:""}</span>
   <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="seg">${ages.map(([k,l])=>`<button data-uage="${k}" aria-pressed="${$("#fQ").value.trim()?k==="":U.age===k}">${l}</button>`).join("")}</span>
   <span class="seg">${[["","전체 상태"],["settled","합의됨·미지급"],["sent","빌 보냄"]].map(([k,l])=>`<button data-ustat="${k}" aria-pressed="${U.status===k}">${l}</button>`).join("")}</span></span></div>`;
   h+=`<div class="mbody" style="gap:10px"><p class="note">기준: 마지막 빌 파일 날짜(없으면 마지막 방문일)부터 오늘까지 지난 날수. Paid로 표시된 건은 뺐습니다. <b>합의됨·미지급</b>(Settled, Payment Pending)은 지금 받을 수 있는 돈이라 먼저 연락하세요.</p>
   <h2>로펌별</h2><div class="tbl" style="max-height:340px"><table><thead><tr><th style="cursor:default">로펌</th><th class="n" style="cursor:default">환자 그룹</th><th class="n" style="cursor:default">합의됨</th><th class="n" style="cursor:default">마지막 빌 잔액</th><th class="n" style="cursor:default">청구 합계</th><th class="n" style="cursor:default">가장 오래된(일)</th><th style="cursor:default"></th></tr></thead><tbody>`;
-  for(const f of byFirm)h+=`<tr class="click${U.firm===f.firm?" open":""}" tabindex="0" data-ufirm="${esc(f.firm)}"><td><strong>${esc(f.firm)}</strong></td><td class="n">${f.n}</td><td class="n">${f.settled||""}</td><td class="n"><strong>${usd(f.balance)}</strong></td><td class="n">${usd(f.billed)}</td><td class="n">${f.oldest.toLocaleString()}</td><td><button class="btn ghost" style="padding:3px 10px;font-size:12px" data-umail="${esc(f.firm)}">독촉 메일</button></td></tr>`;
+  for(const f of byFirm)h+=`<tr class="click${U.firm===f.firm?" open":""}" tabindex="0" data-ufirm="${esc(f.firm)}"><td><strong>${esc(f.firm)}</strong></td><td class="n">${f.n}</td><td class="n">${f.settled||""}</td><td class="n"><strong>${f.balance>0?usd(f.balance):amtK(0)}</strong>${f.unpriced&&f.balance>0?`<div class="foot">미정 ${f.unpriced}건</div>`:""}</td><td class="n">${amtK(f.billed)}</td><td class="n">${f.oldest.toLocaleString()}</td><td><button class="btn ghost" style="padding:3px 10px;font-size:12px" data-umail="${esc(f.firm)}">독촉 메일</button></td></tr>`;
   h+=`</tbody></table></div>`;
   const uth=(k,l,n)=>`<th class="${n?"n":""}" data-usort="${k}">${l}${sk===k?(sd>0?" ▲":" ▼"):""}</th>`;
   h+=`<h2>${U.firm?esc(U.firm)+" · ":""}환자 그룹 ${shown.length.toLocaleString()}개 ${U.firm?`<button class="btn ghost" style="padding:2px 10px;font-size:12px" data-ufirm="">전체 로펌 보기</button>`:""}</h2>
   <div class="tbl"><table><thead><tr>${uth("days","지난 날수",1)}${uth("ref","마지막 빌")}${uth("patient","환자")}${uth("sid","ID")}${uth("doctor","의사")}${uth("firm","로펌")}${uth("doi","DOI")}${uth("balance","남은 잔액",1)}${uth("billed","청구 합계",1)}<th>상태</th><th>입금</th><th>파일</th></tr></thead><tbody>`;
-  for(const g of shown.slice(0,1500)){const op=U.open===g.gid;h+=`<tr class="click${op?" open":""}" tabindex="0" data-ugrp="${esc(g.gid)}" title="누르면 검사·방문 내역이 펼쳐집니다"><td class="n">${g.days==null?"–":g.days.toLocaleString()}</td><td class="d">${fmtD(g.ref)}</td><td><strong>${esc(g.patient)}</strong> <span class="foot">${op?"▲":"▼"}</span></td><td class="d">${esc(g.sid)}</td><td>${esc(g.doctor)}</td><td>${esc(g.firm||NOFIRM)}</td><td class="d">${fmtD(g.doi)}</td><td class="n"><strong>${usd(g.balance)}</strong>${g.paidSum?`<div class="foot">빌 잔액 ${usd(g.origBalance)}</div>`:""}</td><td class="n">${usd(g.billed)}</td><td>${g.settled?`<span class="pill warn">합의됨·미지급</span>`:billPill(g.bill||"-")}</td><td style="white-space:nowrap">${g.paidSum?`<span class="pill ok">${payLabel(g.gid)}</span> `:""}<button class="btn ghost" style="padding:2px 9px;font-size:12px" data-pay="${esc(g.gid)}">${g.paidSum?"수정":"입금 기록"}</button></td><td class="foot">${esc(g.files.map(f=>f.replace(CL.filePrefix,"").replace(/\.xlsx$/,"")).join(", "))}</td></tr>`;
+  for(const g of shown.slice(0,1500)){const op=U.open===g.gid;h+=`<tr class="click${op?" open":""}" tabindex="0" data-ugrp="${esc(g.gid)}" title="누르면 검사·방문 내역이 펼쳐집니다"><td class="n">${g.days==null?"–":g.days.toLocaleString()}</td><td class="d">${fmtD(g.ref)}</td><td><strong>${esc(g.patient)}</strong> <span class="foot">${op?"▲":"▼"}</span></td><td class="d">${esc(g.sid)}</td><td>${esc(g.doctor)}</td><td>${esc(g.firm||NOFIRM)}</td><td class="d">${fmtD(g.doi)}</td><td class="n"><strong>${g.origBalance>0?usd(g.balance):amtK(0)}</strong>${g.paidSum&&g.origBalance>0?`<div class="foot">빌 잔액 ${usd(g.origBalance)}</div>`:""}</td><td class="n">${amtK(g.billed)}</td><td>${g.settled?`<span class="pill warn">합의됨·미지급</span>`:billPill(g.bill||"-")}</td><td style="white-space:nowrap">${g.paidSum?`<span class="pill ok">${payLabel(g.gid)}</span> `:""}<button class="btn ghost" style="padding:2px 9px;font-size:12px" data-pay="${esc(g.gid)}">${g.paidSum?"수정":"입금 기록"}</button></td><td class="foot">${esc(g.files.map(f=>f.replace(CL.filePrefix,"").replace(/\.xlsx$/,"")).join(", "))}</td></tr>`;
     if(op)h+=`<tr class="detail"><td colspan="12">${unpaidDetail(g)}</td></tr>`;}
   h+=`</tbody></table></div>${shown.length>1500?`<p class="note">처음 1,500개만 표시. 로펌을 눌러 좁혀 보세요.</p>`:""}</div>`;
   $("#view").innerHTML=h;
@@ -904,7 +905,7 @@ async function loadShared(){
 let PAY={};
 async function loadPayments(){const {data,error}=await SB.from("cfpc_payments").select("*").eq("clinic",CLINIC).order("paid_on");if(error)return;PAY={};for(const r of data||[])(PAY[r.gid]=PAY[r.gid]||[]).push(r);}
 function payLabel(gid){const p=payInfo(gid);return [p.paid?"입금 "+usd(p.paid)+(p.last?" · "+fmtD(p.last):""):"",p.adj?"감액 "+usd(p.adj):""].filter(Boolean).join(" / ");}
-function payInfo(gid){const l=PAY[gid]||[];const isA=r=>r.kind==="adjust";const paid=l.filter(r=>!isA(r)).reduce((a,r)=>a+Number(r.amount||0),0),adj=l.filter(isA).reduce((a,r)=>a+Number(r.amount||0),0);const pl=l.filter(r=>!isA(r));return {sum:paid+adj,paid,adj,last:pl.length?pl[pl.length-1].paid_on:"",list:l};}
+function payInfo(gid){const l=PAY[gid]||[];const closed=l.some(r=>r.closes);const isA=r=>r.kind==="adjust";const paid=l.filter(r=>!isA(r)).reduce((a,r)=>a+Number(r.amount||0),0),adj=l.filter(isA).reduce((a,r)=>a+Number(r.amount||0),0);const pl=l.filter(r=>!isA(r));return {sum:paid+adj,paid,adj,closed,last:pl.length?pl[pl.length-1].paid_on:"",list:l};}
 let GIDX=null,GIDX_SRC=null;
 function groupForGid(gid){if(GIDX_SRC!==S.groups){GIDX=new Map();for(const [k,g] of Object.entries(S.groups)){const id=k.slice(k.indexOf("|")+1),cur=GIDX.get(id);if(!cur||g.file>cur.file)GIDX.set(id,g);}GIDX_SRC=S.groups;}return GIDX.get(gid)||null;}
 function payDialog(gid,editId){
@@ -916,10 +917,10 @@ function payDialog(gid,editId){
   d.innerHTML=`<div style="padding:16px 18px;border-bottom:1px solid var(--line)"><div style="font-weight:700;font-size:16px">입금·조정 · ${esc(g.patient||"")}</div><div class="sub">${esc(g.sid||"")} · ${esc(g.firm||NOFIRM)} · ${esc(g.doctor||"")}</div></div>
   <div style="padding:14px 18px;display:flex;flex-direction:column;gap:12px">
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-      <div class="kpi"><div class="l">마지막 빌 잔액</div><div class="v" style="font-size:18px">${usd(orig)||"$0"}</div></div>
+      <div class="kpi"><div class="l">마지막 빌 잔액</div><div class="v" style="font-size:18px">${orig>0?usd(orig):"미정"}</div></div>
       <div class="kpi"><div class="l">입금 합계</div><div class="v" style="font-size:18px">${usd(pi.paid)||"$0"}</div></div>
       <div class="kpi"><div class="l">감액(네고)</div><div class="v" style="font-size:18px">${usd(pi.adj)||"$0"}</div></div>
-      <div class="kpi"><div class="l">남은 잔액</div><div class="v" style="font-size:18px">${usd(Math.max(0,orig-pi.sum))||"$0"}</div></div>
+      <div class="kpi"><div class="l">남은 잔액</div><div class="v" style="font-size:18px">${pi.closed?"$0 (종결)":orig>0?usd(Math.max(0,orig-pi.sum)):"미정"}</div></div>
     </div>
     ${pi.list.length?`<table><thead><tr><th style="cursor:default">날짜</th><th style="cursor:default">종류</th><th class="n" style="cursor:default">금액</th><th style="cursor:default">메모</th><th style="cursor:default"></th></tr></thead><tbody>${pi.list.map(x=>`<tr${ed&&ed.id===x.id?' class="open"':""}><td class="d">${fmtD(x.paid_on)}</td><td>${x.kind==="adjust"?'<span class="pill warn">감액</span>':'<span class="pill ok">입금</span>'}</td><td class="n">${usd(Number(x.amount))}</td><td style="white-space:normal">${esc(x.note||"")}<div class="foot">${esc(x.updated_by||x.created_by||"")}</div></td><td style="white-space:nowrap"><button class="btn ghost" style="padding:2px 8px;font-size:12px" data-payedit="${x.id}">수정</button> <button class="btn ghost" style="padding:2px 8px;font-size:12px" data-paydel="${x.id}">삭제</button></td></tr>`).join("")}</tbody></table>`:`<p class="note">아직 기록된 입금·감액이 없습니다.</p>`}
     <form id="payForm" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;border-top:1px solid var(--line);padding-top:12px">
@@ -927,7 +928,7 @@ function payDialog(gid,editId){
       <div class="f"><label for="payDate">날짜</label><input type="date" id="payDate" required value="${ed?ed.paid_on:today}"></div>
       <div class="f"><label for="payAmt">금액 (USD)</label><input type="number" id="payAmt" required step="0.01" min="0.01" style="min-width:0;width:140px" value="${ed?Number(ed.amount):""}" placeholder="예: 2500"></div>
       <div class="f" style="flex:1 1 180px"><label for="payNote">메모 (수표번호·합의 내용 등)</label><input type="text" id="payNote" style="min-width:0;width:100%" value="${ed?esc(ed.note||""):""}"></div>
-      ${ed?"":`<label id="payCloseWrap" style="flex:1 1 100%;display:flex;gap:7px;align-items:center;font-size:13.5px;font-weight:600"><input type="checkbox" id="payClose" checked> Paid — 이 입금으로 종결 (나머지 잔액은 자동 감액, 남은 잔액 $0)</label>`}
+      ${ed?"":`<label id="payCloseWrap" style="flex:1 1 100%;display:flex;gap:7px;align-items:center;font-size:13.5px;font-weight:600"><input type="checkbox" id="payClose" checked> Paid — 이 입금으로 종결 (남은 잔액 $0, 미지급 목록에서 빠짐)</label>`}
       <div style="display:flex;gap:8px"><button class="btn" type="submit">${ed?"수정 저장":"저장"}</button>${ed?`<button class="btn ghost" type="button" data-paynew="1">새로 입력</button>`:""}<button class="btn ghost" type="button" data-payclose="1">닫기</button></div>
     </form>
     <p class="note" id="payMsg">돈이 들어오면 금액을 넣고 저장만 누르세요. "Paid" 체크가 켜져 있으면 나머지는 자동 감액돼 잔액 $0이 되고 미지급 목록에서 빠집니다. 나눠서 들어오는 중이면 체크를 끄세요.</p>
@@ -937,11 +938,12 @@ function payDialog(gid,editId){
     const amt=Number(d.querySelector("#payAmt").value),dt=d.querySelector("#payDate").value,note=d.querySelector("#payNote").value.trim(),kind=d.querySelector("#payKind").value;
     if(!(amt>0)||!dt){d.querySelector("#payMsg").textContent="날짜와 금액을 확인하세요.";return;}
     const row={gid,sid:g.sid||"",patient:g.patient||"",firm:g.firm||"",paid_on:dt,amount:amt,note,kind};
-    const closeIt=!ed&&kind==="payment"&&d.querySelector("#payClose")&&d.querySelector("#payClose").checked;
+    const closeIt=!ed&&kind==="payment"&&!!d.querySelector("#payClose")&&d.querySelector("#payClose").checked;
+    if(closeIt)row.closes=true;
     const res=ed?await SB.from("cfpc_payments").update(Object.assign(row,{updated_by:ME,updated_at:new Date().toISOString()})).eq("id",ed.id):await SB.from("cfpc_payments").insert(Object.assign(row,{clinic:CLINIC,created_by:ME}));
     if(res.error){d.querySelector("#payMsg").textContent="저장 실패: "+res.error.message;return;}
     let rest=0;
-    if(closeIt){rest=Math.round((orig-pi.sum-amt)*100)/100;
+    if(closeIt&&orig>0){rest=Math.round((orig-pi.sum-amt)*100)/100;
       if(rest>0.005){const r2=await SB.from("cfpc_payments").insert({gid,sid:g.sid||"",patient:g.patient||"",firm:g.firm||"",paid_on:dt,amount:rest,note:"Paid 종결 — 자동 감액",kind:"adjust",clinic:CLINIC,created_by:ME});
         if(r2.error){d.querySelector("#payMsg").textContent="입금은 저장됐지만 자동 감액 실패: "+r2.error.message;await loadPayments();render();return;}}}
     SB.from("cfpc_log").insert({clinic:CLINIC,action:ed?"payment_edit":"payment_add",detail:{gid,sid:g.sid,amount:amt,paid_on:dt,kind,closed:closeIt,auto_adjust:rest>0.005?rest:0}});
@@ -967,6 +969,7 @@ let sigTimer=null;function saveSig(){clearTimeout(sigTimer);sigTimer=setTimeout(
 /* ---------- print: professional English documents ---------- */
 const P_ENFIRM=f=>!f||f===NOFIRM?"(No attorney on file)":f;
 const P_USD=n=>"$"+Math.round(n||0).toLocaleString("en-US");
+const P_AMT=n=>n>0?P_USD(n):"TBD";
 const P_MON=["January","February","March","April","May","June","July","August","September","October","November","December"];
 function pPeriod(k){if(S.gran==="year")return k;if(S.gran==="month")return P_MON[+k.slice(5,7)-1]+" "+k.slice(0,4);if(S.gran==="week")return "Week of "+fmtD(k);return fmtD(k);}
 function pToday(){const d=new Date();return String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")+"/"+d.getFullYear();}
@@ -1043,7 +1046,7 @@ function buildPrint(one){
     if(!g)return null;
     const vs=S.visits.filter(v=>v.gid===g.gid).sort((a,b)=>a.date.localeCompare(b.date)),pi=payInfo(g.gid);
     h=pHead("Patient Account Statement",[["Date",d],["Patient",g.patient],["Account #",g.sid||"–"],["Date of Injury",fmtD(g.doi)||"–"]],g.firm)
-    +pSum([["Visits",vs.length.toLocaleString()],["Total Billed",P_USD(g.billed)],["Payments Received",P_USD(pi.paid)],["Balance Due",P_USD(g.balance)]])
+    +pSum([["Visits",vs.length.toLocaleString()],["Total Billed",P_AMT(g.billed)],["Payments Received",P_USD(pi.paid)],["Balance Due",g.origBalance>0?P_USD(g.balance):"TBD"]])
     +`<table class="pd-t"><thead><tr><th class="c-no">#</th><th>Date of Service</th><th>Service</th><th>Provider</th><th>Billing Status</th></tr></thead><tbody>`
     +vs.map((v,i)=>`<tr><td class="c-no">${i+1}</td><td class="m">${fmtD(v.date)}</td><td>${esc(v.service||"–")}</td><td>${esc(v.doctor)}</td><td>${esc(g.settled?"Settled – Payment Pending":(v.bill||"–"))}</td></tr>`).join("")+`</tbody></table>`
     +(pi.list.filter(x=>x.kind!=="adjust").length?`<h2 class="pd-h2">Payments Received</h2><table class="pd-t"><thead><tr><th>Date</th><th class="n">Amount</th><th>Reference</th></tr></thead><tbody>${pi.list.filter(x=>x.kind!=="adjust").map(x=>`<tr><td class="m">${fmtD(x.paid_on)}</td><td class="n">${P_USD(Number(x.amount))}</td><td>${esc(x.note||"")}</td></tr>`).join("")}</tbody></table>`:"")
@@ -1052,7 +1055,7 @@ function buildPrint(one){
     const {list,byFirm,shown}=unpaidView(rows);
     const st=g=>g.settled?"Settled – Payment Pending":(g.bill||"–");
     const aging=(+U.age&&!document.getElementById("fQ").value.trim())?`${(+U.age).toLocaleString()}+ days outstanding`:"All ages";
-    const tbl=(gs,firmCol)=>{let b=0,t=0;const r=gs.map((g,i)=>{b+=g.balance||0;t+=g.billed||0;return `<tr${g.settled?' class="hl"':""}><td class="c-no">${i+1}</td><td class="n">${g.days==null?"–":g.days.toLocaleString()}</td><td class="m">${fmtD(g.ref)}</td><td class="b">${esc(g.patient)}</td><td class="m">${esc(g.sid)}</td>${firmCol?`<td>${esc(P_ENFIRM(g.firm))}</td>`:""}<td>${esc(g.doctor)}</td><td class="m">${fmtD(g.doi)}</td><td class="n b">${g.balance?P_USD(g.balance):"–"}</td><td class="n">${P_USD(g.billed)}</td><td>${esc(st(g))}</td></tr>`;}).join("");
+    const tbl=(gs,firmCol)=>{let b=0,t=0;const r=gs.map((g,i)=>{b+=g.balance||0;t+=g.billed||0;return `<tr${g.settled?' class="hl"':""}><td class="c-no">${i+1}</td><td class="n">${g.days==null?"–":g.days.toLocaleString()}</td><td class="m">${fmtD(g.ref)}</td><td class="b">${esc(g.patient)}</td><td class="m">${esc(g.sid)}</td>${firmCol?`<td>${esc(P_ENFIRM(g.firm))}</td>`:""}<td>${esc(g.doctor)}</td><td class="m">${fmtD(g.doi)}</td><td class="n b">${g.balance?(g.origBalance>0?P_USD(g.balance):"TBD"):"–"}</td><td class="n">${P_AMT(g.billed)}</td><td>${esc(st(g))}</td></tr>`;}).join("");
       return `<table class="pd-t"><thead><tr><th class="c-no">#</th><th class="n">Days Outstanding</th><th>Last Billed</th><th>Patient</th><th>Account #</th>${firmCol?"<th>Law Firm</th>":""}<th>Provider</th><th>DOI</th><th class="n">Balance Due</th><th class="n">Total Billed</th><th>Status</th></tr></thead><tbody>${r}</tbody><tfoot><tr><td></td><td colspan="${firmCol?7:6}">Total — ${gs.length.toLocaleString()} account${gs.length===1?"":"s"}</td><td class="n">${P_USD(b)}</td><td class="n">${P_USD(t)}</td><td></td></tr></tfoot></table>`;};
     if(U.firm){
       const gs=shown,bal=gs.reduce((s,g)=>s+(g.balance||0),0),sett=gs.filter(g=>g.settled).length;
@@ -1126,9 +1129,9 @@ function emailFor(f,vs){
   if(lv===4)h+=`<p style="margin:0 0 12px;padding:8px 12px;background:#fde8e8;color:#8a1c1c;font-weight:bold">FINAL NOTICE</p>`;
   let tbl=`<table style="border-collapse:collapse;margin:4px 0 14px"><tr><th ${H}>Patient</th><th ${H}>Acct #</th><th ${H}>DOI</th><th ${H}>Dates of Service</th><th ${H}>Visits</th><th ${H}>Provider</th><th ${H} align="right">Billed</th>${cs.some(c=>c.paid)?`<th ${H} align="right">Paid</th>`:""}<th ${H} align="right">Balance Due</th><th ${H}>Our Status</th></tr>`;
   const anyPaid=cs.some(c=>c.paid),R='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:right;white-space:nowrap"',RB='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:right;white-space:nowrap;font-weight:bold"',$$=n=>"$"+Math.round(n||0).toLocaleString("en-US");
-  for(const c of cs){const red=/settled/i.test(c.bill)&&strong;tbl+=`<tr><td ${C}>${esc(c.p)}</td><td ${C}>${esc(c.id)}</td><td ${C}>${fmtD(c.doi)}</td><td ${C}>${fmtD(c.first)}${c.first!==c.last?" – "+fmtD(c.last):""}</td><td ${C}>${c.n}</td><td ${C}>${esc(c.doc)}</td><td ${R}>${c.billed?$$(c.billed):"–"}</td>${anyPaid?`<td ${R}>${c.paid?$$(c.paid):"–"}</td>`:""}<td ${RB}>${c.billed||c.due?$$(c.due):"–"}</td><td style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:left;${red?"color:#8a1c1c;font-weight:bold":""}">${esc(c.bill||"-")}</td></tr>`;}
+  for(const c of cs){const red=/settled/i.test(c.bill)&&strong;tbl+=`<tr><td ${C}>${esc(c.p)}</td><td ${C}>${esc(c.id)}</td><td ${C}>${fmtD(c.doi)}</td><td ${C}>${fmtD(c.first)}${c.first!==c.last?" – "+fmtD(c.last):""}</td><td ${C}>${c.n}</td><td ${C}>${esc(c.doc)}</td><td ${R}>${c.billed?$$(c.billed):"TBD"}</td>${anyPaid?`<td ${R}>${c.paid?$$(c.paid):"–"}</td>`:""}<td ${RB}>${c.billed||c.due?$$(c.due):"TBD"}</td><td style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:left;${red?"color:#8a1c1c;font-weight:bold":""}">${esc(c.bill||"-")}</td></tr>`;}
   const tB=cs.reduce((a,c)=>a+c.billed,0),tP=cs.reduce((a,c)=>a+c.paid,0),tD=cs.reduce((a,c)=>a+c.due,0);
-  tbl+=`<tr><td ${C} colspan="6"><b>Total — ${cs.length} patient${cs.length===1?"":"s"}</b></td><td ${RB}>${$$(tB)}</td>${anyPaid?`<td ${RB}>${$$(tP)}</td>`:""}<td ${RB}>${$$(tD)}</td><td ${C}></td></tr></table>`;
+  tbl+=`<tr><td ${C} colspan="6"><b>Total — ${cs.length} patient${cs.length===1?"":"s"}</b></td><td ${RB}>${tB?$$(tB):"TBD"}</td>${anyPaid?`<td ${RB}>${$$(tP)}</td>`:""}<td ${RB}>${tB||tD?$$(tD):"TBD"}</td><td ${C}></td></tr></table>`;
   paras.forEach((t,i)=>{h+=`<p style="margin:0 0 12px">${esc(t)}</p>`;if(i===1)h+=tbl;});
   const sg=M.sig;
   h+=`<p style="margin:16px 0 0">Sincerely,<br>${[sg.name,sg.title,sg.org,sg.phone,sg.email].filter(x=>x&&x.trim()).map(esc).join("<br>")}</p>`;
