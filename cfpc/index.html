@@ -612,7 +612,7 @@ const billPill=(b,n)=>{const cls=/settled|paid|payment/i.test(b)?"ok":/review|mi
 
 /* ---------- render ---------- */
 function render(){
-  const rows=filteredQ();
+  const rows=["mail","alias","users"].includes(S.tab)?[]:filteredQ();
   {const pb=document.getElementById("printBtn");if(pb)pb.hidden=["alias","users","mail"].includes(S.tab);}
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===S.tab));
   if(!S.files.length&&S.tab!=="users"){$("#filters").hidden=true;$("#view").innerHTML=`<div class="empty"><p style="margin:0 0 6px;font-weight:600;color:var(--fg)">아직 넣은 파일이 없습니다</p><p style="margin:0">위 칸에 ${CL.filePat} 엑셀을 끌어다 놓으세요. 한 번 넣으면 회사 서버에 저장되어, 권한 있는 사람은 어느 컴퓨터에서든 바로 봅니다.</p></div>`;return;}
@@ -904,7 +904,8 @@ async function loadShared(){
 let PAY={};
 async function loadPayments(){const {data,error}=await SB.from("cfpc_payments").select("*").eq("clinic",CLINIC).order("paid_on");if(error)return;PAY={};for(const r of data||[])(PAY[r.gid]=PAY[r.gid]||[]).push(r);}
 function payInfo(gid){const l=PAY[gid]||[];return {sum:l.reduce((a,r)=>a+Number(r.amount||0),0),last:l.length?l[l.length-1].paid_on:"",list:l};}
-function groupForGid(gid){let best=null;for(const [k,g] of Object.entries(S.groups)){if(k.slice(k.indexOf("|")+1)===gid&&(!best||g.file>best.file))best=g;}return best;}
+let GIDX=null,GIDX_SRC=null;
+function groupForGid(gid){if(GIDX_SRC!==S.groups){GIDX=new Map();for(const [k,g] of Object.entries(S.groups)){const id=k.slice(k.indexOf("|")+1),cur=GIDX.get(id);if(!cur||g.file>cur.file)GIDX.set(id,g);}GIDX_SRC=S.groups;}return GIDX.get(gid)||null;}
 function payDialog(gid,editId){
   let d=document.getElementById("payDlg");
   if(!d){d=document.createElement("dialog");d.id="payDlg";d.style.cssText="border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);padding:0;max-width:560px;width:calc(100% - 32px)";document.body.appendChild(d);
@@ -1130,7 +1131,7 @@ function renderMail(){
     <div class="presets">${[["lastm","지난달"],["thism","이번 달"],["30","최근 30일"],["90","최근 90일"],["year","올해"],["all","전체"]].map(([k,l])=>`<button data-preset="${k}">${l}</button>`).join("")}</div>
     <div class="row"><div class="f"><label for="mFrom">시작일</label><input type="date" id="mFrom" value="${M.from}"></div><div class="f"><label for="mTo">종료일</label><input type="date" id="mTo" value="${M.to}"></div></div>
     <div class="f"><label>빌링 상태</label><div class="presets">${allBills.map(b=>`<label style="display:flex;gap:5px;align-items:center;font-size:13px"><input type="checkbox" data-bill="${esc(b)}" ${!M.bills||M.bills.has(b)?"checked":""}>${esc(b)}</label>`).join("")}</div></div>
-    <p class="note">${r1.length?`이 조건에 방문 <b>${r1.length.toLocaleString()}</b>건, 환자 <b>${agg(r1).patients.toLocaleString()}</b>명, 로펌 <b>${groupBy(r1,v=>v.firm||NOFIRM).size}</b>곳이 있습니다.`:"조건에 맞는 기록이 없습니다."}</p>`;
+    <p class="note">${r1.length?`이 조건에 방문 <b>${r1.length.toLocaleString()}</b>건, 환자 <b>${agg(r1).patients.toLocaleString()}</b>명, 로펌 <b>${groupBy(r1,v=>v.firm||NOFIRM).size}</b>곳이 있습니다.${M.firms?` 이 중 선택된 로펌: <b>${esc([...M.firms].join(", "))}</b>`:""}`:"조건에 맞는 기록이 없습니다."}</p>`;
   }else if(M.step===2){
     const g=[...groupBy(r1,v=>v.firm||NOFIRM)].map(([f,vs])=>[f,vs.length,agg(vs).patients]).sort((a,b)=>b[1]-a[1]);
     const on=f=>!M.firms||M.firms.has(f);
@@ -1235,7 +1236,7 @@ $("#clear").onclick=async()=>{const b=$("#clear");if(!IS_ADMIN){toast("관리자
 $("#reset").onclick=()=>{["#fFrom","#fTo","#fFirm","#fDoc","#fBill","#fQ"].forEach(s=>$(s).value="");render();};
 ["#fFrom","#fTo","#fFirm","#fDoc","#fBill"].forEach(s=>$(s).addEventListener("change",render));
 $("#fQ").addEventListener("input",render);
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{S.tab=t.dataset.tab;S.open=null;try{localStorage.setItem("cfpc.tab",S.tab)}catch(e){}render();});
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{S.tab=t.dataset.tab;S.open=null;if(S.tab==="mail"){const ff=$("#fFirm")&&$("#fFirm").value;if(ff)M.firms=new Set([ff]);}try{localStorage.setItem("cfpc.tab",S.tab)}catch(e){}render();});
 $("#view").addEventListener("click",ev=>{const b=ev.target.closest("[data-pay]");if(b){ev.stopPropagation();payDialog(b.dataset.pay);}},true);
 $("#view").addEventListener("click",ev=>{
   if(S.tab==="unpaid"){
