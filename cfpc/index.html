@@ -874,6 +874,7 @@ async function loadShared(){
   for(const r of (st.data||[])){
     if(r.key==="firmAliases"){ALIAS=Object.assign({},(r.value||{}).map||{});}
     if(r.key==="signature"){M.sig=Object.assign(M.sig,r.value||{});}
+    if(r.key==="sender"&&r.value&&r.value.email)SENDER=String(r.value.email).trim();
   }
   for(const r of (fm.data||[]))FDB[r.name]=r;
   applyFirmEmails();
@@ -1121,6 +1122,7 @@ function renderMail(){
       ${[1,2,3,4].map(n=>`<label style="align-items:flex-start;flex-direction:column;gap:2px;${M.mode==="fixed"&&M.level===n?"border-color:var(--accent)":""}"><span style="display:flex;gap:8px;align-items:center"><input type="radio" name="lvl" data-level="${n}" ${M.mode==="fixed"&&M.level===n?"checked":""}><b>${LV[n].ko}</b></span><span class="note">${LV[n].desc}</span></label>`).join("")}
     </div>
     <p class="note">이번에 보낼 단계: ${sel.map(([f])=>`<span class="pill ${levelFor(f)>=3?"warn":""}">${esc(f)} → ${levelFor(f)}단계</span>`).join("")}</p>
+    <p class="okbox" style="margin:0">보내는 계정: <b>${esc(SENDER)}</b> — "Gmail로 열기"를 누르면 이 계정의 Gmail 작성 창이 열립니다. 이 컴퓨터 브라우저에서 이 계정으로 Gmail에 로그인돼 있어야 합니다.</p>
     <h2 style="margin-top:6px">서명</h2>
     <div class="row">${[["name","이름"],["title","직함"],["org","병원명"],["phone","전화"],["email","회신 이메일"]].map(([k,l])=>`<div class="f"><label for="sig_${k}">${l}</label><input type="text" id="sig_${k}" data-sig="${k}" value="${esc(M.sig[k]||"")}"></div>`).join("")}</div>
     <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mCsv" ${M.csv?"checked":""}> 케이스 목록 CSV 파일도 첨부</label>
@@ -1154,10 +1156,12 @@ function errMsg(e){
 async function copyHtml(em){
   try{if(window.ClipboardItem)await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([em.html],{type:"text/html"}),"text/plain":new Blob([em.text],{type:"text/plain"})})]);else await navigator.clipboard.writeText(em.text);return true;}catch(e){return false;}
 }
+/* every email from this viewer goes out from the company CFPC mailbox */
+let SENDER="liens.cfpc@gmail.com";
 async function gmailOpen(f){
   const pv=selectedFirms().find(([x])=>x===f);if(!pv)return;const em=emailFor(pv[0],pv[1]);
   const ok=await copyHtml(em);
-  const u="https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(emails(FDB[f].email).join(","))+"&su="+encodeURIComponent(em.subject);
+  const u="https://mail.google.com/mail/?authuser="+encodeURIComponent(SENDER)+"&view=cm&fs=1&to="+encodeURIComponent(emails(FDB[f].email).join(","))+"&su="+encodeURIComponent(em.subject);
   window.open(u,"_blank");
   M.previewFirm=f;M.status=ok?{ok:true,msg:f+": 본문을 복사했습니다. 열린 Gmail 창 본문에 Ctrl+V 하세요."}:{ok:false,msg:"자동 복사가 막혔습니다. 미리보기를 드래그해서 복사하세요."};render();
 }
