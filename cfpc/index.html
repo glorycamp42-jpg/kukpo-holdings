@@ -1071,7 +1071,10 @@ function selectedFirms(){return [...groupBy(mailRows(),v=>v.firm||NOFIRM)].sort(
 
 function caseRows(vs){
   const g=[...groupBy(vs,v=>pkey(v))].map(([k,x])=>{x.sort((p,q)=>p.date.localeCompare(q.date));return x;});
-  return g.sort((a,b)=>a[0].patient.localeCompare(b[0].patient)).map(x=>({p:x[0].patient,id:x[0].sid,doi:x[0].doi,first:x[0].date,last:x[x.length-1].date,n:x.length,doc:[...new Set(x.map(v=>v.doctor))].join(", "),bill:x[x.length-1].bill||""}));
+  return g.sort((a,b)=>a[0].patient.localeCompare(b[0].patient)).map(x=>{const gids=[...new Set(x.map(v=>v.gid))].filter(Boolean);
+    const billed=agg(x).total,paid=gids.reduce((a,g)=>a+payInfo(g).sum,0);
+    const bal=gids.reduce((a,g)=>{const G=groupForGid(g);return a+(G?money(G.balance):0);},0);
+    return {p:x[0].patient,id:x[0].sid,doi:x[0].doi,first:x[0].date,last:x[x.length-1].date,n:x.length,doc:[...new Set(x.map(v=>v.doctor))].join(", "),bill:x[x.length-1].bill||"",billed,paid,due:Math.max(0,bal-paid)};});
 }
 const C='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:left;vertical-align:top"';
 const H='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:12px;text-align:left;background:#eef2f3"';
@@ -1080,15 +1083,17 @@ function emailFor(f,vs){
   const strong=lv>=3;
   let h=`<div style="font-family:Arial,Helvetica,sans-serif;color:#1b1b1b;font-size:14px;line-height:1.55">`;
   if(lv===4)h+=`<p style="margin:0 0 12px;padding:8px 12px;background:#fde8e8;color:#8a1c1c;font-weight:bold">FINAL NOTICE</p>`;
-  let tbl=`<table style="border-collapse:collapse;margin:4px 0 14px"><tr><th ${H}>Patient</th><th ${H}>Acct #</th><th ${H}>DOI</th><th ${H}>Dates of Service</th><th ${H}>Visits</th><th ${H}>Provider</th><th ${H}>Our Status</th></tr>`;
-  for(const c of cs){const red=/settled/i.test(c.bill)&&strong;tbl+=`<tr><td ${C}>${esc(c.p)}</td><td ${C}>${esc(c.id)}</td><td ${C}>${fmtD(c.doi)}</td><td ${C}>${fmtD(c.first)}${c.first!==c.last?" – "+fmtD(c.last):""}</td><td ${C}>${c.n}</td><td ${C}>${esc(c.doc)}</td><td style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:left;${red?"color:#8a1c1c;font-weight:bold":""}">${esc(c.bill||"-")}</td></tr>`;}
-  tbl+=`</table>`;
+  let tbl=`<table style="border-collapse:collapse;margin:4px 0 14px"><tr><th ${H}>Patient</th><th ${H}>Acct #</th><th ${H}>DOI</th><th ${H}>Dates of Service</th><th ${H}>Visits</th><th ${H}>Provider</th><th ${H} align="right">Billed</th>${cs.some(c=>c.paid)?`<th ${H} align="right">Paid</th>`:""}<th ${H} align="right">Balance Due</th><th ${H}>Our Status</th></tr>`;
+  const anyPaid=cs.some(c=>c.paid),R='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:right;white-space:nowrap"',RB='style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:right;white-space:nowrap;font-weight:bold"',$$=n=>"$"+Math.round(n||0).toLocaleString("en-US");
+  for(const c of cs){const red=/settled/i.test(c.bill)&&strong;tbl+=`<tr><td ${C}>${esc(c.p)}</td><td ${C}>${esc(c.id)}</td><td ${C}>${fmtD(c.doi)}</td><td ${C}>${fmtD(c.first)}${c.first!==c.last?" – "+fmtD(c.last):""}</td><td ${C}>${c.n}</td><td ${C}>${esc(c.doc)}</td><td ${R}>${c.billed?$$(c.billed):"–"}</td>${anyPaid?`<td ${R}>${c.paid?$$(c.paid):"–"}</td>`:""}<td ${RB}>${c.billed||c.due?$$(c.due):"–"}</td><td style="border:1px solid #cfd6d9;padding:6px 9px;font-size:13px;text-align:left;${red?"color:#8a1c1c;font-weight:bold":""}">${esc(c.bill||"-")}</td></tr>`;}
+  const tB=cs.reduce((a,c)=>a+c.billed,0),tP=cs.reduce((a,c)=>a+c.paid,0),tD=cs.reduce((a,c)=>a+c.due,0);
+  tbl+=`<tr><td ${C} colspan="6"><b>Total — ${cs.length} patient${cs.length===1?"":"s"}</b></td><td ${RB}>${$$(tB)}</td>${anyPaid?`<td ${RB}>${$$(tP)}</td>`:""}<td ${RB}>${$$(tD)}</td><td ${C}></td></tr></table>`;
   paras.forEach((t,i)=>{h+=`<p style="margin:0 0 12px">${esc(t)}</p>`;if(i===1)h+=tbl;});
   const sg=M.sig;
   h+=`<p style="margin:16px 0 0">Sincerely,<br>${[sg.name,sg.title,sg.org,sg.phone,sg.email].filter(x=>x&&x.trim()).map(esc).join("<br>")}</p>`;
   h+=`<p style="margin:16px 0 0;font-size:11px;color:#6b6b6b">This message contains confidential patient information intended only for the addressee. If you received it in error, please notify the sender and delete it.</p></div>`;
-  const text=paras.join("\n\n")+"\n\n"+cs.map(c=>`${c.p} | ${c.id} | DOI ${fmtD(c.doi)} | DOS ${fmtD(c.first)}${c.first!==c.last?" - "+fmtD(c.last):""} | ${c.n} visits | ${c.bill}`).join("\n")+"\n\nSincerely,\n"+[sg.name,sg.title,sg.org,sg.phone,sg.email].filter(x=>x&&x.trim()).join("\n");
-  const csv="﻿"+[["Patient","Acct #","DOI","First DOS","Last DOS","Visits","Provider","Status"],...cs.map(c=>[c.p,c.id,fmtD(c.doi),fmtD(c.first),fmtD(c.last),c.n,c.doc,c.bill])].map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const text=paras.join("\n\n")+"\n\n"+cs.map(c=>`${c.p} | ${c.id} | DOI ${fmtD(c.doi)} | DOS ${fmtD(c.first)}${c.first!==c.last?" - "+fmtD(c.last):""} | ${c.n} visits | Billed $${Math.round(c.billed).toLocaleString("en-US")} | Balance Due $${Math.round(c.due).toLocaleString("en-US")} | ${c.bill}`).join("\n")+`\nTotal Balance Due: $${Math.round(cs.reduce((a,c)=>a+c.due,0)).toLocaleString("en-US")}`+"\n\nSincerely,\n"+[sg.name,sg.title,sg.org,sg.phone,sg.email].filter(x=>x&&x.trim()).join("\n");
+  const csv="﻿"+[["Patient","Acct #","DOI","First DOS","Last DOS","Visits","Provider","Billed","Paid","Balance Due","Status"],...cs.map(c=>[c.p,c.id,fmtD(c.doi),fmtD(c.first),fmtD(c.last),c.n,c.doc,Math.round(c.billed),Math.round(c.paid),Math.round(c.due),c.bill])].map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\r\n");
   return {lv,subject:T.subj(rangeText()),html:h,text,csv,cases:cs.length};
 }
 const b64=s=>{const b=new TextEncoder().encode(s);let o="";for(let i=0;i<b.length;i+=0x8000)o+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(o);};
