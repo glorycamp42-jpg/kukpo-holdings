@@ -927,18 +927,25 @@ function payDialog(gid,editId){
       <div class="f"><label for="payDate">날짜</label><input type="date" id="payDate" required value="${ed?ed.paid_on:today}"></div>
       <div class="f"><label for="payAmt">금액 (USD)</label><input type="number" id="payAmt" required step="0.01" min="0.01" style="min-width:0;width:140px" value="${ed?Number(ed.amount):""}" placeholder="예: 2500"></div>
       <div class="f" style="flex:1 1 180px"><label for="payNote">메모 (수표번호·합의 내용 등)</label><input type="text" id="payNote" style="min-width:0;width:100%" value="${ed?esc(ed.note||""):""}"></div>
+      ${ed?"":`<label id="payCloseWrap" style="flex:1 1 100%;display:flex;gap:7px;align-items:center;font-size:13.5px;font-weight:600"><input type="checkbox" id="payClose" checked> Paid — 이 입금으로 종결 (나머지 잔액은 자동 감액, 남은 잔액 $0)</label>`}
       <div style="display:flex;gap:8px"><button class="btn" type="submit">${ed?"수정 저장":"저장"}</button>${ed?`<button class="btn ghost" type="button" data-paynew="1">새로 입력</button>`:""}<button class="btn ghost" type="button" data-payclose="1">닫기</button></div>
     </form>
-    <p class="note" id="payMsg">남은 잔액 = 마지막 빌 잔액 − 입금 − 감액. 0이 되면 미지급 목록에서 빠집니다. 예: $2,800 청구 → $2,000에 합의되면 입금 $2,000 + 감액 $800.</p>
+    <p class="note" id="payMsg">돈이 들어오면 금액을 넣고 저장만 누르세요. "Paid" 체크가 켜져 있으면 나머지는 자동 감액돼 잔액 $0이 되고 미지급 목록에서 빠집니다. 나눠서 들어오는 중이면 체크를 끄세요.</p>
   </div>`;
+  {const k=d.querySelector("#payKind"),w=d.querySelector("#payCloseWrap");if(k&&w)k.onchange=()=>{w.style.display=k.value==="adjust"?"none":"flex";};}
   d.querySelector("#payForm").onsubmit=async ev=>{ev.preventDefault();
     const amt=Number(d.querySelector("#payAmt").value),dt=d.querySelector("#payDate").value,note=d.querySelector("#payNote").value.trim(),kind=d.querySelector("#payKind").value;
     if(!(amt>0)||!dt){d.querySelector("#payMsg").textContent="날짜와 금액을 확인하세요.";return;}
     const row={gid,sid:g.sid||"",patient:g.patient||"",firm:g.firm||"",paid_on:dt,amount:amt,note,kind};
+    const closeIt=!ed&&kind==="payment"&&d.querySelector("#payClose")&&d.querySelector("#payClose").checked;
     const res=ed?await SB.from("cfpc_payments").update(Object.assign(row,{updated_by:ME,updated_at:new Date().toISOString()})).eq("id",ed.id):await SB.from("cfpc_payments").insert(Object.assign(row,{clinic:CLINIC,created_by:ME}));
     if(res.error){d.querySelector("#payMsg").textContent="저장 실패: "+res.error.message;return;}
-    SB.from("cfpc_log").insert({clinic:CLINIC,action:ed?"payment_edit":"payment_add",detail:{gid,sid:g.sid,amount:amt,paid_on:dt,kind}});
-    await loadPayments();render();payDialog(gid);toast(kind==="adjust"?"감액을 저장했습니다":"입금을 저장했습니다");};
+    let rest=0;
+    if(closeIt){rest=Math.round((orig-pi.sum-amt)*100)/100;
+      if(rest>0.005){const r2=await SB.from("cfpc_payments").insert({gid,sid:g.sid||"",patient:g.patient||"",firm:g.firm||"",paid_on:dt,amount:rest,note:"Paid 종결 — 자동 감액",kind:"adjust",clinic:CLINIC,created_by:ME});
+        if(r2.error){d.querySelector("#payMsg").textContent="입금은 저장됐지만 자동 감액 실패: "+r2.error.message;await loadPayments();render();return;}}}
+    SB.from("cfpc_log").insert({clinic:CLINIC,action:ed?"payment_edit":"payment_add",detail:{gid,sid:g.sid,amount:amt,paid_on:dt,kind,closed:closeIt,auto_adjust:rest>0.005?rest:0}});
+    await loadPayments();render();payDialog(gid);toast(closeIt?"Paid 처리했습니다 — 남은 잔액 $0":kind==="adjust"?"감액을 저장했습니다":"입금을 저장했습니다");};
   d.onclick=async ev=>{const t=ev.target;
     if(t===d){d.close();return;}
     if(t.closest("[data-payclose]")){d.close();return;}
