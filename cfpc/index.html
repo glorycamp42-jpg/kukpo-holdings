@@ -1227,6 +1227,8 @@ async function boot(){
   const {data:ok}=await SB.rpc('cfpc_can_access');
   if(!ok){await SB.auth.signOut();document.getElementById('lErr').textContent='이 계정은 CFPC 페이지 권한이 없습니다. 관리자에게 요청하세요.';L.hidden=false;A.hidden=true;return;}
   const {data:adm}=await SB.rpc('cfpc_is_admin');IS_ADMIN=!!adm;
+  /* staff accounts are CFPC-only: no link back to the rest of Kukpo Hub */
+  {const hl=document.querySelector('.topbar a[href="/hub/"]');if(hl)hl.hidden=!IS_ADMIN;}
   ME=session.user.email||"";
   L.hidden=true;A.hidden=false;document.getElementById('who').textContent=ME+(IS_ADMIN?" · 관리자":"");
   document.getElementById('usersTab').hidden=!IS_ADMIN;
