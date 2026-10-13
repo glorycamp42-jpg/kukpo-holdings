@@ -889,7 +889,7 @@ const LV={
     subj:(r)=>`FINAL NOTICE – Outstanding Medical Lien Balances – Payment or Written Response Required Within 5 Business Days (${r})`,
     body:(f)=>[`Dear ${f},`,`This is our FINAL NOTICE regarding the outstanding medical lien balances listed below. Despite three prior written requests, your office has not responded.`,`Payment in full for every settled case, or a written status for each open case, must be received within 5 business days of the date of this notice.`,`If we do not receive payment or a written response by that date, ${CL.org} will pursue all available legal and collection remedies to recover these balances, without further notice. These may include enforcing our medical lien against any settlement, judgment, or award; notifying the responsible parties and insurers of our lien; referral to a collection agency; and legal action. Any interest, costs, and fees permitted by law or by the signed lien agreement will be added to the balance.`,`This matter requires your immediate attention.`]}
 };
-const M={step:1,from:"",to:"",firms:null,bills:null,mode:"auto",level:1,csv:false,sig:{name:"",title:"Billing Department",org:CL.org,phone:"",email:""},status:null,busy:false,confirm:false,progress:"",previewFirm:""};
+const M={step:1,from:"",to:"",firms:null,bills:null,mode:"auto",level:1,csv:false,sig:{name:"",title:"Billing Department",org:CL.org,phone:"",email:""},status:null,busy:false,confirm:false,progress:"",previewFirm:"",ind:{firm:"",to:"",other:"",pk:null}};
 const FDB={},hash=s=>{let h=5381;for(const c of s)h=((h*33)^c.charCodeAt(0))>>>0;return "f"+h.toString(16);};
 let db=null;
 async function loadShared(){
@@ -1144,6 +1144,41 @@ function emailFor(f,vs){
 }
 const b64=s=>{const b=new TextEncoder().encode(s);let o="";for(let i=0;i<b.length;i+=0x8000)o+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(o);};
 
+/* ---- 한 명씩 보내기: one recipient, chosen patients only ---- */
+function indRows(vs){return [...groupBy(vs,v=>pkey(v))].map(([k,x])=>({k,...caseRows(x)[0]})).sort((a,b)=>a.p.localeCompare(b.p));}
+function indState(f){if(M.ind.firm!==f)M.ind={firm:f,to:"",other:"",pk:null};return M.ind;}
+function indTo(f){const I=indState(f);return I.to==="__other"?I.other.trim():I.to;}
+function indVs(f,vs){const I=indState(f);return I.pk?vs.filter(v=>I.pk.has(pkey(v))):vs;}
+function indPanel(f,vs){
+  const I=indState(f),list=emails(FDB[f]&&FDB[f].email).filter(validEmail),rows=indRows(vs);
+  if(!I.to&&list.length===1)I.to=list[0];
+  const on=k=>!I.pk||I.pk.has(k),nSel=rows.filter(r=>on(r.k)).length,to=indTo(f);
+  let h=`<div class="card" style="margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px"><h2 style="margin:0 0 6px">한 명씩 보내기 · ${esc(f)}</h2>
+  <p class="note" style="margin:0 0 10px">사무실 전체가 아니라 <b>담당자 한 사람</b>에게, <b>고른 환자만</b> 담아 보냅니다.</p>
+  <div class="f"><label>받는 사람 (한 명)</label><div class="presets" style="flex-wrap:wrap">${list.map(e=>`<label style="display:flex;gap:5px;align-items:center;font-size:13px"><input type="radio" name="ito" data-ito="${esc(e)}" ${I.to===e?"checked":""}>${esc(e)}</label>`).join("")}
+  <label style="display:flex;gap:5px;align-items:center;font-size:13px"><input type="radio" name="ito" data-ito="__other" ${I.to==="__other"?"checked":""}>다른 주소</label>
+  <input type="email" id="iOther" placeholder="담당자 이메일 직접 입력" value="${esc(I.other)}" style="max-width:260px;${I.to==="__other"?"":"display:none"}"></div></div>
+  <div class="presets" style="margin:8px 0"><button data-ipk="all">환자 전체 선택</button><button data-ipk="none">전체 해제</button></div>
+  <div class="tbl" style="max-height:260px"><table><thead><tr><th style="cursor:default"></th><th style="cursor:default">환자</th><th style="cursor:default">Acct #</th><th style="cursor:default">DOI</th><th class="n" style="cursor:default">방문</th><th class="n" style="cursor:default">잔액</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td><input type="checkbox" data-ipk="${esc(r.k)}" ${on(r.k)?"checked":""} aria-label="${esc(r.p)} 선택"></td><td>${esc(r.p)}</td><td>${esc(r.id)}</td><td>${fmtD(r.doi)}</td><td class="n">${r.n}</td><td class="n">${r.billed||r.due?"$"+Math.round(r.due).toLocaleString("en-US"):"미정"}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn" data-iopen="${esc(f)}" ${nSel&&validEmail(to)?"":"disabled"}>선택 ${nSel}명 · Gmail로 열기</button><button class="btn ghost" data-isent="${esc(f)}" ${nSel&&validEmail(to)?"":"disabled"}>보냄으로 기록</button><span class="note">${validEmail(to)?"받는 사람: <b>"+esc(to)+"</b>":"받는 사람을 한 명 고르세요"}</span></div></div>`;
+  return h;
+}
+async function indOpen(f){
+  const pv=selectedFirms().find(([x])=>x===f);if(!pv)return;const to=indTo(f);if(!validEmail(to))return;
+  const em=emailFor(f,indVs(f,pv[1]));const ok=await copyHtml(em);
+  window.open("https://mail.google.com/mail/?authuser="+encodeURIComponent(SENDER)+"&view=cm&fs=1&to="+encodeURIComponent(to)+"&su="+encodeURIComponent(em.subject),"_blank");
+  M.status=ok?{ok:true,msg:to+": "+em.cases+"명 본문을 복사했습니다. 열린 Gmail 창 본문에 Ctrl+V 하세요."}:{ok:false,msg:"자동 복사가 막혔습니다. 미리보기를 드래그해서 복사하세요."};render();
+}
+async function indSent(f){
+  const pv=selectedFirms().find(([x])=>x===f);if(!pv)return;const to=indTo(f);if(!validEmail(to))return;
+  const em=emailFor(f,indVs(f,pv[1]));
+  const hist=((FDB[f]&&FDB[f].history)||[]).concat([{level:em.lv,date:toISO(new Date()),cases:em.cases,range:rangeText(),by:ME,to}]).slice(-20);
+  await saveFirm(f,{history:hist});await SB.from("cfpc_log").insert({clinic:CLINIC,action:"mail_sent",detail:{firm:f,level:em.lv,cases:em.cases,to,individual:true}});
+  M.status={ok:true,msg:f+" · "+to+": "+em.lv+"단계 보냄으로 기록했습니다."};render();
+}
+
 function renderMail(){
   const r1=mailRange(),sel=selectedFirms();
   const ready=sel.filter(([f])=>firmEmailOk(f));
@@ -1180,12 +1215,13 @@ function renderMail(){
     <p class="note">메일은 변호사에게 가는 것이라 영어로 작성됩니다. 3·4단계 문구는 처음 쓰기 전에 한 번 검토해 주세요.</p>`;
   }else{
     if(!M.previewFirm||!sel.some(([f])=>f===M.previewFirm))M.previewFirm=(ready[0]||sel[0]||[""])[0];
-    const pv=sel.find(([f])=>f===M.previewFirm);const em=pv?emailFor(pv[0],pv[1]):null;
+    const pv=sel.find(([f])=>f===M.previewFirm);const em=pv?emailFor(pv[0],indVs(pv[0],pv[1])):null;
     h+=`<h2>확인하고 보내기</h2>
     <div class="tbl" style="max-height:none"><table><thead><tr><th style="cursor:default">로펌</th><th style="cursor:default">받는 주소</th><th style="cursor:default">단계</th><th class="n" style="cursor:default">케이스</th><th style="cursor:default"></th></tr></thead><tbody>
     ${sel.map(([f,vs])=>{const ok=firmEmailOk(f),lv=levelFor(f);return `<tr${f===M.previewFirm?' class="open"':""}><td>${esc(f)}</td><td>${ok?esc(emails(FDB[f].email).join(", ")):`<span class="pill warn">주소 없음 · 건너뜀</span>`}</td><td><span class="pill ${lv>=3?"warn":""}">${LV[lv].ko}</span></td><td class="n">${caseRows(vs).length}</td><td style="white-space:nowrap"><button class="btn ghost" style="padding:3px 10px;font-size:12px" data-pv="${esc(f)}">미리보기</button> ${ok?`<button class="btn" style="padding:3px 10px;font-size:12px" data-gopen="${esc(f)}">Gmail로 열기</button> <button class="btn ghost" style="padding:3px 10px;font-size:12px" data-gsent="${esc(f)}">보냄으로 기록</button>`:""}</td></tr>`;}).join("")}
     </tbody></table></div>
     ${em?`<p class="note"><b>미리보기:</b> ${esc(M.previewFirm)} · 제목: ${esc(em.subject)}</p><div class="preview">${em.html}</div>`:""}`;
+    if(pv)h+=indPanel(pv[0],pv[1]);
     if(M.progress)h+=`<p class="note">${esc(M.progress)}</p>`;
     if(M.status)h+=`<p class="${M.status.ok?"okbox":"errbox"}">${esc(M.status.msg)}</p>`;
     h+=`<p class="note"><b>보내는 방법:</b> 로펌마다 <b>Gmail로 열기</b>를 누르면 메일 본문(표 포함)이 복사되고 Gmail 새 메일 창이 받는 사람·제목이 채워진 채로 열립니다. 본문 칸에 <b>Ctrl+V</b>로 붙여 넣고 보내세요. 보낸 뒤 <b>보냄으로 기록</b>을 누르면 다음번에 한 단계 올라갑니다.</p>`;
@@ -1261,6 +1297,8 @@ $("#clear").onclick=async()=>{const b=$("#clear");if(!IS_ADMIN){toast("관리자
 $("#reset").onclick=()=>{["#fFrom","#fTo","#fFirm","#fDoc","#fBill","#fQ"].forEach(s=>$(s).value="");render();};
 ["#fFrom","#fTo","#fFirm","#fDoc","#fBill"].forEach(s=>$(s).addEventListener("change",render));
 $("#fQ").addEventListener("input",render);
+$("#view").addEventListener("input",ev=>{if(ev.target.id==="iOther"){M.ind.other=ev.target.value;const ok=validEmail(M.ind.other.trim());document.querySelectorAll("[data-iopen],[data-isent]").forEach(b=>{b.disabled=!ok||!document.querySelector("[data-ipk]:checked");});}});
+$("#view").addEventListener("change",ev=>{if(ev.target.id==="iOther")render();});
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{S.tab=t.dataset.tab;S.open=null;if(S.tab==="mail"){const ff=$("#fFirm")&&$("#fFirm").value;if(ff)M.firms=new Set([ff]);}try{localStorage.setItem("cfpc.tab",S.tab)}catch(e){}render();});
 $("#view").addEventListener("click",ev=>{const b=ev.target.closest("[data-pay]");if(b){ev.stopPropagation();payDialog(b.dataset.pay);}},true);
 $("#view").addEventListener("click",ev=>{
@@ -1295,6 +1333,11 @@ $("#view").addEventListener("click",ev=>{
     const pr=t.closest("[data-preset]");if(pr){preset(pr.dataset.preset);render();return;}
     const fa=t.closest("[data-firms]");if(fa){const k=fa.dataset.firms;if(k==="all")M.firms=null;else if(k==="none")M.firms=new Set();else M.firms=new Set([...groupBy(mailRange(),v=>v.firm||NOFIRM).keys()].filter(firmEmailOk));render();return;}
     const pv=t.closest("[data-pv]");if(pv){M.previewFirm=pv.dataset.pv;render();return;}
+    const it=t.closest("[data-ito]");if(it){M.ind.to=it.dataset.ito;render();return;}
+    const ip=t.closest("[data-ipk]");if(ip){const k=ip.dataset.ipk,pvv=selectedFirms().find(([x])=>x===M.previewFirm);const all=pvv?indRows(pvv[1]).map(r=>r.k):[];
+      if(k==="all")M.ind.pk=null;else if(k==="none")M.ind.pk=new Set();else{const cur=M.ind.pk||new Set(all);cur.has(k)?cur.delete(k):cur.add(k);M.ind.pk=cur.size===all.length?null:cur;}render();return;}
+    const io=t.closest("[data-iopen]");if(io&&!io.disabled){indOpen(io.dataset.iopen);return;}
+    const isn=t.closest("[data-isent]");if(isn&&!isn.disabled){indSent(isn.dataset.isent);return;}
     const go2=t.closest("[data-gopen]");if(go2){gmailOpen(go2.dataset.gopen);return;}
     const gs=t.closest("[data-gsent]");if(gs){gmailSent(gs.dataset.gsent);return;}
     const ac=t.closest("[data-act]");if(ac&&!ac.disabled){mailAct(ac.dataset.act);return;}
