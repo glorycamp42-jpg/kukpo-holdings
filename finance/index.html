@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <head>
+<script>if(/type=recovery/.test(location.hash)&&!location.pathname.startsWith("/reset"))location.replace("/reset/"+location.hash)</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
@@ -69,6 +70,7 @@ textarea{min-height:64px}
     <div style="height:16px"></div>
     <button class="btn" style="width:100%">로그인</button>
     <p id="lErr" style="color:var(--bad);font-size:13px;margin:10px 0 0"></p>
+    <p style="font-size:12px;margin:10px 0 0;text-align:right"><a href="/reset/" style="color:#64748b">비밀번호를 잊으셨나요?</a></p>
     <p class="muted" style="font-size:12px;margin:12px 0 0">Eugene · David 전용. 직원 관리와 같은 계정입니다.</p>
   </form>
 </div>

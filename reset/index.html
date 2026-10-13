@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>비밀번호 재설정 · Kukpo</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--navy:#1f3a5f;--bg:#f5f7fa;--line:#e3e8ef;--muted:#64748b;--text:#1e293b;--ok:#15803d;--bad:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.wrap{max-width:380px;margin:12vh auto;padding:0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:26px}
+label{display:block;font-size:12px;color:#475569;margin-bottom:4px;font-weight:500}
+input{width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit}
+.btn{width:100%;background:var(--navy);color:#fff;border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font:inherit;font-weight:500}
+.btn:disabled{opacity:.6}
+.msg{font-size:13px;margin:12px 0 0}.err{color:var(--bad)}.ok{color:var(--ok)}
+.muted{color:var(--muted);font-size:12px}
+.hidden{display:none}
+a{color:var(--navy)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="text-align:center;margin-bottom:18px"><div style="font-size:12px;letter-spacing:.12em;color:var(--muted)">KUKPO HOLDINGS</div>
+  <div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px">비밀번호 재설정</div></div>
+
+  <form class="card" id="reqForm">
+    <label>이메일</label><input id="rEmail" type="email" autocomplete="username" required>
+    <div style="height:16px"></div>
+    <button class="btn" id="reqBtn">재설정 링크 보내기</button>
+    <p id="reqMsg" class="msg"></p>
+    <p class="muted" style="margin:12px 0 0">이메일로 받은 링크를 누르면 이 화면에서 새 비밀번호를 정할 수 있습니다.</p>
+  </form>
+
+  <form class="card hidden" id="newForm">
+    <p class="muted" style="margin:0 0 14px">계정: <b id="who"></b></p>
+    <label>새 비밀번호 (8자 이상)</label><input id="pw1" type="password" autocomplete="new-password" minlength="8" required>
+    <div style="height:12px"></div>
+    <label>새 비밀번호 확인</label><input id="pw2" type="password" autocomplete="new-password" minlength="8" required>
+    <div style="height:16px"></div>
+    <button class="btn" id="newBtn">비밀번호 저장</button>
+    <p id="newMsg" class="msg"></p>
+  </form>
+
+  <p class="muted" style="text-align:center;margin-top:16px"><a href="/hub">Kukpo Hub로 돌아가기</a></p>
+</div>
+<script>
+const SB=supabase.createClient('https://wgohvustiekmyfdihibk.supabase.co','sb_publishable_sZOi0oR6xRHUPv7CEQSjpg_kW-2j6yg');
+const $=s=>document.querySelector(s);
+const qs=new URLSearchParams(location.search);
+if(qs.get('email')) $('#rEmail').value=qs.get('email');
+const recovering=/type=recovery/.test(location.hash)||qs.has('code');
+function showNew(session){
+  $('#reqForm').classList.add('hidden');$('#newForm').classList.remove('hidden');
+  $('#who').textContent=session.user.email;
+}
+SB.auth.onAuthStateChange((ev,session)=>{ if((ev==='PASSWORD_RECOVERY'||(recovering&&ev==='SIGNED_IN'))&&session) showNew(session); });
+(async()=>{
+  if(qs.has('code')){ try{ await SB.auth.exchangeCodeForSession(qs.get('code')); }catch(e){} }
+  const {data:{session}}=await SB.auth.getSession();
+  if(recovering&&session) showNew(session);
+  const err=new URLSearchParams(location.hash.slice(1)).get('error_description');
+  if(err){ $('#reqMsg').className='msg err'; $('#reqMsg').textContent='링크가 만료됐거나 이미 사용됐습니다. 다시 요청해 주세요.'; }
+})();
+$('#reqForm').onsubmit=async e=>{
+  e.preventDefault(); const b=$('#reqBtn'); b.disabled=true; $('#reqMsg').className='msg';
+  const {error}=await SB.auth.resetPasswordForEmail($('#rEmail').value.trim(),{redirectTo:location.origin+'/reset/'});
+  b.disabled=false;
+  if(error){ $('#reqMsg').className='msg err'; $('#reqMsg').textContent=/rate|seconds/i.test(error.message)?'잠시 후 다시 시도해 주세요 (요청 간격 제한).':'보내지 못했습니다: '+error.message; return; }
+  $('#reqMsg').className='msg ok'; $('#reqMsg').textContent='보냈습니다. 메일함(스팸함 포함)에서 링크를 눌러 주세요.';
+};
+$('#newForm').onsubmit=async e=>{
+  e.preventDefault(); $('#newMsg').className='msg err';
+  if($('#pw1').value!==$('#pw2').value){ $('#newMsg').textContent='두 비밀번호가 다릅니다.'; return; }
+  const b=$('#newBtn'); b.disabled=true;
+  const {error}=await SB.auth.updateUser({password:$('#pw1').value});
+  b.disabled=false;
+  if(error){ $('#newMsg').textContent='저장하지 못했습니다: '+error.message; return; }
+  $('#newMsg').className='msg ok'; $('#newMsg').textContent='저장됐습니다. 이제 새 비밀번호로 로그인하세요.';
+  history.replaceState(null,'','/reset/');
+  setTimeout(()=>location.href='/hub',1800);
+};
+</script>
+</body>
+</html>
