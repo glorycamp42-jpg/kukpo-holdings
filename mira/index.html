@@ -966,7 +966,7 @@ async function patDialog(k,keep){
       <div class="presets" style="flex-wrap:wrap">${list.map(e=>`<label style="display:flex;gap:5px;align-items:center;font-size:13px"><input type="radio" name="pdto" data-pdto="${esc(e)}" ${P.to===e?"checked":""}>${esc(e)}</label>`).join("")}
         <label style="display:flex;gap:5px;align-items:center;font-size:13px"><input type="radio" name="pdto" data-pdto="__other" ${P.to==="__other"?"checked":""}>다른 주소</label>
         <input type="email" id="pdOther" placeholder="담당자 이메일" value="${esc(P.other)}" style="max-width:240px;${P.to==="__other"?"":"display:none"}"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><button class="btn" data-pdmail="open" ${validEmail(to)?"":"disabled"}>Gmail로 열기</button><button class="btn ghost" data-pdmail="sent" ${validEmail(to)?"":"disabled"}>보냄으로 기록</button><span class="note">${validEmail(to)?"받는 사람: <b>"+esc(to)+"</b> · 제목: "+esc(em.subject):"받는 사람을 고르세요"}</span></div>
+      ${closed?`<p class="okbox" style="margin:8px 0 0">Paid로 종결된 환자라 독촉 메일을 보낼 필요가 없습니다.</p>`:""}<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;${closed?"display:none":""}"><button class="btn" data-pdmail="open" ${validEmail(to)?"":"disabled"}>Gmail로 열기</button><button class="btn ghost" data-pdmail="sent" ${validEmail(to)?"":"disabled"}>보냄으로 기록</button><span class="note">${validEmail(to)?"받는 사람: <b>"+esc(to)+"</b> · 제목: "+esc(em.subject):"받는 사람을 고르세요"}</span></div>
       ${hist.length?`<p class="note" style="margin-top:6px">이 환자로 보낸 기록: ${hist.map(x=>fmtD(x.date)+" "+x.level+"단계 → "+esc(x.to||"")).join(" · ")}</p>`:""}
       <details style="margin-top:8px"><summary class="note" style="cursor:pointer">메일 미리보기</summary><div class="preview">${em.html}</div></details>
       <p class="note" style="margin-top:6px">서명·단계 문구는 '독촉 메일' 탭 설정을 그대로 씁니다.</p>
@@ -1177,7 +1177,9 @@ const lastSent=f=>{const h=(FDB[f]&&FDB[f].history)||[];return h.length?h[h.leng
 const nextLevel=f=>{const l=lastSent(f);return l?Math.min(4,l.level+1):1;};
 const levelFor=f=>M.mode==="auto"?nextLevel(f):M.level;
 
-const mailRange=()=>S.visits.filter(v=>(!M.from||v.date>=M.from)&&(!M.to||v.date<=M.to)&&(!M.bills||M.bills.has(v.bill||"-")));
+const CLOSED_RE=/\bpaid\b|disregard|dropped|closed|write.?off/i;
+/* reminders never include cases that are already paid / closed */
+const mailRange=()=>S.visits.filter(v=>!CLOSED_RE.test(v.bill||"")&&(!M.from||v.date>=M.from)&&(!M.to||v.date<=M.to)&&(!M.bills||M.bills.has(v.bill||"-")));
 function mailRows(){const r=mailRange();return M.firms?r.filter(v=>M.firms.has(v.firm||NOFIRM)):r;}
 function rangeText(){return (M.from?fmtD(M.from):"start")+" – "+(M.to?fmtD(M.to):"present");}
 function rangeKo(){return (M.from?fmtD(M.from):"처음")+" ~ "+(M.to?fmtD(M.to):"마지막");}
@@ -1267,7 +1269,7 @@ function renderMail(){
   const labels=["기간","로펌·주소","독촉 단계","확인·발송"];
   let h=`<div class="steps">`+labels.map((l,i)=>`<button class="step${M.step>i+1?" done":""}" data-step="${i+1}" ${M.step===i+1?'aria-current="step"':""} ${can[i+1]?"":"disabled"}><span class="no">${i+1}</span>${l}</button>`).join("")+`</div><div class="mbody">`;
   if(M.step===1){
-    const allBills=[...new Set(S.visits.map(v=>v.bill||"-"))].sort();
+    const allBills=[...new Set(S.visits.map(v=>v.bill||"-"))].filter(b=>!CLOSED_RE.test(b)).sort();
     h+=`<h2>몇 월 며칠부터 몇 월 며칠까지 방문한 케이스인가요?</h2>
     <div class="presets">${[["lastm","지난달"],["thism","이번 달"],["30","최근 30일"],["90","최근 90일"],["year","올해"],["all","전체"]].map(([k,l])=>`<button data-preset="${k}">${l}</button>`).join("")}</div>
     <div class="row"><div class="f"><label for="mFrom">시작일</label><input type="date" id="mFrom" value="${M.from}"></div><div class="f"><label for="mTo">종료일</label><input type="date" id="mTo" value="${M.to}"></div></div>
@@ -1432,7 +1434,7 @@ $("#view").addEventListener("change",ev=>{
   if(S.tab!=="mail")return;const t=ev.target;
   if(t.id==="mFrom"){M.from=t.value;M.firms=null;render();}
   else if(t.id==="mTo"){M.to=t.value;M.firms=null;render();}
-  else if(t.dataset.bill!=null){const all=[...new Set(S.visits.map(v=>v.bill||"-"))];if(!M.bills)M.bills=new Set(all);t.checked?M.bills.add(t.dataset.bill):M.bills.delete(t.dataset.bill);if(M.bills.size===all.length)M.bills=null;M.firms=null;render();}
+  else if(t.dataset.bill!=null){const all=[...new Set(S.visits.map(v=>v.bill||"-"))].filter(b=>!CLOSED_RE.test(b));if(!M.bills)M.bills=new Set(all);t.checked?M.bills.add(t.dataset.bill):M.bills.delete(t.dataset.bill);if(M.bills.size===all.length)M.bills=null;M.firms=null;render();}
   else if(t.dataset.firm!=null){const all=[...groupBy(mailRange(),v=>v.firm||NOFIRM).keys()];if(!M.firms)M.firms=new Set(all);t.checked?M.firms.add(t.dataset.firm):M.firms.delete(t.dataset.firm);if(M.firms.size===all.length)M.firms=null;render();}
   else if(t.dataset.femail!=null){saveFirm(t.dataset.femail,{email:t.value.trim()});render();}
   else if(t.dataset.mode){M.mode="auto";render();}
