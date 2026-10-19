@@ -40,8 +40,10 @@
     const days = opts.days || 365, to = new Date(), from = new Date(Date.now() - days * 864e5);
 
     /* 1) all exams (Advanced Search → Excel export, which is an HTML table) */
+    if (typeof switchNav === "function") switchNav("li1");
     mainSearch();
-    await waitFor(() => document.advsearchform && document.advsearchform.searchid && typeof doSearch === "function", 20000, "검사 검색 패널");
+    await waitFor(() => document.advsearchform && document.advsearchform.searchdob && typeof doSearch === "function", 20000, "검사 검색 패널");
+    await sleep(500);
     setRange(from, to);
     const xu = captureOpen(() => doSearch("excel"));
     if (!xu) throw new Error("엑셀 주소를 만들지 못함");
@@ -51,7 +53,9 @@
 
     /* 2) billing amounts (Billing search results page; its Excel button is broken on the server) */
     showBilling();
+    await waitFor(() => !(document.advsearchform && document.advsearchform.searchdob), 20000, "빌링 패널 전환");
     await waitFor(() => document.advsearchform && typeof doLsearch === "function" && [...document.querySelectorAll("input[type=button],button")].some(b => /doLsearch/.test(b.getAttribute("onclick") || "")), 20000, "빌링 검색 패널");
+    await sleep(500);
     setRange(from, to);
     const lu = captureXhr(() => doLsearch(""), /doLsearch/);
     if (!lu) throw new Error("빌링 검색 주소를 만들지 못함");
