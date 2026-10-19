@@ -569,6 +569,8 @@ function rebuild(){
   for(const f of S.files)if(f.ci)for(const v of f.visits){
     const m=bySD.get(v.sid+"|"+v.date);
     if(m){if(v.bill)for(const mv of m){if(mv._m0===undefined)mv._m0=mv._b0!==undefined?mv._b0:mv.bill;if(mv._m0!==v.bill){mv.bill=v.bill;mv._b0=undefined;}}continue;}
+    /* like the Master files, leave out cases already closed in cfpcinc (Paid / Disregard / Dropped …) */
+    if(/\bpaid\b|disregard|dropped|closed|write.?off/i.test(v.bill))continue;
     if(seen.has(v.rid))continue;seen.add(v.rid);all.push(v);
   }
   S.sample=!S.files.length;
