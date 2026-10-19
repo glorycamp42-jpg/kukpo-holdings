@@ -486,13 +486,44 @@ function moneySum(rows){let office=0,inj=0;const seen=new Set();for(const v of r
 const usd=n=>n?"$"+Math.round(n).toLocaleString("en-US"):"–";
 const amtK=n=>n>0?usd(n):`<span class="pill">미정</span>`;
 
+/* ---------- cfpcinc.com weekly snapshot (CFPCINC_Sync.json) ---------- */
+/* exams: [PID,Name,DOI,Doctor,Procedure,Location,StudyDate,Referrer,Status,Lien]; bills: [PID,StudyDate,Procedure,Status,Billed,Paid,Adjusted,Balance] */
+const CI_INJ=/inj|epi|esi|tpi|prp|rfa|block|facet|si joint/i;
+function parseCfpcinc(o,fileName){
+  const iso=x=>{x=String(x||"").trim();return /^\d{4}-\d\d-\d\d/.test(x)?x.slice(0,10):toISO(x);};
+  const bk={};for(const b of (o.bills||[])){const k=b[0]+"|"+iso(b[1])+"|"+String(b[2]||"").trim();const e=bk[k]||(bk[k]={billed:0,paid:0,adj:0,bal:0});e.billed+=money(b[4]);e.paid+=money(b[5]);e.adj+=money(b[6]);e.bal+=money(b[7]);}
+  const visits=[],groups={},seen={};
+  for(const e of (o.exams||[])){
+    const [pid,name,doi0,doc,proc0,loc,date0,ref,status,lien]=e;const date=iso(date0),doi=iso(doi0),proc=String(proc0||"").trim();
+    if(!pid||!name||!date)continue;
+    const gid="CI:"+pid+":"+(doi||"-");const n=(seen[pid+date+proc]=(seen[pid+date+proc]||0)+1);
+    const b=bk[pid+"|"+date+"|"+proc];const inj=CI_INJ.test(proc);
+    visits.push({rid:"CI-"+pid+"-"+date+"-"+proc+"-"+n,gid,scope:"",patient:String(name).trim(),sid:String(pid).trim(),doctor:String(doc||"").trim(),date,service:proc,
+      initial:/initial/i.test(proc)?1:0,fu:/f\/?u|follow/i.test(proc)?1:0,proc:inj?1:0,surgery:/surgery|\bsx\b/i.test(proc)?1:0,pending:0,
+      firm:String(ref||"").trim(),bill:String(status||"").trim(),doi,review:"",file:fileName,location:String(loc||"").trim(),lien:String(lien||"").trim(),ci:true});
+    const g=groups[gid]||(groups[gid]={patient:String(name).trim(),sid:String(pid).trim(),doctor:"",doi,firm:"",last:"",bill:"",coll:"",review:"",office:0,inj:0,injVisits:0,lastBill:"",balance:0,initial:0,fu:0,gid});
+    if(date>=g.last){g.last=date;g.bill=String(status||"").trim();g.firm=String(ref||"").trim()||g.firm;g.doctor=String(doc||"").trim()||g.doctor;}
+    if(b&&n===1){if(inj)g.inj+=b.billed;else g.office+=b.billed;g.balance+=b.bal;if(b.billed>0&&date>g.lastBill)g.lastBill=date;}
+    if(inj)g.injVisits++;
+  }
+  return {visits,groups,issues:[],amtCols:{office:"cfpcinc Billing (Billed)",inj:"cfpcinc Billing (Billed, 주사)"},lines:[],ci:true,pulled:o.pulled||"",range:o.range||[]};
+}
+async function cfpcincIngest(o){
+  if(!o||!Array.isArray(o.exams)||!Array.isArray(o.bills)||!o.exams.length)throw new Error("빈 데이터");
+  const name="CFPCINC_Sync.json",buf=new TextEncoder().encode(JSON.stringify(o)).buffer;
+  await IDB.put(name,buf,"application/json");
+  await addFiles([{name,buf}],true);
+  const f=S.files.find(x=>x.name===name);return {exams:o.exams.length,bills:o.bills.length,visits:f?f.visits.length:0,newVisits:S.visits.filter(v=>v.ci).length};
+}
+window.__cfpcincIngest=cfpcincIngest;
+
 /* ---------- file intake ---------- */
 /* files stay on this computer only: kept in this browser's IndexedDB so the page reopens with the last files */
 /* shared storage: files live in Supabase Storage (private bucket cfpc-master), visible only to cfpc_users */
 const IDB={
-  async put(name,buf){
+  async put(name,buf,ctype){
     const path=(CLINIC==='cfpc'?'':CLINIC+'/')+name;
-    const up=await SB.storage.from("cfpc-master").upload(path,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),{upsert:true});
+    const up=await SB.storage.from("cfpc-master").upload(path,new Blob([buf],{type:ctype||"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),{upsert:true});
     if(up.error){toast("서버 저장 실패: "+up.error.message);return;}
     await SB.from("cfpc_files").upsert({clinic:CLINIC,name,storage_path:path,size_bytes:buf.byteLength,uploaded_by:ME,uploaded_at:new Date().toISOString()});
     await SB.from("cfpc_log").insert({clinic:CLINIC,action:"upload",detail:{name}});
@@ -512,6 +543,7 @@ const IDB={
 async function addFiles(list,fromStore){
   const err=[];
   for(const f of list){
+    if(/\.json$/i.test(f.name)&&fromStore){try{const r=parseCfpcinc(JSON.parse(new TextDecoder().decode(f.buf)),f.name);S.files=S.files.filter(x=>x.name!==f.name);S.files.push({name:f.name,visits:r.visits,groups:r.groups,issues:[],amtCols:r.amtCols,lines:[],ci:true,pulled:r.pulled});}catch(e){err.push(f.name+": cfpcinc 데이터를 읽지 못했습니다 ("+e.message+").");}continue;}
     if(!/\.xlsx?$/i.test(f.name)){err.push(f.name+": 엑셀 파일(.xlsx)만 넣을 수 있습니다.");continue;}
     try{
       const buf=f.buf||await f.arrayBuffer();
@@ -527,10 +559,17 @@ async function addFiles(list,fromStore){
   const eb=$("#errBanner");eb.hidden=!err.length;eb.innerHTML=err.map(esc).join("<br>");
 }
 function rebuild(){
-  const seen=new Set(),all=[];
-  for(const f of S.files)for(const v of f.visits){
+  const seen=new Set(),all=[],bySD=new Map();
+  for(const f of S.files)if(!f.ci)for(const v of f.visits){
     const k=v.rid||(v.patient+"|"+v.sid+"|"+v.date+"|"+v.service+"|"+v.doctor);
     if(seen.has(k))continue;seen.add(k);all.push(v);
+    const sd=v.sid+"|"+v.date;(bySD.get(sd)||bySD.set(sd,[]).get(sd)).push(v);
+  }
+  /* cfpcinc.com snapshot: adds visits the Master files don't have yet, and refreshes the billing status of ones they do */
+  for(const f of S.files)if(f.ci)for(const v of f.visits){
+    const m=bySD.get(v.sid+"|"+v.date);
+    if(m){if(v.bill)for(const mv of m){if(mv._m0===undefined)mv._m0=mv._b0!==undefined?mv._b0:mv.bill;if(mv._m0!==v.bill){mv.bill=v.bill;mv._b0=undefined;}}continue;}
+    if(seen.has(v.rid))continue;seen.add(v.rid);all.push(v);
   }
   S.sample=!S.files.length;
   S.visits=all;
@@ -1471,7 +1510,17 @@ async function boot(){
   document.getElementById('usersTab').hidden=!IS_ADMIN;
   document.getElementById('clear').style.display=IS_ADMIN?"":"none";
   SB.from('cfpc_log').insert({clinic:CLINIC,action:'open',detail:{}});
-  window.__startViewer();
+  await window.__startViewer();
+  /* weekly cfpcinc.com sync: the cfpcinc tab opens this page and hands over the snapshot by postMessage (no passwords or keys involved) */
+  if(/[?&]sync=cfpcinc\b/.test(location.search)&&window.opener){
+    const CI_ORIGIN="http://www.cfpcinc.com";
+    window.addEventListener("message",async ev=>{
+      if(ev.origin!==CI_ORIGIN||!ev.data||ev.data.type!=="cfpcinc-sync")return;
+      try{const r=await window.__cfpcincIngest(ev.data.payload);SB.from('cfpc_log').insert({clinic:CLINIC,action:'cfpcinc_sync',detail:r});ev.source.postMessage({type:"cfpcinc-sync-done",ok:true,result:r},CI_ORIGIN);toast("cfpcinc 동기화 완료");}
+      catch(e){ev.source.postMessage({type:"cfpcinc-sync-done",ok:false,error:String(e&&e.message||e)},CI_ORIGIN);}
+    });
+    window.opener.postMessage({type:"cfpcinc-sync-ready",user:ME},CI_ORIGIN);
+  }
 }
 document.getElementById('loginForm').onsubmit=async ev=>{ev.preventDefault();const e=document.getElementById('lErr');e.textContent='';
   const {error}=await SB.auth.signInWithPassword({email:document.getElementById('lEmail').value.trim(),password:document.getElementById('lPw').value});
