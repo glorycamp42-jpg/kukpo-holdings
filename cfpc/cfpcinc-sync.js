@@ -23,7 +23,7 @@
     const dt = f.querySelector("select[name=dateType]"); if (dt) dt.value = "studydate";
   }
   function captureOpen(fn) { let u = null; const o = window.open; window.open = x => { u = x; return null; }; try { fn(); } finally { window.open = o; } return u; }
-  function captureXhr(fn, re) { let u = null; const po = XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open = function (m, x, ...a) { if (re.test(x)) u = x; return po.call(this, m, x, ...a); }; try { fn(); } finally { XMLHttpRequest.prototype.open = po; } return u; }
+  function captureXhr(fn, re) { let u = null; const po = XMLHttpRequest.prototype.open, ps = XMLHttpRequest.prototype.send; XMLHttpRequest.prototype.open = function (m, x, ...a) { if (re.test(x)) { u = x; this.__kpSkip = true; } return po.call(this, m, x, ...a); }; XMLHttpRequest.prototype.send = function (...a) { if (this.__kpSkip) return; return ps.apply(this, a); }; try { fn(); } finally { XMLHttpRequest.prototype.open = po; XMLHttpRequest.prototype.send = ps; } return u; }
   async function getHtml(u) { const r = await fetch(u, { credentials: "include" }); if (!r.ok) throw new Error("cfpcinc 응답 " + r.status); return new DOMParser().parseFromString(await r.text(), "text/html"); }
   function table(doc, must) {
     const rows = [...doc.querySelectorAll("tr")];
