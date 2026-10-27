@@ -338,7 +338,7 @@ newPost:'New announcement',edit:'Edit',del:'Delete',save:'Save',cancel:'Cancel',
 title:'Title',body:'Message',pinned:'Pin to top',audience:'Audience',company:'Company',postedBy:'Posted by',
 role:'Role',owner:'Owner',manager:'Manager',staffR:'Staff',name:'Name',jobTitle:'Job title',phone:'Phone',status:'Status',active:'Active',inactive:'Inactive',
 message:'Message',call:'Call',mail:'Email',noPeople:'No one found.',
-channels:'Channels',dms:'Direct messages',grp_title:'Group chats',grp_chat:'Group chat',grp_add:'Add people',grp_invite:'Invite people',grp_members:'Members',grp_name:'Group name (optional)',grp_namePh:'e.g. CFP front desk + billing',grp_hint:'Pick one person for a private chat, or several to start a group chat.',grp_start:'Start group chat',grp_pick:'Pick at least one person.',grp_guestNote:'Invited people can read and write in this room even if they work at another company.',grp_addNote:'New members can see earlier messages in this group.',grp_guest:'Guest',grp_guestsN:n=>`${n} guest${n>1?'s':''}`,grp_remove:'Remove',grp_leave:'Leave group',grp_leaveQ:'Leave this group chat?',grp_you:'you',newDm:'New message',pickPerson:'Choose a person',typeMsg:'Write a message…',phi:'Do not enter patient information (PHI) in chat.',
+channels:'Channels',dms:'Direct messages',grp_title:'Group chats',grp_searchPpl:'Search people…',grp_inRoom:'In this room',grp_chat:'Group chat',grp_add:'Add people',grp_invite:'Invite people',grp_members:'Members',grp_name:'Group name (optional)',grp_namePh:'e.g. CFP front desk + billing',grp_hint:'Pick one person for a private chat, or several to start a group chat.',grp_start:'Start group chat',grp_pick:'Pick at least one person.',grp_guestNote:'Invited people can read and write in this room even if they work at another company.',grp_addNote:'New members can see earlier messages in this group.',grp_guest:'Guest',grp_guestsN:n=>`${n} guest${n>1?'s':''}`,grp_remove:'Remove',grp_leave:'Leave group',grp_leaveQ:'Leave this group chat?',grp_you:'you',newDm:'New message',pickPerson:'Choose a person',typeMsg:'Write a message…',phi:'Do not enter patient information (PHI) in chat.',
 annOnly:'Only owners and managers can post in Company-wide.',selectCh:'Select a conversation',attach:'Attach file',uploading:'Uploading…',today:'Today',yesterday:'Yesterday',
 deleteMsg:'Delete message?',fileBig:'File is larger than 25 MB.',
 newEvent:'New event',date:'Date',endDate:'End date',time:'Time',note:'Note',prev:'Previous',next:'Next',
@@ -371,7 +371,7 @@ newPost:'공지 작성',edit:'수정',del:'삭제',save:'저장',cancel:'취소'
 title:'제목',body:'내용',pinned:'상단 고정',audience:'대상',company:'회사',postedBy:'작성자',
 role:'권한',owner:'오너',manager:'매니저',staffR:'직원',name:'이름',jobTitle:'직책',phone:'전화',status:'상태',active:'재직',inactive:'비활성',
 message:'메시지',call:'전화',mail:'이메일',noPeople:'찾는 사람이 없습니다.',
-channels:'채널',dms:'1:1 메시지',grp_title:'그룹 채팅',grp_chat:'그룹 채팅',grp_add:'사람 추가',grp_invite:'초대하기',grp_members:'멤버',grp_name:'그룹 이름 (선택)',grp_namePh:'예: CFP 프론트 + 빌링',grp_hint:'한 명을 고르면 1:1 대화, 여러 명을 고르면 그룹 채팅이 만들어집니다.',grp_start:'그룹 채팅 시작',grp_pick:'한 명 이상 선택하세요.',grp_guestNote:'초대된 사람은 다른 회사 소속이어도 이 방에서 읽고 쓸 수 있습니다.',grp_addNote:'새 멤버도 이전 대화를 볼 수 있습니다.',grp_guest:'게스트',grp_guestsN:n=>`게스트 ${n}명`,grp_remove:'내보내기',grp_leave:'그룹 나가기',grp_leaveQ:'이 그룹 채팅에서 나갈까요?',grp_you:'나',newDm:'새 메시지',pickPerson:'대화 상대 선택',typeMsg:'메시지 입력…',phi:'채팅에 환자 정보(PHI)를 입력하지 마세요.',
+channels:'채널',dms:'1:1 메시지',grp_title:'그룹 채팅',grp_searchPpl:'이름 검색…',grp_inRoom:'참여 중',grp_chat:'그룹 채팅',grp_add:'사람 추가',grp_invite:'초대하기',grp_members:'멤버',grp_name:'그룹 이름 (선택)',grp_namePh:'예: CFP 프론트 + 빌링',grp_hint:'한 명을 고르면 1:1 대화, 여러 명을 고르면 그룹 채팅이 만들어집니다.',grp_start:'그룹 채팅 시작',grp_pick:'한 명 이상 선택하세요.',grp_guestNote:'초대된 사람은 다른 회사 소속이어도 이 방에서 읽고 쓸 수 있습니다.',grp_addNote:'새 멤버도 이전 대화를 볼 수 있습니다.',grp_guest:'게스트',grp_guestsN:n=>`게스트 ${n}명`,grp_remove:'내보내기',grp_leave:'그룹 나가기',grp_leaveQ:'이 그룹 채팅에서 나갈까요?',grp_you:'나',newDm:'새 메시지',pickPerson:'대화 상대 선택',typeMsg:'메시지 입력…',phi:'채팅에 환자 정보(PHI)를 입력하지 마세요.',
 annOnly:'전사 공지방은 오너·매니저만 작성할 수 있습니다.',selectCh:'대화를 선택하세요',attach:'파일 첨부',uploading:'올리는 중…',today:'오늘',yesterday:'어제',
 deleteMsg:'메시지를 삭제할까요?',fileBig:'파일이 25MB를 넘습니다.',
 newEvent:'일정 추가',date:'날짜',endDate:'종료일',time:'시간',note:'메모',prev:'이전',next:'다음',
@@ -1253,10 +1253,10 @@ function renderChList(){
 }
 function peoplePicker(addTo){
   const already=addTo?chMembers(addTo):[];
-  const others=MEMBERS.filter(m=>m.active&&m.email!==ME.email&&!already.includes(m.email));
+  const others=MEMBERS.filter(m=>m.active&&m.email!==ME.email).sort((a,b)=>(already.includes(a.email)-already.includes(b.email))||(a.name||'').localeCompare(b.name||''));
   const sel=new Set();
   const bg=modal(addTo?t('grp_add')+' · '+chLabel(addTo):t('newDm'),`
-    <input class="inp" id="dmQ" placeholder="${esc(t('search'))}" style="margin-bottom:10px">
+    <input class="inp" id="dmQ" placeholder="${esc(t('grp_searchPpl'))}" style="margin-bottom:10px">
     <div id="dmChips" class="row" style="gap:6px;margin-bottom:10px"></div>
     <div id="dmL" style="max-height:42vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px"></div>
     ${addTo?`<p class="small muted" style="margin:10px 0 0">${esc(addTo.kind==='company'?t('grp_guestNote'):t('grp_addNote'))}</p>`
@@ -1269,7 +1269,7 @@ function peoplePicker(addTo){
     await reloadChannels();CUR_CH=data;if(VIEW!=='chat')go('chat');else render()},
   addTo?t('add'):t('grp_start'));
   const draw=()=>{const q=bg.querySelector('#dmQ').value.toLowerCase();
-    bg.querySelector('#dmL').innerHTML=others.filter(m=>(m.name+' '+m.email+' '+coName(m.company_id)).toLowerCase().includes(q)).map(m=>`<label class="chi" style="margin:0;font-weight:400"><input type="checkbox" data-e="${esc(m.email)}" ${sel.has(m.email)?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)">${avatar(m.email,'sm')}<span class="nm">${esc(m.name||m.email)}<span class="small muted" style="font-weight:400"> · ${esc(coName(m.company_id))}</span></span></label>`).join('')||`<div class="empty">${t('noPeople')}</div>`;
+    bg.querySelector('#dmL').innerHTML=others.filter(m=>(m.name+' '+m.email+' '+coName(m.company_id)).toLowerCase().includes(q)).map(m=>{const inRoom=already.includes(m.email);return `<label class="chi" style="margin:0;font-weight:400;${inRoom?'opacity:.6;cursor:default':''}"><input type="checkbox" ${inRoom?'checked disabled':`data-e="${esc(m.email)}" ${sel.has(m.email)?'checked':''}`} style="width:18px;height:18px;accent-color:var(--acc)">${avatar(m.email,'sm')}<span class="nm">${esc(m.name||m.email)}<span class="small muted" style="font-weight:400"> · ${esc(coName(m.company_id))}</span></span>${inRoom?`<span class="tag approved">${esc(t('grp_inRoom'))}</span>`:''}</label>`}).join('')||`<div class="empty">${t('noPeople')}</div>`;
     bg.querySelectorAll('[data-e]').forEach(cb=>cb.onchange=()=>{cb.checked?sel.add(cb.dataset.e):sel.delete(cb.dataset.e);chips()})};
   const chips=()=>{bg.querySelector('#dmChips').innerHTML=[...sel].map(e=>`<span class="tag">${esc(nameOf(e))}</span>`).join('');
     const gb=bg.querySelector('#gNameBox');if(gb)gb.classList.toggle('hidden',sel.size<2);
