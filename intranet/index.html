@@ -198,6 +198,7 @@ table.tb{width:100%;border-collapse:collapse}
 .chip.mine{background:var(--acc);color:#fff}.chip.swap{background:#FFFAEB;color:var(--warn);outline:1px dashed #F5B547}.chip i{font-style:normal;margin-left:3px;opacity:.7}
 .act-it{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--soft);cursor:pointer}.act-it:hover{background:var(--soft)}.act-it:first-child{border-top:0}
 .act-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+@media(max-width:860px){.hide-sm{display:none}}
 .trn{font-size:12px;color:var(--muted);margin-top:4px}.trn .linkbtn{font-size:12px}
 .msg.cont{padding-top:1px}.msg.cont .av{visibility:hidden;height:0}
 .msg .del{position:absolute;right:8px;top:6px;display:none;background:#fff;border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:2px 6px;color:var(--muted);font-size:12px}
@@ -337,7 +338,7 @@ newPost:'New announcement',edit:'Edit',del:'Delete',save:'Save',cancel:'Cancel',
 title:'Title',body:'Message',pinned:'Pin to top',audience:'Audience',company:'Company',postedBy:'Posted by',
 role:'Role',owner:'Owner',manager:'Manager',staffR:'Staff',name:'Name',jobTitle:'Job title',phone:'Phone',status:'Status',active:'Active',inactive:'Inactive',
 message:'Message',call:'Call',mail:'Email',noPeople:'No one found.',
-channels:'Channels',dms:'Direct messages',newDm:'New message',pickPerson:'Choose a person',typeMsg:'Write a message…',phi:'Do not enter patient information (PHI) in chat.',
+channels:'Channels',dms:'Direct messages',grp_title:'Group chats',grp_chat:'Group chat',grp_add:'Add people',grp_invite:'Invite people',grp_members:'Members',grp_name:'Group name (optional)',grp_namePh:'e.g. CFP front desk + billing',grp_hint:'Pick one person for a private chat, or several to start a group chat.',grp_start:'Start group chat',grp_pick:'Pick at least one person.',grp_guestNote:'Invited people can read and write in this room even if they work at another company.',grp_addNote:'New members can see earlier messages in this group.',grp_guest:'Guest',grp_guestsN:n=>`${n} guest${n>1?'s':''}`,grp_remove:'Remove',grp_leave:'Leave group',grp_leaveQ:'Leave this group chat?',grp_you:'you',newDm:'New message',pickPerson:'Choose a person',typeMsg:'Write a message…',phi:'Do not enter patient information (PHI) in chat.',
 annOnly:'Only owners and managers can post in Company-wide.',selectCh:'Select a conversation',attach:'Attach file',uploading:'Uploading…',today:'Today',yesterday:'Yesterday',
 deleteMsg:'Delete message?',fileBig:'File is larger than 25 MB.',
 newEvent:'New event',date:'Date',endDate:'End date',time:'Time',note:'Note',prev:'Previous',next:'Next',
@@ -370,7 +371,7 @@ newPost:'공지 작성',edit:'수정',del:'삭제',save:'저장',cancel:'취소'
 title:'제목',body:'내용',pinned:'상단 고정',audience:'대상',company:'회사',postedBy:'작성자',
 role:'권한',owner:'오너',manager:'매니저',staffR:'직원',name:'이름',jobTitle:'직책',phone:'전화',status:'상태',active:'재직',inactive:'비활성',
 message:'메시지',call:'전화',mail:'이메일',noPeople:'찾는 사람이 없습니다.',
-channels:'채널',dms:'1:1 메시지',newDm:'새 메시지',pickPerson:'대화 상대 선택',typeMsg:'메시지 입력…',phi:'채팅에 환자 정보(PHI)를 입력하지 마세요.',
+channels:'채널',dms:'1:1 메시지',grp_title:'그룹 채팅',grp_chat:'그룹 채팅',grp_add:'사람 추가',grp_invite:'초대하기',grp_members:'멤버',grp_name:'그룹 이름 (선택)',grp_namePh:'예: CFP 프론트 + 빌링',grp_hint:'한 명을 고르면 1:1 대화, 여러 명을 고르면 그룹 채팅이 만들어집니다.',grp_start:'그룹 채팅 시작',grp_pick:'한 명 이상 선택하세요.',grp_guestNote:'초대된 사람은 다른 회사 소속이어도 이 방에서 읽고 쓸 수 있습니다.',grp_addNote:'새 멤버도 이전 대화를 볼 수 있습니다.',grp_guest:'게스트',grp_guestsN:n=>`게스트 ${n}명`,grp_remove:'내보내기',grp_leave:'그룹 나가기',grp_leaveQ:'이 그룹 채팅에서 나갈까요?',grp_you:'나',newDm:'새 메시지',pickPerson:'대화 상대 선택',typeMsg:'메시지 입력…',phi:'채팅에 환자 정보(PHI)를 입력하지 마세요.',
 annOnly:'전사 공지방은 오너·매니저만 작성할 수 있습니다.',selectCh:'대화를 선택하세요',attach:'파일 첨부',uploading:'올리는 중…',today:'오늘',yesterday:'어제',
 deleteMsg:'메시지를 삭제할까요?',fileBig:'파일이 25MB를 넘습니다.',
 newEvent:'일정 추가',date:'날짜',endDate:'종료일',time:'시간',note:'메모',prev:'이전',next:'다음',
@@ -487,12 +488,13 @@ async function boot(){
   render();subscribe();initPush();
 }
 async function loadBase(){
-  const[c,m,ch,u]=await Promise.all([
+  const[c,m,ch,u,cm]=await Promise.all([
     SB.from('itn_companies').select('*').order('sort'),
     SB.from('itn_members').select('*').order('name'),
     SB.from('itn_channels').select('*'),
-    SB.rpc('itn_unread')]);
-  COS=c.data||[];MEMBERS=m.data||[];CHANNELS=ch.data||[];
+    SB.rpc('itn_unread'),
+    SB.from('itn_channel_members').select('channel_id,email,added_by')]);
+  COS=c.data||[];MEMBERS=m.data||[];CHANNELS=ch.data||[];CH_MEM=cm.data||[];
   UNREAD={};(u.data||[]).forEach(r=>UNREAD[r.channel_id]=Number(r.n));
   setMeRole();
 }
@@ -1205,21 +1207,33 @@ function coModal(c){
 }
 
 /* ---------- CHAT ---------- */
-let MSGS=[],PEND_FILE=null;
-function chLabel(c){if(c.kind==='all')return t('companyWide');if(c.kind==='company')return coName(c.company_id);const o=c.dm_a===ME.email?c.dm_b:c.dm_a;return nameOf(o)}
-function chIcon(c,sm){if(c.kind==='dm'){const o=c.dm_a===ME.email?c.dm_b:c.dm_a;return avatar(o,'sm')}
+let MSGS=[],PEND_FILE=null,CH_MEM=[];
+function chLabel(c){if(c.kind==='all')return t('companyWide');if(c.kind==='company')return coName(c.company_id);if(c.kind==='group')return c.name||chMembers(c).filter(e=>e!==ME.email).map(e=>nameOf(e).split(' ')[0]).join(', ')||t('grp_chat');const o=c.dm_a===ME.email?c.dm_b:c.dm_a;return nameOf(o)}
+function chIcon(c,sm){if(c.kind==='group')return `<span class="hash" style="background:#475467">${ic('people','style="width:15px;height:15px"')}</span>`;if(c.kind==='dm'){const o=c.dm_a===ME.email?c.dm_b:c.dm_a;return avatar(o,'sm')}
   const col=c.kind==='all'?'#0B1A2E':coColor(c.company_id);return `<span class="hash" style="background:${col}">${c.kind==='all'?'★':'#'}</span>`}
 function sortedChannels(){
   const all=CHANNELS.filter(c=>c.kind==='all'),co=CHANNELS.filter(c=>c.kind==='company').sort((a,b)=>((coBy(a.company_id)||{}).sort||99)-((coBy(b.company_id)||{}).sort||99)),
-    dm=CHANNELS.filter(c=>c.kind==='dm').sort((a,b)=>chLabel(a).localeCompare(chLabel(b)));
-  return{all,co,dm};
+    dm=CHANNELS.filter(c=>c.kind==='dm').sort((a,b)=>chLabel(a).localeCompare(chLabel(b))),
+    grp=CHANNELS.filter(c=>c.kind==='group').sort((a,b)=>chLabel(a).localeCompare(chLabel(b)));
+  return{all,co,dm,grp};
 }
+/* everyone in a room: company staff (+ guests) / group members / the two DM people */
+function chMembers(c){
+  const extra=CH_MEM.filter(x=>x.channel_id===c.id).map(x=>x.email);
+  if(c.kind==='all')return MEMBERS.filter(m=>m.active).map(m=>m.email);
+  if(c.kind==='company')return[...new Set([...MEMBERS.filter(m=>m.active&&m.company_id===c.company_id).map(m=>m.email),...extra])];
+  if(c.kind==='group')return extra;
+  return[c.dm_a,c.dm_b];
+}
+const chGuests=c=>c.kind==='company'?CH_MEM.filter(x=>x.channel_id===c.id&&(memBy(x.email)||{}).company_id!==c.company_id).map(x=>x.email):[];
+const canAddTo=c=>(c.kind==='group'&&CH_MEM.some(x=>x.channel_id===c.id&&x.email===ME.email))||(c.kind==='company'&&canManage(c.company_id));
+async function reloadChannels(){const[{data:ch},{data:cm}]=await Promise.all([SB.from('itn_channels').select('*'),SB.from('itn_channel_members').select('channel_id,email,added_by')]);CHANNELS=ch||[];CH_MEM=cm||[]}
 function vChat(v){
   v.style.padding='0';v.style.maxWidth='none';
   v.innerHTML=`<div class="chat ${CUR_CH?'sel':''}" id="chat" style="height:calc(100vh - 64px)"><div class="chl"><div class="hd row"><b style="font-size:15px">${t('chat')}</b><div class="sp"></div><button class="btn sm sec" id="dmNew">${ic('plus')}${t('newDm')}</button></div><div class="sc" id="chList"></div>
     <div style="padding:10px 12px;border-top:1px solid var(--line)" id="notifBox"></div></div>
     <div class="chm" id="chMain"></div></div>`;
-  $('#dmNew').onclick=dmPicker;
+  $('#dmNew').onclick=()=>peoplePicker();
   renderChList();renderNotif();
   if(CUR_CH)openCh(CUR_CH,true);else $('#chMain').innerHTML=`<div class="empty" style="margin:auto">${ic('chat','style="width:40px;height:40px;opacity:.3"')}<p>${t('selectCh')}</p></div>`;
 }
@@ -1232,10 +1246,49 @@ function renderNotif(){const b=$('#notifBox');if(!b)return;
   b.innerHTML=`<button class="btn ghost sm block" id="nOn">${ic('bell')}${t('notif')}</button>`;
   $('#nOn').onclick=async()=>{await Notification.requestPermission();renderNotif()};}
 function renderChList(){
-  const L=$('#chList');if(!L)return;const{all,co,dm}=sortedChannels();
+  const L=$('#chList');if(!L)return;const{all,co,dm,grp}=sortedChannels();
   const row=c=>{const u=UNREAD[c.id]||0;return `<div class="chi ${c.id===CUR_CH?'on':''} ${u?'unread':''}" data-ch="${c.id}">${chIcon(c)}<span class="nm">${esc(chLabel(c))}</span>${u?`<span class="bdg">${u}</span>`:''}</div>`};
-  L.innerHTML=`<div class="grp">${t('channels')}</div>${all.map(row).join('')}${co.map(row).join('')}<div class="grp">${t('dms')}</div>${dm.map(row).join('')||`<div class="small muted" style="padding:4px 10px">—</div>`}`;
+  L.innerHTML=`<div class="grp">${t('channels')}</div>${all.map(row).join('')}${co.map(row).join('')}${grp.length?`<div class="grp">${t('grp_title')}</div>${grp.map(row).join('')}`:''}<div class="grp">${t('dms')}</div>${dm.map(row).join('')||`<div class="small muted" style="padding:4px 10px">—</div>`}`;
   L.querySelectorAll('[data-ch]').forEach(d=>d.onclick=()=>openCh(d.dataset.ch));
+}
+function peoplePicker(addTo){
+  const already=addTo?chMembers(addTo):[];
+  const others=MEMBERS.filter(m=>m.active&&m.email!==ME.email&&!already.includes(m.email));
+  const sel=new Set();
+  const bg=modal(addTo?t('grp_add')+' · '+chLabel(addTo):t('newDm'),`
+    <input class="inp" id="dmQ" placeholder="${esc(t('search'))}" style="margin-bottom:10px">
+    <div id="dmChips" class="row" style="gap:6px;margin-bottom:10px"></div>
+    <div id="dmL" style="max-height:42vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px"></div>
+    ${addTo?`<p class="small muted" style="margin:10px 0 0">${esc(addTo.kind==='company'?t('grp_guestNote'):t('grp_addNote'))}</p>`
+      :`<div class="fld hidden" id="gNameBox" style="margin:12px 0 0"><label>${t('grp_name')}</label><input class="inp" id="gName" maxlength="60" placeholder="${esc(t('grp_namePh'))}"></div>
+        <p class="small muted" style="margin:10px 0 0">${esc(t('grp_hint'))}</p>`}`,
+  async()=>{const list=[...sel];if(!list.length){toast(t('grp_pick'));return false}
+    if(addTo){const{error}=await SB.rpc('itn_add_members',{p_ch:addTo.id,p_emails:list});if(error)throw error;await reloadChannels();toast(t('saved'));openCh(addTo.id,true);return}
+    if(list.length===1){openDm(list[0]);return}
+    const{data,error}=await SB.rpc('itn_create_group',{p_name:(bg.querySelector('#gName')||{}).value||'',p_emails:list});if(error)throw error;
+    await reloadChannels();CUR_CH=data;if(VIEW!=='chat')go('chat');else render()},
+  addTo?t('add'):t('grp_start'));
+  const draw=()=>{const q=bg.querySelector('#dmQ').value.toLowerCase();
+    bg.querySelector('#dmL').innerHTML=others.filter(m=>(m.name+' '+m.email+' '+coName(m.company_id)).toLowerCase().includes(q)).map(m=>`<label class="chi" style="margin:0;font-weight:400"><input type="checkbox" data-e="${esc(m.email)}" ${sel.has(m.email)?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)">${avatar(m.email,'sm')}<span class="nm">${esc(m.name||m.email)}<span class="small muted" style="font-weight:400"> · ${esc(coName(m.company_id))}</span></span></label>`).join('')||`<div class="empty">${t('noPeople')}</div>`;
+    bg.querySelectorAll('[data-e]').forEach(cb=>cb.onchange=()=>{cb.checked?sel.add(cb.dataset.e):sel.delete(cb.dataset.e);chips()})};
+  const chips=()=>{bg.querySelector('#dmChips').innerHTML=[...sel].map(e=>`<span class="tag">${esc(nameOf(e))}</span>`).join('');
+    const gb=bg.querySelector('#gNameBox');if(gb)gb.classList.toggle('hidden',sel.size<2);
+    const b=bg.querySelector('.mf .btn:not(.sec)');if(b&&!addTo)b.textContent=sel.size>1?t('grp_start'):t('message')};
+  bg.querySelector('#dmQ').oninput=draw;draw();chips();
+}
+function membersModal(c){
+  const mem=chMembers(c),guests=chGuests(c),canAdd=canAddTo(c);
+  const canRemove=e=>e!==ME.email&&((c.kind==='company'&&canManage(c.company_id)&&guests.includes(e))||(c.kind==='group'&&c.created_by===ME.email));
+  const bg=modal(`${chLabel(c)} · ${t('members_n')(mem.length)}`,`
+    ${c.kind==='group'?`<div class="row" style="gap:8px;margin-bottom:12px"><input class="inp" id="gRen" maxlength="60" value="${esc(c.name||'')}" placeholder="${esc(t('grp_namePh'))}" style="flex:1"><button type="button" class="btn sec sm" id="gRenB">${t('save')}</button></div>`:''}
+    ${canAdd?`<button type="button" class="btn sm" id="mAdd" style="margin-bottom:10px">${ic('plus')}${t(c.kind==='company'?'grp_invite':'grp_add')}</button>`:''}
+    <div style="max-height:50vh;overflow:auto">${mem.slice().sort((a,b)=>nameOf(a).localeCompare(nameOf(b))).map(e=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--soft);flex-wrap:nowrap">${avatar(e,'sm')}<div style="flex:1;min-width:0"><b>${esc(nameOf(e))}</b>${e===ME.email?` <span class="small muted">(${esc(t('grp_you'))})</span>`:''}<div class="small muted">${esc(coName((memBy(e)||{}).company_id))}</div></div>
+      ${guests.includes(e)?`<span class="tag pending">${esc(t('grp_guest'))}</span>`:''}${canRemove(e)?`<button type="button" class="btn ghost sm" data-rm="${esc(e)}">${t('grp_remove')}</button>`:''}</div>`).join('')}</div>
+    ${c.kind==='group'?`<button type="button" class="btn danger sm" id="gLeave" style="margin-top:14px">${t('grp_leave')}</button>`:''}`);
+  const a=bg.querySelector('#mAdd');if(a)a.onclick=()=>{bg.remove();peoplePicker(c)};
+  bg.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm(t('confirmDel')))return;const{error}=await SB.rpc('itn_remove_member',{p_ch:c.id,p_email:b.dataset.rm});if(error)return fail(error);await reloadChannels();bg.remove();membersModal(CHANNELS.find(x=>x.id===c.id))});
+  const r=bg.querySelector('#gRenB');if(r)r.onclick=async()=>{const{error}=await SB.rpc('itn_rename_group',{p_ch:c.id,p_name:bg.querySelector('#gRen').value});if(error)return fail(error);await reloadChannels();bg.remove();toast(t('saved'));openCh(c.id,true)};
+  const l=bg.querySelector('#gLeave');if(l)l.onclick=async()=>{if(!confirm(t('grp_leaveQ')))return;const{error}=await SB.rpc('itn_remove_member',{p_ch:c.id,p_email:ME.email});if(error)return fail(error);await reloadChannels();bg.remove();CUR_CH=null;render()};
 }
 function dmPicker(){
   const others=MEMBERS.filter(m=>m.active&&m.email!==ME.email);
@@ -1254,12 +1307,17 @@ async function openCh(id,keep){
   CUR_CH=id;const c=CHANNELS.find(x=>x.id===id);if(!c){CUR_CH=null;return render()}
   $('#chat').classList.add('sel');renderChList();
   const canPost=c.kind!=='all'||isOwner()||isMgr();
-  const sub=c.kind==='dm'?t('dmWith'):c.kind==='all'?t('allCos'):t('members_n')(MEMBERS.filter(m=>m.active&&m.company_id===c.company_id).length);
-  $('#chMain').innerHTML=`<div class="hd"><button class="btn ghost sm back" id="chBack">${ic('back')}</button>${chIcon(c)}<div><b>${esc(chLabel(c))}</b><div class="small muted">${esc(sub)}</div></div></div>
+  const nG=chGuests(c).length;
+  const sub=c.kind==='dm'?t('dmWith'):c.kind==='all'?t('allCos'):t('members_n')(chMembers(c).length)+(nG?' · '+t('grp_guestsN')(nG):'');
+  $('#chMain').innerHTML=`<div class="hd"><button class="btn ghost sm back" id="chBack">${ic('back')}</button>${chIcon(c)}<div style="min-width:0"><b>${esc(chLabel(c))}</b><div class="small muted">${esc(sub)}</div></div><div class="sp"></div>
+    ${c.kind!=='dm'&&c.kind!=='all'?`<button class="btn sec sm" id="chMem">${ic('people')}<span class="hide-sm">${t('grp_members')}</span></button>`:''}
+    ${canAddTo(c)?`<button class="btn sm" id="chAdd">${ic('plus')}<span class="hide-sm">${t(c.kind==='company'?'grp_invite':'grp_add')}</span></button>`:''}</div>
     <div class="phi">⚠️ ${esc(t('phi'))}</div>
     <div class="msgs" id="msgs"><div class="empty">…</div></div>
     ${canPost?`<div class="pend hidden" id="pend"></div><form class="comp" id="comp"><button type="button" class="att" id="attBtn" title="${t('attach')}">${ic('clip')}</button><textarea id="mIn" rows="1" placeholder="${esc(t('typeMsg'))}" maxlength="4000"></textarea><button class="btn send" id="sendBtn">${ic('send')}</button></form>`:`<div class="ro">${esc(t('annOnly'))}</div>`}`;
   $('#chBack').onclick=()=>{CUR_CH=null;$('#chat').classList.remove('sel');renderChList()};
+  if($('#chMem'))$('#chMem').onclick=()=>membersModal(c);
+  if($('#chAdd'))$('#chAdd').onclick=()=>peoplePicker(c);
   if(canPost){
     const ta=$('#mIn');
     ta.oninput=()=>{ta.style.height='42px';ta.style.height=Math.min(ta.scrollHeight,160)+'px'};
@@ -1316,7 +1374,7 @@ function subscribe(){
       const u=p.new;const i=MSGS.findIndex(x=>x.id===u.id);if(i>=0){MSGS[i]={...MSGS[i],...u};drawMsgs()}return}
     if(p.eventType!=='INSERT')return;
     const m=p.new;
-    if(!CHANNELS.some(c=>c.id===m.channel_id)){const{data}=await SB.from('itn_channels').select('*').eq('id',m.channel_id).maybeSingle();if(!data)return;CHANNELS.push(data)}
+    if(!CHANNELS.some(c=>c.id===m.channel_id)){await reloadChannels();if(!CHANNELS.some(c=>c.id===m.channel_id))return}
     const viewing=VIEW==='chat'&&CUR_CH===m.channel_id&&!document.hidden;
     if(VIEW==='chat'&&CUR_CH===m.channel_id){if(!MSGS.some(x=>x.id===m.id)){MSGS.push(m);drawMsgs()}}
     if(m.sender_email===ME.email)return;
