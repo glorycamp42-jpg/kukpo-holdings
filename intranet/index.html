@@ -189,6 +189,15 @@ table.tb{width:100%;border-collapse:collapse}
 .msg .bx{min-width:0;flex:1}
 .msg .who{font-weight:600;font-size:13px}.msg .who small{font-weight:400;color:var(--muted);margin-left:6px}
 .msg .tx{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;line-height:1.55;color:var(--body);margin-top:2px}
+.swap-it{align-items:center;flex-wrap:wrap}.swap-it>div:nth-child(2){min-width:200px}
+@media(max-width:640px){.swap-it>div:nth-child(2){flex:1 1 calc(100% - 50px)!important}.swap-it{padding-left:16px!important}}
+.ackd{margin-top:10px;font-size:13px;color:var(--ok);font-weight:600}
+.tb.sched td{vertical-align:top}.sc-cell{min-width:96px;text-align:center}.sc-cell.can{cursor:pointer}.sc-cell.can:hover{background:var(--acc-bg)}
+.sc-cell .add{color:#B6C0CD;font-size:18px;line-height:1}.me-row td{background:#FAFBFF}
+.chip{display:block;margin:2px auto;padding:4px 8px;border-radius:7px;background:var(--soft);font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.chip.mine{background:var(--acc);color:#fff}.chip.swap{background:#FFFAEB;color:var(--warn);outline:1px dashed #F5B547}.chip i{font-style:normal;margin-left:3px;opacity:.7}
+.act-it{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--soft);cursor:pointer}.act-it:hover{background:var(--soft)}.act-it:first-child{border-top:0}
+.act-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .trn{font-size:12px;color:var(--muted);margin-top:4px}.trn .linkbtn{font-size:12px}
 .msg.cont{padding-top:1px}.msg.cont .av{visibility:hidden;height:0}
 .msg .del{position:absolute;right:8px;top:6px;display:none;background:#fff;border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:2px 6px;color:var(--muted);font-size:12px}
@@ -318,7 +327,7 @@ signIn:'Sign in',signInSub:'Use your Kukpo staff account.',createAcct:'Create ac
 email:'Work email',password:'Password',firstTime:'First time here? Create your account',haveAcct:'Already have an account? Sign in',forgot:'Forgot password?',
 badLogin:'Email or password is incorrect.',already:'An account already exists. Please sign in.',checkMail:'We sent a confirmation email. Click the link, then sign in.',pwShort:'Enter your email and a password of 8+ characters.',
 noAccessT:'Access pending',noAccess:'Your account is created, but it has not been added to the intranet yet. Ask Eugene or David to add your email.',signOut:'Sign out',
-g_main:'Workspace',g_admin:'Administration',home:'Home',news:'Announcements',chat:'Messages',people:'Directory',calendar:'Calendar',docs:'Documents & Apps',requests:'Requests',admin:'Admin',timeclock:'Time Clock',
+g_main:'Workspace',g_admin:'Administration',home:'Home',news:'Announcements',chat:'Messages',people:'Directory',calendar:'Calendar',docs:'Documents & Apps',requests:'Requests',admin:'Admin',timeclock:'Time Clock',schedule:'Schedule',policies:'Policies & Training',ackReq:'Confirmation required',ackReqLong:'Ask everyone to confirm they read this',ackBtn:'I have read and understand',acked:'Confirmed',readN:'Read',ackN:'Confirmed',readOnly:'Read, not confirmed',notRead:'Not read yet',act_title:'Action needed',act_ack:'Confirm announcement',act_sign:'Sign',act_train:'Complete training',act_cover:'Shift cover request',act_next:'Your next shift',act_none:'You are all caught up.',sc_add:'Add shift',sc_edit:'Edit shift',sc_copy:'Copy last week',sc_copyQ:n=>`Copy ${n} shifts from last week into this week? Existing shifts are kept.`,sc_noPrev:'Nothing to copy from last week.',sc_start:'Start',sc_end:'End',sc_notePh:'e.g. front desk, X-ray room',sc_help:'Tap one of your upcoming shifts to ask someone to cover it.',sc_helpMgr:'Tap an empty cell to add a shift, or a shift to change it. Staff can request cover; you approve.',sw_title:'Cover requests',sw_needs:n=>`${n} needs this shift covered`,sw_willCover:(a,b)=>`${a} will cover ${b}`,sw_askedTo:'asked',sw_take:'I can take it',sw_waitMgr:'Waiting for manager',sw_request:'Ask someone to cover',sw_who:'Who?',sw_anyone:'Anyone on my team',sw_notePh:'e.g. doctor appointment',sw_not_your_shift:'You can only give away your own shifts.',sw_shift_started:'This shift has already started.',sw_unknown_person:'That person is not on this team.',sw_cannot_take:'You cannot take this shift.',sw_cannot_cancel:'This request can no longer be cancelled.',sw_cannot_decide:'This request was already handled.',sw_no_taker:'Nobody has offered to take this shift yet.',pol_mine:'My items',pol_team:'Team compliance',pol_new:'New policy / training',pol_policy:'Policy',pol_training:'Training',pol_due:'Due',pol_every:n=>n%12===0?(n===12?'Every year':`Every ${n/12} years`):`Every ${n} months`,pol_validTo:'valid until',pol_view:'View',pol_readSign:'Read & sign',pol_none:'Nothing to sign right now.',pol_openDoc:'Open document',pol_agree:'I have read, understood and agree to follow this.',pol_typeName:'Type your full legal name to sign',pol_legal:'Typing your name is your electronic signature. The date, time and version are recorded.',pol_sign:'Sign',pol_signed:'Signed — thank you',pol_manage:'Manage items',pol_auditNote:'Signatures cannot be edited or deleted. Download CSV for audits (HIPAA, OSHA, licensing).',pol_titlePh:'e.g. HIPAA Privacy Training 2026',pol_bodyPh:'Paste the policy text, or link the document below',pol_docUrl:'Document link (optional)',pol_dueL:'Due date',pol_renewL:'Sign again',pol_once:'Once',pol_resign:'Content changed — everyone must sign again',pol_retire:'Retire this item',ps_signed:'Signed',ps_due:'Needs signature',ps_overdue:'Overdue',ps_expired:'Renewal due',ps_updated:'Updated — sign again',
 tc_in:'Clock in',tc_out:'Clock out',tc_break:'Start break',tc_back:'End break',tc_off:'Not clocked in',tc_working:'Working',tc_onbreak:'On break',tc_since:x=>`since ${x}`,tc_today:'Today',tc_week:'This week',tc_hours:'hrs',tc_mine:'My time',tc_team:'Team timesheet',tc_history:'Recent shifts',tc_none:'No time recorded yet.',tc_nowWorking:'Working now',tc_nobody:'No one is clocked in.',tc_total:'Total',tc_ot:'Over 8 h in a day or 40 h in a week (California overtime)',tc_missing:'Missing clock-out',tc_edited:'Edited',tc_by:'by',tc_detail:'Shifts',tc_add:'Add shift',tc_editT:'Edit shift',tc_reason:'Reason for change (required)',tc_reasonPh:'e.g. forgot to clock out at 6 PM',tc_inT:'Clock in',tc_outT:'Clock out',tc_csv:'Download CSV',tc_rate:'Rate',tc_pay:'Est. pay',tc_payNote:'Estimated from hourly rates in Employees (owners only).',tc_loc:'Location saved',tc_noloc:'No location',tc_ownNote:'Your own shifts can only be changed by an owner.',tc_badOut:'Clock-out must be after clock-in.',tc_done:'Clocked in',tc_doneOut:'Clocked out',tc_doneBreak:'Break started',tc_doneBack:'Back from break',tc_err_already_in:'You are already clocked in.',tc_err_not_in:'You are not clocked in.',tc_breakNote:'break',tc_thisWeek:'This week',tc_person:'Employee',
 search:'Search people and announcements…',allCos:'All companies',companyWide:'Company-wide',
 morning:'Good morning',afternoon:'Good afternoon',evening:'Good evening',heroSub:'Here is what is happening across Kukpo today.',
@@ -351,7 +360,7 @@ signIn:'로그인',signInSub:'국포 직원 계정으로 로그인하세요.',cr
 email:'회사 이메일',password:'비밀번호',firstTime:'처음이신가요? 계정 만들기',haveAcct:'계정이 있으신가요? 로그인',forgot:'비밀번호를 잊으셨나요?',
 badLogin:'이메일 또는 비밀번호가 맞지 않습니다.',already:'이미 계정이 있습니다. 로그인하세요.',checkMail:'확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인하세요.',pwShort:'이메일과 8자 이상 비밀번호를 입력하세요.',
 noAccessT:'접근 대기 중',noAccess:'계정은 만들어졌지만 아직 인트라넷에 등록되지 않았습니다. Eugene 또는 David에게 이메일 등록을 요청하세요.',signOut:'로그아웃',
-g_main:'업무',g_admin:'관리',home:'홈',news:'공지사항',chat:'메시지',people:'직원 디렉토리',calendar:'일정',docs:'문서 · 앱',requests:'요청서',admin:'관리자',timeclock:'출퇴근',
+g_main:'업무',g_admin:'관리',home:'홈',news:'공지사항',chat:'메시지',people:'직원 디렉토리',calendar:'일정',docs:'문서 · 앱',requests:'요청서',admin:'관리자',timeclock:'출퇴근',schedule:'근무 스케줄',policies:'규정 · 교육',ackReq:'확인 필요',ackReqLong:'모든 대상자에게 읽음 확인 받기',ackBtn:'읽고 이해했습니다',acked:'확인함',readN:'읽음',ackN:'확인',readOnly:'읽음 (확인 전)',notRead:'안 읽음',act_title:'해야 할 일',act_ack:'공지 확인',act_sign:'서명',act_train:'교육 이수',act_cover:'대근 요청',act_next:'다음 근무',act_none:'할 일이 없습니다.',sc_add:'근무 추가',sc_edit:'근무 수정',sc_copy:'지난주 복사',sc_copyQ:n=>`지난주 근무 ${n}건을 이번 주로 복사할까요? 기존 근무는 그대로 둡니다.`,sc_noPrev:'지난주에 복사할 근무가 없습니다.',sc_start:'시작',sc_end:'종료',sc_notePh:'예: 프론트 데스크, X-ray실',sc_help:'내 다가오는 근무를 누르면 대근을 요청할 수 있습니다.',sc_helpMgr:'빈 칸을 누르면 근무 추가, 근무를 누르면 수정합니다. 직원이 대근을 요청하면 승인해 주세요.',sw_title:'대근 요청',sw_needs:n=>`${n}님 대근 요청`,sw_willCover:(a,b)=>`${a}님이 ${b}님 근무를 대신함`,sw_askedTo:'요청 대상:',sw_take:'제가 할게요',sw_waitMgr:'매니저 승인 대기',sw_request:'대근 요청하기',sw_who:'누구에게?',sw_anyone:'우리 팀 아무나',sw_notePh:'예: 병원 예약',sw_not_your_shift:'본인 근무만 요청할 수 있습니다.',sw_shift_started:'이미 시작된 근무입니다.',sw_unknown_person:'우리 팀 직원이 아닙니다.',sw_cannot_take:'이 근무를 맡을 수 없습니다.',sw_cannot_cancel:'이미 처리되어 취소할 수 없습니다.',sw_cannot_decide:'이미 처리된 요청입니다.',sw_no_taker:'아직 맡겠다는 사람이 없습니다.',pol_mine:'내 항목',pol_team:'팀 이수 현황',pol_new:'새 규정 / 교육',pol_policy:'규정',pol_training:'교육',pol_due:'기한',pol_every:n=>n%12===0?(n===12?'매년':`${n/12}년마다`):`${n}개월마다`,pol_validTo:'유효기간',pol_view:'보기',pol_readSign:'읽고 서명하기',pol_none:'지금 서명할 항목이 없습니다.',pol_openDoc:'문서 열기',pol_agree:'내용을 읽고 이해했으며 준수하겠습니다.',pol_typeName:'서명: 본인 이름(영문 법적 이름)을 입력하세요',pol_legal:'이름 입력이 전자서명이 됩니다. 날짜·시간·버전이 기록됩니다.',pol_sign:'서명',pol_signed:'서명 완료',pol_manage:'항목 관리',pol_auditNote:'서명 기록은 수정·삭제할 수 없습니다. 감사(HIPAA, OSHA, 면허) 때 CSV로 내려받으세요.',pol_titlePh:'예: 2026 HIPAA 개인정보 교육',pol_bodyPh:'규정 내용을 붙여넣거나 아래에 문서 링크를 넣으세요',pol_docUrl:'문서 링크 (선택)',pol_dueL:'기한',pol_renewL:'재서명 주기',pol_once:'한 번만',pol_resign:'내용 변경 — 모두 다시 서명해야 함',pol_retire:'이 항목 종료',ps_signed:'서명 완료',ps_due:'서명 필요',ps_overdue:'기한 지남',ps_expired:'갱신 필요',ps_updated:'변경됨 — 재서명',
 tc_in:'출근',tc_out:'퇴근',tc_break:'휴게 시작',tc_back:'휴게 끝',tc_off:'출근 전',tc_working:'근무 중',tc_onbreak:'휴게 중',tc_since:x=>`${x}부터`,tc_today:'오늘',tc_week:'이번 주',tc_hours:'시간',tc_mine:'내 근무',tc_team:'팀 근무표',tc_history:'최근 근무 기록',tc_none:'아직 기록이 없습니다.',tc_nowWorking:'지금 근무 중',tc_nobody:'근무 중인 사람이 없습니다.',tc_total:'합계',tc_ot:'하루 8시간 또는 주 40시간 초과 (캘리포니아 초과근무)',tc_missing:'퇴근 기록 없음',tc_edited:'수정됨',tc_by:'',tc_detail:'근무 기록',tc_add:'기록 추가',tc_editT:'근무 기록 수정',tc_reason:'수정 사유 (필수)',tc_reasonPh:'예: 오후 6시 퇴근 기록을 잊음',tc_inT:'출근 시각',tc_outT:'퇴근 시각',tc_csv:'CSV 다운로드',tc_rate:'시급',tc_pay:'예상 급여',tc_payNote:'직원 관리의 시급 기준 예상 금액입니다 (오너만 보임).',tc_loc:'위치 저장됨',tc_noloc:'위치 없음',tc_ownNote:'본인 근무 기록은 오너만 수정할 수 있습니다.',tc_badOut:'퇴근 시각은 출근 시각보다 늦어야 합니다.',tc_done:'출근했습니다',tc_doneOut:'퇴근했습니다',tc_doneBreak:'휴게를 시작했습니다',tc_doneBack:'휴게를 마쳤습니다',tc_err_already_in:'이미 출근 상태입니다.',tc_err_not_in:'출근 상태가 아닙니다.',tc_breakNote:'휴게',tc_thisWeek:'이번 주',tc_person:'직원',
 search:'직원 · 공지 검색…',allCos:'전체 회사',companyWide:'전사 공지방',
 morning:'좋은 아침입니다',afternoon:'좋은 오후입니다',evening:'수고 많으셨습니다',heroSub:'오늘 국포 전체 소식입니다.',
@@ -422,6 +431,8 @@ people:'<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 4a4 4 0 0 
 calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
 docs:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
 time:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M7 14h4M7 17h7"/>',
+policies:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
 requests:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
 admin:'<path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/>',
 plus:'<path d="M12 5v14M5 12h14"/>',clip:'<path d="m21 11-8.6 8.6a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.6 8.6a2 2 0 0 1-2.8-2.8L15 7.5"/>',
@@ -486,7 +497,7 @@ async function loadBase(){
 }
 
 /* ---------- nav ---------- */
-const NAV=[{k:'home'},{k:'news'},{k:'chat'},{k:'time'},{k:'people'},{k:'calendar'},{k:'docs'},{k:'requests'},{k:'admin',owner:true}];
+const NAV=[{k:'home'},{k:'news'},{k:'chat'},{k:'time'},{k:'schedule'},{k:'policies'},{k:'people'},{k:'calendar'},{k:'docs'},{k:'requests'},{k:'admin',owner:true}];
 function totalUnread(){return Object.values(UNREAD).reduce((a,b)=>a+b,0)}
 function renderNav(){
   const u=totalUnread();
@@ -515,7 +526,7 @@ const inScope=c=>!SCOPE||!c||c===SCOPE;
 function render(){
   $('#pgTitle').textContent=navT(VIEW);
   const v=$('#view');v.style.padding='';v.style.maxWidth='';
-  ({home:vHome,news:vNews,chat:vChat,people:vPeople,calendar:vCal,docs:vDocs,requests:vReq,admin:vAdmin,time:vTime}[VIEW]||vHome)(v);
+  ({home:vHome,news:vNews,chat:vChat,people:vPeople,calendar:vCal,docs:vDocs,requests:vReq,admin:vAdmin,time:vTime,schedule:vSched,policies:vPol}[VIEW]||vHome)(v);
 }
 
 /* ---------- modal ---------- */
@@ -549,6 +560,7 @@ async function vHome(v){
     SB.from('itn_events').select('*').gte('starts_on',today).order('starts_on').limit(30),
     SB.from('itn_links').select('*').eq('kind','app').order('title'),
     SB.from('itn_requests').select('*').order('created_at',{ascending:false}).limit(100)]);
+  const act=await actionItems(p.data||[]);
   if(VIEW!=='home')return;
   const posts=(p.data||[]).filter(x=>inScope(x.company_id)).slice(0,5);
   const evs=(ev.data||[]).filter(x=>inScope(x.company_id)).slice(0,5);
@@ -562,6 +574,7 @@ async function vHome(v){
     <h2>${esc(greet)}, ${esc(first)}</h2><p>${esc(t('heroSub'))}</p></div>
     <div class="acts"><button class="btn gold" data-go="chat">${ic('chat')}${t('openChat')}</button><button class="btn sec" id="hReq">${ic('plus')}${t('newReq')}</button><button class="btn sec" data-go="time">${ic('time')}${t('timeclock')}</button></div></div>
   <div id="pushHome"></div>
+  ${act.html}
   <div class="grid g4" style="margin-top:20px">
     ${kpi('chat','#EEF3FF','#1D4ED8',totalUnread(),t('unread'))}
     ${kpi('requests','#FFFAEB','#B54708',pend,t('pendingReq'))}
@@ -581,6 +594,7 @@ async function vHome(v){
       <div class="list">${reqs.filter(r=>r.email===ME.email).slice(0,4).map(r=>`<div class="it"><div style="flex:1"><b>${esc(t('req_'+r.kind))}</b><div class="small muted">${r.start_date?esc(fmtD(dOnly(r.start_date)))+(r.end_date&&r.end_date!==r.start_date?' – '+esc(fmtD(dOnly(r.end_date))):''):esc(fmtD(r.created_at))}</div></div>${stTag(r.status)}</div>`).join('')||`<div class="empty">${t('noReq')}</div>`}</div></div>
   </div>`;
   bindGo(v);$('#hReq').onclick=reqModal;renderPush();bindTr(v,render);
+  v.querySelectorAll('.act-it[data-to]').forEach(a=>a.onclick=()=>{const[vw,h]=a.dataset.to.split('|');go(vw);if(h)setTimeout(()=>{const el=document.getElementById(h);if(el)el.scrollIntoView({block:'center'})},700)});
   v.querySelectorAll('.kpi[data-go]').forEach(k=>k.onclick=()=>go(k.dataset.go));
 }
 function kpi(k,bg,fg,val,lab,goto){return `<div class="card kpi" data-go="${goto||(k==='people'?'people':k)}"><div class="ic" style="background:${bg};color:${fg}">${ic(k)}</div><div><div class="v">${val}</div><div class="l">${esc(lab)}</div></div></div>`}
@@ -607,15 +621,33 @@ async function vNews(v){
   const{data,error}=await SB.from('itn_posts').select('*').order('pinned',{ascending:false}).order('created_at',{ascending:false}).limit(200);
   if(error)return fail(error);if(VIEW!=='news')return;
   const rows=(data||[]).filter(x=>inScope(x.company_id));
+  const ids=rows.map(r=>r.id);
+  const{data:rd}=ids.length?await SB.from('itn_post_reads').select('*').in('post_id',ids):{data:[]};
+  if(VIEW!=='news')return;
+  const reads=rd||[];
+  const mine=id=>reads.find(r=>r.post_id===id&&r.email===ME.email);
   v.innerHTML=`<div class="row" style="margin-bottom:16px"><div class="sp"></div>${canCreate()?`<button class="btn" id="nNew">${ic('plus')}${t('newPost')}</button>`:''}</div>
-  <div class="card list">${rows.length?rows.map(x=>`<div class="it post">${avatar(x.author_email)}<div style="flex:1;min-width:0">
-    <div class="row" style="gap:8px">${x.pinned?`<span class="tag pin">📌</span>`:''}<h4>${esc(pTitle(x))}</h4><div class="sp"></div>${coTag(x.company_id)}</div>
+  <div class="card list">${rows.length?rows.map(x=>{const own=x.author_email===ME.email,m=mine(x.id);
+    const showStats=canManage(x.company_id);const aud=postAudience(x);const rs=reads.filter(r=>r.post_id===x.id&&aud.includes(r.email));
+    return `<div class="it post" id="post-${x.id}">${avatar(x.author_email)}<div style="flex:1;min-width:0">
+    <div class="row" style="gap:8px">${x.pinned?`<span class="tag pin">📌</span>`:''}<h4>${esc(pTitle(x))}</h4>${x.require_ack?`<span class="tag pending">${esc(t('ackReq'))}</span>`:''}<div class="sp"></div>${coTag(x.company_id)}</div>
     <div class="meta">${esc(nameOf(x.author_email))} · ${esc(fmtDT(x.created_at))}</div>
-    <div class="txt">${linkify(pBody(x))}</div>${trNote(x,x.author_email===ME.email)}
-    ${canManage(x.company_id)?`<div class="row" style="margin-top:10px;gap:6px"><button class="btn sec sm" data-e="${x.id}">${t('edit')}</button><button class="btn danger sm" data-d="${x.id}">${t('del')}</button></div>`:''}
-  </div></div>`).join(''):`<div class="empty">${t('noNews')}</div>`}</div>`;
+    <div class="txt">${linkify(pBody(x))}</div>${trNote(x,own)}
+    ${x.require_ack&&!own&&postAudience(x).includes(ME.email)?(m&&m.acked_at?`<div class="ackd">✅ ${esc(t('acked'))} · ${esc(fmtDT(m.acked_at))}</div>`:`<button class="btn ok sm" style="margin-top:12px" data-ack="${x.id}">✅ ${esc(t('ackBtn'))}</button>`):''}
+    <div class="row" style="margin-top:10px;gap:6px">
+      ${showStats?`<button class="btn ghost sm" data-rs="${x.id}">👁 ${esc(t('readN'))} ${rs.length}/${aud.length}${x.require_ack?` · ✅ ${esc(t('ackN'))} ${rs.filter(r=>r.acked_at).length}/${aud.length}`:''}</button>`:''}
+      ${canManage(x.company_id)?`<span class="sp"></span><button class="btn sec sm" data-e="${x.id}">${t('edit')}</button><button class="btn danger sm" data-d="${x.id}">${t('del')}</button>`:''}</div>
+  </div></div>`}).join(''):`<div class="empty">${t('noNews')}</div>`}</div>`;
   if($('#nNew'))$('#nNew').onclick=()=>postModal();
   bindTr(v,render);
+  /* mark everything shown as read (once) */
+  const unread=rows.filter(x=>x.author_email!==ME.email&&!mine(x.id)).map(x=>({post_id:x.id,email:ME.email}));
+  if(unread.length)SB.from('itn_post_reads').upsert(unread,{onConflict:'post_id,email',ignoreDuplicates:true}).then(({error})=>{if(error)console.warn(error)});
+  v.querySelectorAll('[data-ack]').forEach(b=>b.onclick=async()=>{b.disabled=true;
+    const{error}=await SB.from('itn_post_reads').upsert({post_id:b.dataset.ack,email:ME.email,acked_at:new Date().toISOString()},{onConflict:'post_id,email'});
+    if(error){b.disabled=false;return fail(error)}toast(t('acked'));render()});
+  v.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>{const x=rows.find(r=>r.id===b.dataset.rs);readersModal(x,reads.filter(r=>r.post_id===x.id))});
+  if(location.hash.startsWith('#news-')){const el=document.getElementById('post-'+location.hash.slice(6));if(el)el.scrollIntoView({block:'center'})}
   v.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>postModal(rows.find(r=>r.id===b.dataset.e)));
   v.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{if(!confirm(t('confirmDel')))return;const{error}=await SB.from('itn_posts').delete().eq('id',b.dataset.d);if(error)return fail(error);toast(t('deleted'));render()});
 }
@@ -624,10 +656,21 @@ function postModal(x){
     <div class="fld"><label>${t('audience')}</label><select class="inp" name="co">${coOptions(x?x.company_id:SCOPE,true)}</select></div>
     <div class="fld"><label>${t('title')}</label><input class="inp" name="title" required maxlength="200" value="${esc(x?x.title:'')}"></div>
     <div class="fld"><label>${t('body')}</label><textarea class="inp" name="body" rows="7">${esc(x?x.body:'')}</textarea></div>
-    <label class="chk"><input type="checkbox" name="pin" ${x&&x.pinned?'checked':''}>${t('pinned')}</label>`,
-  async bg=>{const f=bg.querySelector('form');const row={company_id:f.co.value||null,title:f.title.value.trim(),body:f.body.value,pinned:f.pin.checked,updated_at:new Date().toISOString()};
+    <label class="chk"><input type="checkbox" name="pin" ${x&&x.pinned?'checked':''}>${t('pinned')}</label>
+    <label class="chk" style="margin-top:10px"><input type="checkbox" name="ack" ${x&&x.require_ack?'checked':''}>${t('ackReqLong')}</label>`,
+  async bg=>{const f=bg.querySelector('form');const row={company_id:f.co.value||null,title:f.title.value.trim(),body:f.body.value,pinned:f.pin.checked,require_ack:f.ack.checked,updated_at:new Date().toISOString()};
     const{error}=x?await SB.from('itn_posts').update(row).eq('id',x.id):await SB.from('itn_posts').insert(row);
     if(error)throw error;toast(t('saved'));render()});
+}
+/* who should read a post: everyone active in its company (or everyone for company-wide), minus the author */
+function postAudience(x){return MEMBERS.filter(m=>m.active&&m.email!==x.author_email&&(!x.company_id||m.company_id===x.company_id)).map(m=>m.email)}
+function readersModal(x,rs){
+  const aud=postAudience(x);
+  const row=e=>{const r=rs.find(z=>z.email===e);const st=x.require_ack?(r&&r.acked_at?['approved',t('acked')+' · '+fmtDT(r.acked_at)]:r?['pending',t('readOnly')+' · '+fmtDT(r.read_at)]:['rejected',t('notRead')])
+      :(r?['approved',t('readN')+' · '+fmtDT(r.read_at)]:['rejected',t('notRead')]);
+    return `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--soft);flex-wrap:nowrap">${avatar(e,'sm')}<div style="flex:1;min-width:0"><b>${esc(nameOf(e))}</b><div class="small muted">${esc(coName((memBy(e)||{}).company_id))}</div></div><span class="tag ${st[0]}">${esc(st[1])}</span></div>`};
+  const order=e=>{const r=rs.find(z=>z.email===e);return r?(r.acked_at?2:1):0};
+  modal(pTitle(x),aud.length?aud.slice().sort((a,b)=>order(a)-order(b)||nameOf(a).localeCompare(nameOf(b))).map(row).join(''):`<div class="empty">${t('noPeople')}</div>`);
 }
 
 /* ---------- DIRECTORY ---------- */
@@ -913,6 +956,207 @@ function shiftModal(email,e){
     const{error}=e?await SB.from('itn_time_entries').update(row).eq('id',e.id):await SB.from('itn_time_entries').insert({...row,email,company_id:m.company_id||null,manual:true});
     if(error)throw error;toast(t('saved'));render()});
   if(e)bg.querySelector('#tcDel').onclick=async()=>{if(!confirm(t('confirmDel')))return;const{error}=await SB.from('itn_time_entries').delete().eq('id',e.id);if(error)return fail(error);bg.remove();toast(t('deleted'));render()};
+}
+
+/* things this person must do: confirm announcements, sign policies, answer cover requests; plus their next shift */
+async function actionItems(posts){
+  const req=posts.filter(x=>x.require_ack&&x.author_email!==ME.email&&postAudience(x).includes(ME.email));
+  const now=new Date().toISOString();
+  const[{data:rd},{data:pol},{data:sg},{data:sw},{data:nx}]=await Promise.all([
+    req.length?SB.from('itn_post_reads').select('post_id,acked_at').eq('email',ME.email).in('post_id',req.map(x=>x.id)):Promise.resolve({data:[]}),
+    SB.from('itn_policies').select('*').eq('active',true),
+    SB.from('itn_policy_signs').select('*').eq('email',ME.email),
+    SB.from('itn_shift_swaps').select('*').eq('status','open'),
+    SB.from('itn_shifts').select('*').eq('email',ME.email).gte('ends_at',now).order('starts_at').limit(1)]);
+  const items=[];
+  req.filter(x=>!(rd||[]).some(r=>r.post_id===x.id&&r.acked_at)).forEach(x=>items.push({ic:'📢',bg:'#EEF3FF',lab:t('act_ack'),txt:pTitle(x),to:'news|post-'+x.id}));
+  (pol||[]).filter(p=>p.company_id===null||p.company_id===ME.company).forEach(p=>{const st=polStatus(p,sg||[],ME.email);
+    if(st.k!=='signed')items.push({ic:p.kind==='training'?'🎓':'📝',bg:st.k==='overdue'||st.k==='expired'?'#FEF3F2':'#FFFAEB',lab:(p.kind==='training'?t('act_train'):t('act_sign'))+' · '+t('ps_'+st.k),txt:p.title,to:'policies'})});
+  (sw||[]).filter(w=>w.from_email!==ME.email&&(w.to_email===ME.email||(!w.to_email&&w.company_id===ME.company))).forEach(w=>items.push({ic:'🔄',bg:'#FFFAEB',lab:t('act_cover'),txt:t('sw_needs')(nameOf(w.from_email)),to:'schedule'}));
+  const next=(nx||[])[0];
+  if(!items.length&&!next)return{html:''};
+  return{html:`<div class="card" style="margin-top:20px"><div class="hd"><h3>${t('act_title')}</h3>${items.length?`<span class="tag rejected">${items.length}</span>`:''}<div class="sp"></div>
+    ${next?`<span class="small muted">${esc(t('act_next'))}: <b style="color:var(--ink)">${esc(shDay(next))} · ${esc(shTxt(next))}</b></span>`:''}</div>
+    ${items.length?`<div>${items.slice(0,6).map(i=>`<div class="act-it" data-to="${esc(i.to)}"><div class="act-ic" style="background:${i.bg}">${i.ic}</div><div style="flex:1;min-width:0"><div class="small muted">${esc(i.lab)}</div><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(i.txt)}</b></div><span class="muted">›</span></div>`).join('')}</div>`
+      :`<div class="empty" style="padding:16px">✅ ${esc(t('act_none'))}</div>`}</div>`};
+}
+
+/* ---------- SCHEDULE (shifts + cover requests) ---------- */
+let SC_WEEK=null,SC_CO='';
+const fmtHM=d=>{const x=new Date(d);if(LANG==='ko')return `${x.getHours()}:${String(x.getMinutes()).padStart(2,'0')}`;return x.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).replace(/:00(?=\s?[AP]M)/i,'').replace(/\s?([AP])M/i,(m,a)=>a.toLowerCase())};
+const shTxt=s=>`${fmtHM(s.starts_at)}–${fmtHM(s.ends_at)}`;
+const shDay=s=>new Date(s.starts_at).toLocaleDateString(LOC(),{weekday:'short',month:'short',day:'numeric'});
+const swapErr=e=>{const k=((e&&e.message)||'').match(/not_your_shift|shift_started|unknown_person|cannot_take|cannot_cancel|cannot_decide|no_taker/);return new Error(k?t('sw_'+k[0]):(e&&e.message)||String(e))};
+async function swapAct(action,id,to,note){const{error}=await SB.rpc('itn_swap',{action,p_id:id,p_to:to||null,p_note:note||''});if(error)throw swapErr(error)}
+async function vSched(v){
+  if(!SC_WEEK)SC_WEEK=weekStart(new Date());
+  const co=isOwner()?(SCOPE||SC_CO||(COS[0]||{}).id):ME.company;SC_CO=co;
+  if(!co){v.innerHTML=`<div class="card empty">${t('noPeople')}</div>`;return}
+  const ws=SC_WEEK,we=addDays(ws,7);
+  const[{data:sh,error},{data:sw}]=await Promise.all([
+    SB.from('itn_shifts').select('*').eq('company_id',co).gte('starts_at',ws.toISOString()).lt('starts_at',we.toISOString()).order('starts_at'),
+    SB.from('itn_shift_swaps').select('*').eq('company_id',co).in('status',['open','accepted']).order('created_at')]);
+  if(error)return fail(error);if(VIEW!=='schedule')return;
+  const shifts=sh||[],swaps=sw||[];
+  /* swaps can point at shifts outside this week: fetch those too */
+  const missing=[...new Set(swaps.map(w=>w.shift_id).filter(id=>!shifts.some(s=>s.id===id)))];
+  const extra=missing.length?((await SB.from('itn_shifts').select('*').in('id',missing)).data||[]):[];
+  const allSh=[...shifts,...extra];const shBy=id=>allSh.find(s=>s.id===id);
+  const mgr=canManage(co);
+  const people=[...new Set([...MEMBERS.filter(m=>m.active&&m.company_id===co&&m.role!=='owner').map(m=>m.email),...shifts.map(s=>s.email)])].sort((a,b)=>(a===ME.email?-1:b===ME.email?1:0)||nameOf(a).localeCompare(nameOf(b)));
+  const dayKeys=[...Array(7)].map((_,i)=>ymd(addDays(ws,i)));const today=ymd(new Date());
+  const activeSwap=id=>swaps.find(w=>w.shift_id===id);
+  const isThis=ymd(ws)===ymd(weekStart(new Date()));
+  const coSel=isOwner()&&!SCOPE?`<select class="inp" id="scCo" style="width:auto;height:36px">${COS.map(c=>`<option value="${esc(c.id)}" ${c.id===co?'selected':''}>${esc(LANG==='ko'?c.name_ko:c.name_en)}</option>`).join('')}</select>`:coTag(co);
+  const swapCard=w=>{const s=shBy(w.shift_id);if(!s)return'';const canTake=w.status==='open'&&w.from_email!==ME.email&&(!w.to_email||w.to_email===ME.email)&&(memBy(ME.email)||{}).company_id===co;
+    return `<div class="it swap-it">${avatar(w.from_email,'sm')}<div style="flex:1;min-width:0">
+      <b>${esc(w.status==='accepted'?t('sw_willCover')(nameOf(w.taken_by),nameOf(w.from_email)):t('sw_needs')(nameOf(w.from_email)))}</b>
+      <div class="small muted">${esc(shDay(s))} · ${esc(shTxt(s))}${w.to_email?' · '+esc(t('sw_askedTo'))+' '+esc(nameOf(w.to_email)):''}${w.note?' · “'+esc(w.note)+'”':''}</div></div>
+      ${w.status==='accepted'?`<span class="tag pending">${esc(t('sw_waitMgr'))}</span>`:''}
+      ${canTake?`<button class="btn ok sm" data-sw="take" data-id="${w.id}">${esc(t('sw_take'))}</button>`:''}
+      ${mgr&&w.status==='accepted'?`<button class="btn ok sm" data-sw="approve" data-id="${w.id}">${t('approve')}</button>`:''}
+      ${mgr?`<button class="btn danger sm" data-sw="reject" data-id="${w.id}">${t('reject')}</button>`:''}
+      ${w.from_email===ME.email?`<button class="btn ghost sm" data-sw="cancel" data-id="${w.id}">${t('cancel')}</button>`:''}</div>`};
+  v.innerHTML=`
+  ${swaps.length?`<div class="card" style="margin-bottom:20px;border-color:#F7E3B5"><div class="hd" style="background:var(--warn-bg)"><h3>🔄 ${esc(t('sw_title'))}</h3><span class="tag pending">${swaps.length}</span></div><div class="list">${swaps.map(swapCard).join('')}</div></div>`:''}
+  <div class="card"><div class="hd" style="flex-wrap:wrap"><button class="btn sec sm" id="sPrev">‹</button><h3>${esc(fmtD(ws))} – ${esc(fmtD(addDays(ws,6)))}</h3><button class="btn sec sm" id="sNext">›</button>${isThis?'':`<button class="btn ghost sm" id="sThis">${t('today')}</button>`}
+    <div class="sp"></div>${coSel}${mgr?`<button class="btn sec sm" id="sCopy">${esc(t('sc_copy'))}</button><button class="btn sm" id="sAdd">${ic('plus')}${esc(t('sc_add'))}</button>`:''}</div>
+    <div class="tbw"><table class="tb sched"><thead><tr><th>${t('tc_person')}</th>${dayKeys.map((k,i)=>`<th style="text-align:center;${k===today?'color:var(--acc)':''}">${T[LANG].days[i]}<div style="font-weight:400">${dOnly(k).getDate()}</div></th>`).join('')}<th style="text-align:right">${t('tc_total')}</th></tr></thead><tbody>
+    ${people.length?people.map(p=>{const mineRow=p===ME.email;let tot=0;
+      return `<tr class="${mineRow?'me-row':''}"><td><div class="row" style="gap:8px;flex-wrap:nowrap">${avatar(p,'sm')}<b style="white-space:nowrap">${esc(nameOf(p))}</b></div></td>
+      ${dayKeys.map(k=>{const ds=shifts.filter(s=>s.email===p&&ymd(new Date(s.starts_at))===k);ds.forEach(s=>tot+=(new Date(s.ends_at)-new Date(s.starts_at))/HR);
+        return `<td class="sc-cell ${mgr?'can':''}" data-day="${k}" data-p="${esc(p)}">${ds.map(s=>{const w=activeSwap(s.id);
+          return `<span class="chip ${mineRow?'mine':''} ${w?'swap':''}" data-s="${s.id}" title="${esc(s.note||'')}">${w?'🔄 ':''}${esc(shTxt(s))}${s.note?'<i>•</i>':''}</span>`}).join('')}${mgr&&!ds.length?'<span class="add">+</span>':''}</td>`}).join('')}
+      <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;${tot>40?'color:var(--bad)':''}">${tot?fmtH(tot):'–'}</td></tr>`}).join(''):`<tr><td colspan="9" class="empty">${t('noPeople')}</td></tr>`}
+    </tbody></table></div>
+    <div class="small muted" style="padding:12px 20px;border-top:1px solid var(--line)">${esc(mgr?t('sc_helpMgr'):t('sc_help'))}</div></div>`;
+  $('#sPrev').onclick=()=>{SC_WEEK=addDays(ws,-7);render()};$('#sNext').onclick=()=>{SC_WEEK=addDays(ws,7);render()};
+  if($('#sThis'))$('#sThis').onclick=()=>{SC_WEEK=null;render()};
+  if($('#scCo'))$('#scCo').onchange=e=>{SC_CO=e.target.value;render()};
+  v.querySelectorAll('[data-sw]').forEach(b=>b.onclick=async()=>{const a=b.dataset.sw;if((a==='reject'||a==='cancel')&&!confirm(t('confirmDel')))return;b.disabled=true;
+    try{await swapAct(a,b.dataset.id);toast(t('saved'));render()}catch(e){b.disabled=false;fail(e)}});
+  v.querySelectorAll('.chip[data-s]').forEach(c=>c.onclick=e=>{e.stopPropagation();const s=shBy(c.dataset.s);
+    if(mgr)return shiftEditModal(co,s);
+    if(s.email===ME.email&&new Date(s.starts_at)>new Date()&&!activeSwap(s.id))return coverModal(s,co);
+    modal(`${nameOf(s.email)} · ${shDay(s)}`,`<p style="margin:0">${esc(shTxt(s))}</p>${s.note?`<p class="muted">${esc(s.note)}</p>`:''}`)});
+  if(mgr){v.querySelectorAll('.sc-cell.can').forEach(c=>c.onclick=()=>shiftEditModal(co,null,c.dataset.p,c.dataset.day));
+    $('#sAdd').onclick=()=>shiftEditModal(co,null,null,ymd(new Date())>=ymd(ws)&&ymd(new Date())<ymd(we)?ymd(new Date()):ymd(ws));
+    $('#sCopy').onclick=async()=>{
+      const{data:prev}=await SB.from('itn_shifts').select('*').eq('company_id',co).gte('starts_at',addDays(ws,-7).toISOString()).lt('starts_at',ws.toISOString());
+      if(!prev||!prev.length)return toast(t('sc_noPrev'));
+      if(!confirm(t('sc_copyQ')(prev.length)))return;
+      const rows=prev.filter(s=>!shifts.some(x=>x.email===s.email&&ymd(new Date(x.starts_at))===ymd(addDays(new Date(s.starts_at),7))))
+        .map(s=>({company_id:co,email:s.email,starts_at:addDays(new Date(s.starts_at),7).toISOString(),ends_at:addDays(new Date(s.ends_at),7).toISOString(),note:s.note||''}));
+      if(!rows.length)return toast(t('sc_noPrev'));
+      const{error}=await SB.from('itn_shifts').insert(rows);if(error)return fail(error);toast(t('saved'));render()}}
+}
+function shiftEditModal(co,s,email,day){
+  const ppl=MEMBERS.filter(m=>m.active&&m.company_id===co&&m.role!=='owner');
+  const d=s?ymd(new Date(s.starts_at)):day;
+  const hm=x=>{const z=new Date(x);return `${String(z.getHours()).padStart(2,'0')}:${String(z.getMinutes()).padStart(2,'0')}`};
+  const bg=modal(s?t('sc_edit'):t('sc_add'),`
+    <div class="fld"><label>${t('tc_person')}</label><select class="inp" name="p" required>${ppl.map(m=>`<option value="${esc(m.email)}" ${(s?s.email:email)===m.email?'selected':''}>${esc(m.name||m.email)}</option>`).join('')}</select></div>
+    <div class="f2"><div class="fld"><label>${t('date')}</label><input class="inp" type="date" name="d" required value="${esc(d)}"></div><div></div>
+    <div class="fld"><label>${t('sc_start')}</label><input class="inp" type="time" name="a" required value="${s?hm(s.starts_at):'09:00'}"></div>
+    <div class="fld"><label>${t('sc_end')}</label><input class="inp" type="time" name="b" required value="${s?hm(s.ends_at):'17:00'}"></div></div>
+    <div class="fld"><label>${t('note')}</label><input class="inp" name="n" maxlength="120" placeholder="${esc(t('sc_notePh'))}" value="${esc(s?s.note:'')}"></div>
+    ${s?`<button type="button" class="btn danger sm" id="shDel">${t('del')}</button>`:''}`,
+  async bg=>{const f=bg.querySelector('form');const a=new Date(`${f.d.value}T${f.a.value}`);let b=new Date(`${f.d.value}T${f.b.value}`);if(b<=a)b=addDays(b,1);
+    const row={company_id:co,email:f.p.value,starts_at:a.toISOString(),ends_at:b.toISOString(),note:f.n.value.trim()};
+    const{error}=s?await SB.from('itn_shifts').update(row).eq('id',s.id):await SB.from('itn_shifts').insert(row);if(error)throw error;toast(t('saved'));render()});
+  if(s)bg.querySelector('#shDel').onclick=async()=>{if(!confirm(t('confirmDel')))return;const{error}=await SB.from('itn_shifts').delete().eq('id',s.id);if(error)return fail(error);bg.remove();toast(t('deleted'));render()};
+}
+function coverModal(s,co){
+  const ppl=MEMBERS.filter(m=>m.active&&m.company_id===co&&m.email!==ME.email&&m.role!=='owner');
+  modal(t('sw_request'),`<p style="margin:0 0 14px"><b>${esc(shDay(s))}</b> · ${esc(shTxt(s))}</p>
+    <div class="fld"><label>${t('sw_who')}</label><select class="inp" name="to"><option value="">${esc(t('sw_anyone'))}</option>${ppl.map(m=>`<option value="${esc(m.email)}">${esc(m.name||m.email)}</option>`).join('')}</select></div>
+    <div class="fld"><label>${t('note')}</label><input class="inp" name="n" maxlength="200" placeholder="${esc(t('sw_notePh'))}"></div>`,
+  async bg=>{const f=bg.querySelector('form');await swapAct('request',s.id,f.to.value,f.n.value.trim());toast(t('sent'));render()},t('submit'));
+}
+
+/* ---------- POLICIES & TRAINING ---------- */
+let POL_TAB='mine';
+function polStatus(p,signs,email){
+  const mine=signs.filter(s=>s.policy_id===p.id&&s.email===email).sort((a,b)=>new Date(b.signed_at)-new Date(a.signed_at));
+  const s=mine[0];const today=ymd(new Date());
+  if(s&&s.version===p.version){
+    if(p.renew_months){const exp=new Date(s.signed_at);exp.setMonth(exp.getMonth()+p.renew_months);
+      if(exp<new Date())return{k:'expired',s,exp};return{k:'signed',s,exp}}
+    return{k:'signed',s}}
+  if(s)return{k:'updated',s};
+  if(p.due_date&&today>p.due_date)return{k:'overdue'};
+  return{k:'due'};
+}
+const POL_TAG={signed:'approved',due:'pending',overdue:'rejected',expired:'rejected',updated:'pending'};
+function polTag(st){return `<span class="tag ${POL_TAG[st.k]}">${esc(t('ps_'+st.k))}${st.k==='signed'&&st.s?' · '+esc(fmtD(st.s.signed_at)):''}</span>`}
+async function vPol(v){
+  const mgr=isOwner()||isMgr();if(!mgr)POL_TAB='mine';
+  const[{data:pol,error},{data:sg}]=await Promise.all([SB.from('itn_policies').select('*').eq('active',true).order('created_at',{ascending:false}),SB.from('itn_policy_signs').select('*')]);
+  if(error)return fail(error);if(VIEW!=='policies')return;
+  const pols=(pol||[]).filter(p=>inScope(p.company_id)),signs=sg||[];
+  const tabs=mgr?`<div class="row"><div class="tabs" style="flex:1"><button data-k="mine" class="${POL_TAB==='mine'?'on':''}">${t('pol_mine')}</button><button data-k="team" class="${POL_TAB==='team'?'on':''}">${t('pol_team')}</button></div>${canCreate()?`<button class="btn" id="pNew" style="margin-bottom:20px">${ic('plus')}${t('pol_new')}</button>`:''}</div>`:'';
+  if(POL_TAB==='team'){
+    const managed=pols.filter(p=>canManage(p.company_id));
+    const people=MEMBERS.filter(m=>m.active&&m.role!=='owner'&&(isOwner()?(!SCOPE||m.company_id===SCOPE):m.company_id===ME.company)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    const applies=(p,m)=>!p.company_id||p.company_id===m.company_id;
+    v.innerHTML=`${tabs}<div class="card"><div class="hd"><h3>${t('pol_team')}</h3><div class="sp"></div><button class="btn sec sm" id="pCsv">${t('tc_csv')}</button></div>
+      <div class="tbw"><table class="tb"><thead><tr><th>${t('tc_person')}</th>${managed.map(p=>`<th style="min-width:130px">${p.kind==='training'?'🎓':'📝'} ${esc(p.title)}<div style="font-weight:400">v${p.version}${p.due_date?' · '+esc(t('pol_due'))+' '+esc(fmtD(dOnly(p.due_date))):''}</div></th>`).join('')}</tr></thead><tbody>
+      ${people.map(m=>`<tr><td><div class="row" style="gap:8px;flex-wrap:nowrap">${avatar(m.email,'sm')}<div><b>${esc(m.name)}</b><div class="small muted">${esc(coName(m.company_id))}</div></div></div></td>
+        ${managed.map(p=>`<td>${applies(p,m)?polTag(polStatus(p,signs,m.email)):'<span class="muted">—</span>'}</td>`).join('')}</tr>`).join('')||`<tr><td class="empty">${t('noPeople')}</td></tr>`}
+      </tbody></table></div><div class="small muted" style="padding:12px 20px;border-top:1px solid var(--line)">${esc(t('pol_auditNote'))}</div></div>
+      ${managed.length?`<div class="card" style="margin-top:20px"><div class="hd"><h3>${t('pol_manage')}</h3></div><div class="list">${managed.map(p=>`<div class="it" style="align-items:center"><div style="flex:1"><b>${p.kind==='training'?'🎓':'📝'} ${esc(p.title)}</b><div class="small muted">${esc(coName(p.company_id))} · v${p.version}${p.renew_months?' · '+esc(t('pol_every')(p.renew_months)):''}</div></div>${canManage(p.company_id)?`<button class="btn sec sm" data-pe="${p.id}">${t('edit')}</button>`:''}</div>`).join('')}</div></div>`:''}`;
+    v.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{POL_TAB=b.dataset.k;render()});
+    if($('#pNew'))$('#pNew').onclick=()=>polModal();
+    v.querySelectorAll('[data-pe]').forEach(b=>b.onclick=()=>polModal(pols.find(p=>p.id===b.dataset.pe)));
+    $('#pCsv').onclick=()=>{const cell=x=>`"${String(x??'').replace(/"/g,'""')}"`;
+      const out=[['Employee','Email','Company','Item','Type','Version','Status','Signed at','Signed name','Valid until'].map(cell).join(',')];
+      people.forEach(m=>managed.filter(p=>applies(p,m)).forEach(p=>{const st=polStatus(p,signs,m.email);
+        out.push([m.name,m.email,coName(m.company_id),p.title,p.kind,p.version,st.k,st.s?new Date(st.s.signed_at).toISOString():'',st.s?st.s.signature_name:'',st.exp?ymd(st.exp):''].map(cell).join(','))}));
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+out.join('\r\n')],{type:'text/csv'}));a.download=`compliance-${ymd(new Date())}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+    return;
+  }
+  const items=pols.map(p=>({p,st:polStatus(p,signs,ME.email)})).sort((a,b)=>(a.st.k==='signed')-(b.st.k==='signed'));
+  v.innerHTML=`${tabs}${items.length?`<div class="grid g2">${items.map(({p,st})=>`<div class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+      <div class="row"><span class="tag">${p.kind==='training'?'🎓 '+esc(t('pol_training')):'📝 '+esc(t('pol_policy'))}</span>${polTag(st)}<div class="sp"></div>${coTag(p.company_id)}</div>
+      <b style="font-size:16px">${esc(p.title)}</b>
+      <div class="small muted">v${p.version}${p.due_date?' · '+esc(t('pol_due'))+' '+esc(fmtD(dOnly(p.due_date))):''}${p.renew_months?' · '+esc(t('pol_every')(p.renew_months)):''}${st.exp&&st.k==='signed'?' · '+esc(t('pol_validTo'))+' '+esc(fmtD(st.exp)):''}</div>
+      <div><button class="btn ${st.k==='signed'?'sec':''} sm" data-po="${p.id}">${esc(st.k==='signed'?t('pol_view'):t('pol_readSign'))}</button></div></div>`).join('')}</div>`
+    :`<div class="card empty">${t('pol_none')}</div>`}`;
+  v.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{POL_TAB=b.dataset.k;render()});
+  if($('#pNew'))$('#pNew').onclick=()=>polModal();
+  v.querySelectorAll('[data-po]').forEach(b=>b.onclick=()=>{const it=items.find(i=>i.p.id===b.dataset.po);signModal(it.p,it.st)});
+}
+function signModal(p,st){
+  const done=st.k==='signed';
+  const bg=modal(p.title,`
+    <div class="row" style="margin-bottom:12px">${polTag(st)}<span class="small muted">v${p.version}</span></div>
+    ${p.body?`<div style="white-space:pre-wrap;line-height:1.65;max-height:45vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--soft)">${linkify(p.body)}</div>`:''}
+    ${p.doc_url?`<a class="btn sec sm" style="margin-top:12px" href="${esc(p.doc_url)}" target="_blank" rel="noopener noreferrer">${ic('file')}${esc(t('pol_openDoc'))}</a>`:''}
+    ${done?`<p class="small muted" style="margin:14px 0 0">✍️ ${esc(st.s.signature_name)} · ${esc(fmtDT(st.s.signed_at))}</p>`:`
+    <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
+      <label class="chk" style="margin-bottom:12px"><input type="checkbox" name="agree" required>${esc(t('pol_agree'))}</label>
+      <div class="fld"><label>${esc(t('pol_typeName'))}</label><input class="inp" name="sig" required minlength="2" maxlength="80" value="" placeholder="${esc(nameOf(ME.email))}" style="font-family:'Brush Script MT',cursive;font-size:20px"></div>
+      <p class="small muted" style="margin:0">${esc(t('pol_legal'))}</p></div>`}`,
+  done?null:async bg=>{const f=bg.querySelector('form');
+    const{error}=await SB.rpc('itn_sign',{p_id:p.id,p_name:f.sig.value.trim(),p_ua:navigator.userAgent});if(error)throw error;toast(t('pol_signed'));render()},t('pol_sign'));
+}
+function polModal(p){
+  const bg=modal(p?t('edit'):t('pol_new'),`
+    <div class="f2"><div class="fld"><label>${t('kind')}</label><select class="inp" name="kind"><option value="policy" ${!p||p.kind==='policy'?'selected':''}>📝 ${t('pol_policy')}</option><option value="training" ${p&&p.kind==='training'?'selected':''}>🎓 ${t('pol_training')}</option></select></div>
+    <div class="fld"><label>${t('audience')}</label><select class="inp" name="co" ${p?'disabled':''}>${coOptions(p?p.company_id:SCOPE,true)}</select></div></div>
+    <div class="fld"><label>${t('title')}</label><input class="inp" name="title" required maxlength="160" value="${esc(p?p.title:'')}" placeholder="${esc(t('pol_titlePh'))}"></div>
+    <div class="fld"><label>${t('body')}</label><textarea class="inp" name="body" rows="7" placeholder="${esc(t('pol_bodyPh'))}">${esc(p?p.body:'')}</textarea></div>
+    <div class="fld"><label>${t('pol_docUrl')}</label><input class="inp" name="url" type="url" placeholder="https://drive.google.com/…" value="${esc(p?p.doc_url:'')}"></div>
+    <div class="f2"><div class="fld"><label>${t('pol_dueL')}</label><input class="inp" type="date" name="due" value="${esc(p&&p.due_date||'')}"></div>
+    <div class="fld"><label>${t('pol_renewL')}</label><select class="inp" name="renew"><option value="">${t('pol_once')}</option>${[12,24,6,3].map(n=>`<option value="${n}" ${p&&p.renew_months===n?'selected':''}>${esc(t('pol_every')(n))}</option>`).join('')}</select></div></div>
+    ${p?`<label class="chk"><input type="checkbox" name="resign">${t('pol_resign')}</label><div style="margin-top:14px"><button type="button" class="btn danger sm" id="pOff">${t('pol_retire')}</button></div>`:''}`,
+  async bg=>{const f=bg.querySelector('form');
+    const row={kind:f.kind.value,title:f.title.value.trim(),body:f.body.value,doc_url:f.url.value.trim(),due_date:f.due.value||null,renew_months:f.renew.value?Number(f.renew.value):null,updated_at:new Date().toISOString()};
+    let error;
+    if(p){if(f.resign.checked)row.version=p.version+1;({error}=await SB.from('itn_policies').update(row).eq('id',p.id))}
+    else({error}=await SB.from('itn_policies').insert({...row,company_id:f.co.value||null}));
+    if(error)throw error;toast(t('saved'));render()});
+  if(p)bg.querySelector('#pOff').onclick=async()=>{if(!confirm(t('confirmDel')))return;const{error}=await SB.from('itn_policies').update({active:false}).eq('id',p.id);if(error)return fail(error);bg.remove();toast(t('saved'));render()};
 }
 
 /* ---------- ADMIN ---------- */
