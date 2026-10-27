@@ -8,6 +8,9 @@
 <meta name="theme-color" content="#0B1A2E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kukpo One">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/intranet/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/intranet/apple-touch-icon.png">
 <title>Kukpo One</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230B1A2E'/%3E%3Cpath d='M20 16v32M20 32l16-16M26 27l14 21' stroke='%23C9A55C' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -280,6 +283,7 @@ table.tb{width:100%;border-collapse:collapse}
     <div class="brand"><span id="sbLogo"></span><div><b>Kukpo One</b><small>INTRANET</small></div></div>
     <nav id="nav"></nav>
     <div class="foot">
+      <div id="pushSide" style="margin-bottom:12px"></div>
       <div class="row"><div class="lang-sw" data-lang-sw></div><div class="sp"></div><a href="/hub/" style="color:#7F90A8;font-size:12px">Kukpo Hub ↗</a></div>
       <div class="me"><div id="meAv"></div><div style="min-width:0"><div class="nm" id="meName"></div><div class="rl" id="meRole"></div></div>
         <button class="out" id="outBtn" title="Sign out"><svg class="i" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
@@ -332,7 +336,11 @@ st_pending:'Pending',st_approved:'Approved',st_rejected:'Rejected',approve:'Appr
 members:'Members',companies:'Companies',addMember:'Add member',addCo:'Add company',nameEn:'Name (English)',nameKo:'Name (Korean)',color:'Color',
 inviteHelp:'After you add someone, send them this link: kukpoholdings.com/intranet — they click “Create account” with the same email.',
 ownersNote:'Owners (Eugene, David) can see every company. Managers manage their own company. Staff see only their company.',
-saved:'Saved',deleted:'Deleted',sent:'Submitted',notif:'Turn on desktop notifications',notifOn:'Notifications on',newMsgFrom:'New message from',
+saved:'Saved',deleted:'Deleted',sent:'Submitted',notif:'Turn on notifications',notifOn:'Notifications on',newMsgFrom:'New message from',
+pushT:'Get notified on your phone',pushSub:'Messages, announcements and request updates — even when Kukpo One is closed.',pushBtn:'Turn on notifications',pushDone:'Notifications are on for this device.',
+pushDenied:'Notifications are blocked. Allow them for this site in your browser settings, then try again.',pushFail:'Could not turn on notifications',
+iosT:'Install Kukpo One on your iPhone first',iosSteps:'On iPhone, notifications work only from the home-screen app: tap the Share button ⬆ in Safari → “Add to Home Screen” → open Kukpo One from your home screen and turn on notifications.',
+install:'Install app',later:'Later',
 results:'Search results',announcementsR:'Announcements',peopleR:'People',noRes:'No results.',dmWith:'Direct message',
 members_n:n=>`${n} members`,days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat']},
 ko:{lgHead:'국포 모든 회사를 위한 <em>하나의 업무 공간.</em>',lgSub:'공지, 팀 채팅, 직원 연락처, 일정, 문서, 요청서까지 — 국포 홀딩스 전 회사를 안전하게 한곳에서.',
@@ -359,7 +367,11 @@ st_pending:'대기',st_approved:'승인',st_rejected:'반려',approve:'승인',r
 members:'직원',companies:'회사',addMember:'직원 추가',addCo:'회사 추가',nameEn:'이름 (영문)',nameKo:'이름 (한글)',color:'색상',
 inviteHelp:'직원을 추가한 뒤 이 주소를 보내 주세요: kukpoholdings.com/intranet — 같은 이메일로 “계정 만들기”를 누르면 됩니다.',
 ownersNote:'오너(Eugene, David)는 모든 회사를 봅니다. 매니저는 자기 회사를 관리하고, 직원은 자기 회사만 봅니다.',
-saved:'저장했습니다',deleted:'삭제했습니다',sent:'제출했습니다',notif:'바탕화면 알림 켜기',notifOn:'알림 켜짐',newMsgFrom:'새 메시지',
+saved:'저장했습니다',deleted:'삭제했습니다',sent:'제출했습니다',notif:'알림 켜기',notifOn:'알림 켜짐',newMsgFrom:'새 메시지',
+pushT:'휴대폰으로 알림 받기',pushSub:'메시지 · 공지 · 요청 승인 소식을 앱을 닫아 둬도 받습니다.',pushBtn:'알림 켜기',pushDone:'이 기기에서 알림이 켜졌습니다.',
+pushDenied:'알림이 차단되어 있습니다. 브라우저 설정에서 이 사이트 알림을 허용한 뒤 다시 눌러 주세요.',pushFail:'알림을 켜지 못했습니다',
+iosT:'아이폰은 먼저 홈 화면에 설치하세요',iosSteps:'아이폰은 홈 화면 앱에서만 알림이 됩니다: Safari 아래 공유 버튼 ⬆ → “홈 화면에 추가” → 홈 화면의 Kukpo One을 열고 알림을 켜세요.',
+install:'앱 설치',later:'나중에',
 results:'검색 결과',announcementsR:'공지',peopleR:'직원',noRes:'결과가 없습니다.',dmWith:'1:1 메시지',
 members_n:n=>`${n}명`,days:['일','월','화','수','목','금','토']}
 };
@@ -374,7 +386,7 @@ function applyStatic(){
   if($('#q'))$('#q').placeholder=t('search');
   setLoginMode(LOGIN_MODE);
 }
-function setLang(l){LANG=l;try{localStorage.setItem('itn_lang',l)}catch(e){}applyStatic();if(ME){renderNav();renderScope();render()}}
+function setLang(l){LANG=l;try{localStorage.setItem('itn_lang',l)}catch(e){}applyStatic();if(ME){renderNav();renderScope();render();renderPush();if(PUSH_SUB)savePushSub(PUSH_SUB)}}
 
 /* ---------- state ---------- */
 let ME=null,COS=[],MEMBERS=[],CHANNELS=[],UNREAD={},VIEW='home',SCOPE='',CUR_CH=null,RT=null,LOGIN_MODE='in',CAL_M=null,REQ_TAB='mine',DOC_TAB='doc';
@@ -430,7 +442,11 @@ $('#loginForm').onsubmit=async e=>{e.preventDefault();const er=$('#lErr');er.tex
       if(!data.session){er.style.color='var(--ok)';er.textContent=t('checkMail');return}}
     boot();
   }finally{$('#lBtn').disabled=false}};
-async function signOut(){if(RT)SB.removeChannel(RT);await SB.auth.signOut();location.reload()}
+async function signOut(){
+  if(RT)SB.removeChannel(RT);
+  /* stop this device from receiving the signed-out person's notifications */
+  try{if(PUSH_SUB){await SB.from('itn_push_subs').delete().eq('endpoint',PUSH_SUB.endpoint);await PUSH_SUB.unsubscribe()}}catch(e){}
+  await SB.auth.signOut();location.reload()}
 $('#outBtn').onclick=signOut;$('#gateOut').onclick=signOut;
 
 async function boot(){
@@ -448,7 +464,8 @@ async function boot(){
   $('#meAv').innerHTML=avatar(email,'sm');$('#meName').textContent=nameOf(email);
   renderNav();renderScope();
   const h=location.hash.replace('#','');if(h&&NAV.some(n=>n.k===h))VIEW=h;
-  render();subscribe();
+  const chq=new URLSearchParams(location.search).get('ch');if(chq&&CHANNELS.some(c=>c.id===chq)){CUR_CH=chq;VIEW='chat';history.replaceState(null,'','/intranet/#chat')}
+  render();subscribe();initPush();
 }
 async function loadBase(){
   const[c,m,ch,u]=await Promise.all([
@@ -537,6 +554,7 @@ async function vHome(v){
   <div class="hero"><div style="position:relative;z-index:1"><div class="dt">${esc(now.toLocaleDateString(LOC(),{weekday:'long',year:'numeric',month:'long',day:'numeric'}))}</div>
     <h2>${esc(greet)}, ${esc(first)}</h2><p>${esc(t('heroSub'))}</p></div>
     <div class="acts"><button class="btn gold" data-go="chat">${ic('chat')}${t('openChat')}</button><button class="btn sec" id="hReq">${ic('plus')}${t('newReq')}</button></div></div>
+  <div id="pushHome"></div>
   <div class="grid g4" style="margin-top:20px">
     ${kpi('chat','#EEF3FF','#1D4ED8',totalUnread(),t('unread'))}
     ${kpi('requests','#FFFAEB','#B54708',pend,t('pendingReq'))}
@@ -555,7 +573,7 @@ async function vHome(v){
     <div class="card"><div class="hd"><h3>${t('myReq')}</h3><div class="sp"></div><button class="btn ghost sm" data-go="requests">${t('viewAll')} →</button></div>
       <div class="list">${reqs.filter(r=>r.email===ME.email).slice(0,4).map(r=>`<div class="it"><div style="flex:1"><b>${esc(t('req_'+r.kind))}</b><div class="small muted">${r.start_date?esc(fmtD(dOnly(r.start_date)))+(r.end_date&&r.end_date!==r.start_date?' – '+esc(fmtD(dOnly(r.end_date))):''):esc(fmtD(r.created_at))}</div></div>${stTag(r.status)}</div>`).join('')||`<div class="empty">${t('noReq')}</div>`}</div></div>
   </div>`;
-  bindGo(v);$('#hReq').onclick=reqModal;
+  bindGo(v);$('#hReq').onclick=reqModal;renderPush();
   v.querySelectorAll('.kpi[data-go]').forEach(k=>k.onclick=()=>go(k.dataset.go));
 }
 function kpi(k,bg,fg,val,lab,goto){return `<div class="card kpi" data-go="${goto||(k==='people'?'people':k)}"><div class="ic" style="background:${bg};color:${fg}">${ic(k)}</div><div><div class="v">${val}</div><div class="l">${esc(lab)}</div></div></div>`}
@@ -779,6 +797,8 @@ function vChat(v){
   if(CUR_CH)openCh(CUR_CH,true);else $('#chMain').innerHTML=`<div class="empty" style="margin:auto">${ic('chat','style="width:40px;height:40px;opacity:.3"')}<p>${t('selectCh')}</p></div>`;
 }
 function renderNotif(){const b=$('#notifBox');if(!b)return;
+  if(PUSH_SUB){b.innerHTML=`<span class="small muted">${ic('bell','style="width:14px;height:14px;vertical-align:-2px"')} ${t('notifOn')}</span>`;return}
+  if(pushSupported()||isIOS()){b.innerHTML=`<button class="btn ghost sm block" id="nOn">${ic('bell')}${t('notif')}</button>`;$('#nOn').onclick=enablePush;return}
   if(!('Notification' in window)){b.innerHTML='';return}
   if(Notification.permission==='granted'){b.innerHTML=`<span class="small muted">${ic('bell','style="width:14px;height:14px;vertical-align:-2px"')} ${t('notifOn')}</span>`;return}
   if(Notification.permission==='denied'){b.innerHTML='';return}
@@ -872,13 +892,77 @@ function subscribe(){
     if(m.sender_email===ME.email)return;
     if(viewing){markRead(m.channel_id);return}
     UNREAD[m.channel_id]=(UNREAD[m.channel_id]||0)+1;renderNav();renderChList();
-    if('Notification' in window&&Notification.permission==='granted'){
+    if(!PUSH_SUB&&'Notification' in window&&Notification.permission==='granted'){ /* with push on, the phone/OS notification comes from the server instead */
       const c=CHANNELS.find(x=>x.id===m.channel_id);
       try{const n=new Notification(`${t('newMsgFrom')}: ${nameOf(m.sender_email)}${c&&c.kind!=='dm'?' · '+chLabel(c):''}`,{body:m.body?m.body.slice(0,120):(m.file_name||''),tag:m.channel_id});
         n.onclick=()=>{window.focus();CUR_CH=m.channel_id;go('chat');n.close()}}catch(e){}}
   }).subscribe();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&VIEW==='chat'&&CUR_CH&&UNREAD[CUR_CH])markRead(CUR_CH)});
+
+/* ---------- push notifications (installable app + Web Push) ---------- */
+const VAPID='BE6LhOAHT2-QbyTrTE7_HdCwFOgrPFSoOoA1NEGDzaQtVP3vudH9RcoxXRBE17H6QpM9Brh13jP3SP1sjUjoTz8';
+let PUSH_SUB=null,SW_REG=null,INSTALL_EVT=null;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const pushSupported=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+function b64u(s){const p='='.repeat((4-s.length%4)%4);const r=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))}
+function savePushSub(s){const j=s.toJSON();return SB.from('itn_push_subs').upsert({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,lang:LANG,ua:navigator.userAgent.slice(0,200)})}
+async function initPush(){
+  if('serviceWorker' in navigator){
+    try{
+      SW_REG=await navigator.serviceWorker.register('/intranet/sw.js',{scope:'/intranet/'});
+      if(pushSupported()&&Notification.permission==='granted'){
+        PUSH_SUB=await SW_REG.pushManager.getSubscription();
+        if(PUSH_SUB){const{error}=await savePushSub(PUSH_SUB);if(error){console.warn(error);PUSH_SUB=null}}
+      }
+    }catch(e){console.warn('sw',e)}
+  }
+  renderPush();renderNotif();
+}
+async function enablePush(){
+  if(isIOS()&&!isStandalone())return modal(t('iosT'),`<p style="line-height:1.7;margin:0">${esc(t('iosSteps'))}</p>`);
+  if(!pushSupported())return toast(t('pushFail'));
+  try{
+    if(!SW_REG)SW_REG=await navigator.serviceWorker.register('/intranet/sw.js',{scope:'/intranet/'});
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted')return toast(t('pushDenied'));
+    await navigator.serviceWorker.ready;
+    PUSH_SUB=(await SW_REG.pushManager.getSubscription())||(await SW_REG.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID)}));
+    const{error}=await savePushSub(PUSH_SUB);if(error)throw error;
+    toast(t('pushDone'));
+  }catch(e){PUSH_SUB=null;toast(t('pushFail')+': '+((e&&e.message)||e))}
+  renderPush();renderNotif();
+}
+async function installApp(){if(!INSTALL_EVT)return;INSTALL_EVT.prompt();try{await INSTALL_EVT.userChoice}catch(e){}INSTALL_EVT=null;renderPush()}
+function renderPush(){
+  if(!ME)return;
+  const can=pushSupported()||isIOS();
+  const side=$('#pushSide');
+  if(side){
+    if(PUSH_SUB)side.innerHTML=`<div class="small" style="color:#7F90A8;display:flex;align-items:center;gap:6px">${ic('bell','style="width:14px;height:14px"')}${esc(t('notifOn'))}</div>`;
+    else if(can)side.innerHTML=`<button class="btn sm block" id="pushSideBtn" style="background:var(--gold);color:var(--side)">${ic('bell')}${esc(t('pushBtn'))}</button>`;
+    else side.innerHTML='';
+    if($('#pushSideBtn'))$('#pushSideBtn').onclick=enablePush;
+  }
+  const home=$('#pushHome');
+  if(home){
+    if(PUSH_SUB||!can){home.innerHTML=INSTALL_EVT?`<div class="card" style="margin-top:20px;padding:16px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div class="sp"><b>Kukpo One</b></div><button class="btn sec" id="instBtn">${t('install')}</button></div>`:''}
+    else home.innerHTML=`<div class="card" style="margin-top:20px;padding:18px 22px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;border-color:#E9D9B4;background:#FFFCF5">
+      <div style="width:44px;height:44px;border-radius:12px;background:#0B1A2E;color:var(--gold);display:flex;align-items:center;justify-content:center">${ic('bell')}</div>
+      <div style="flex:1;min-width:200px"><b style="font-size:15px">${esc(isIOS()&&!isStandalone()?t('iosT'):t('pushT'))}</b><div class="muted" style="margin-top:2px">${esc(isIOS()&&!isStandalone()?t('iosSteps'):t('pushSub'))}</div></div>
+      ${INSTALL_EVT?`<button class="btn sec" id="instBtn">${t('install')}</button>`:''}
+      ${isIOS()&&!isStandalone()?'':`<button class="btn" id="pushHomeBtn">${ic('bell')}${esc(t('pushBtn'))}</button>`}</div>`;
+    if($('#pushHomeBtn'))$('#pushHomeBtn').onclick=enablePush;
+    if($('#instBtn'))$('#instBtn').onclick=installApp;
+  }
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INSTALL_EVT=e;renderPush()});
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{
+  if(!e.data||e.data.type!=='open'||!ME)return;
+  try{const u=new URL(e.data.url);const ch=u.searchParams.get('ch');const v=u.hash.replace('#','');
+    if(ch&&CHANNELS.some(c=>c.id===ch))CUR_CH=ch;if(v&&NAV.some(n=>n.k===v))go(v)}catch(err){}
+});
 
 /* ---------- start ---------- */
 $('#yr').textContent=new Date().getFullYear();
