@@ -346,7 +346,7 @@ req_pto:'Vacation / PTO',req_sick:'Sick leave',req_schedule:'Schedule change',re
 st_pending:'Pending',st_approved:'Approved',st_rejected:'Rejected',approve:'Approve',reject:'Reject',teamReq:'Team requests',from:'From',to:'To',submitted:'Submitted',submit:'Submit',reqType:'Request type',requester:'Requester',decided:'Decided',
 members:'Members',companies:'Companies',addMember:'Add member',addCo:'Add company',nameEn:'Name (English)',nameKo:'Name (Korean)',color:'Color',
 inviteHelp:'After you add someone, send them this link: kukpoholdings.com/intranet — they click “Create account” with the same email.',
-ownersNote:'Owners (Eugene, David) can see every company. Managers manage their own company. Staff see only their company.',
+ownersNote:'David (CEO) and Eugene (General Manager) can see and manage every company. Managers manage their own company. Staff see only their company.',
 saved:'Saved',deleted:'Deleted',sent:'Submitted',notif:'Turn on notifications',notifOn:'Notifications on',newMsgFrom:'New message from',
 pushT:'Get notified on your phone',pushSub:'Messages, announcements and request updates — even when Kukpo One is closed.',pushBtn:'Turn on notifications',pushDone:'Notifications are on for this device.',
 pushDenied:'Notifications are blocked. Allow them for this site in your browser settings, then try again.',pushFail:'Could not turn on notifications',
@@ -379,7 +379,7 @@ req_pto:'휴가',req_sick:'병가',req_schedule:'근무 변경',req_supplies:'�
 st_pending:'대기',st_approved:'승인',st_rejected:'반려',approve:'승인',reject:'반려',teamReq:'팀 요청',from:'시작',to:'종료',submitted:'제출일',submit:'제출',reqType:'요청 종류',requester:'요청자',decided:'처리',
 members:'직원',companies:'회사',addMember:'직원 추가',addCo:'회사 추가',nameEn:'이름 (영문)',nameKo:'이름 (한글)',color:'색상',
 inviteHelp:'직원을 추가한 뒤 이 주소를 보내 주세요: kukpoholdings.com/intranet — 같은 이메일로 “계정 만들기”를 누르면 됩니다.',
-ownersNote:'오너(Eugene, David)는 모든 회사를 봅니다. 매니저는 자기 회사를 관리하고, 직원은 자기 회사만 봅니다.',
+ownersNote:'David(CEO)와 Eugene(총괄매니저)은 모든 회사를 보고 관리합니다. 매니저는 자기 회사를 관리하고, 직원은 자기 회사만 봅니다.',
 saved:'저장했습니다',deleted:'삭제했습니다',sent:'제출했습니다',notif:'알림 켜기',notifOn:'알림 켜짐',newMsgFrom:'새 메시지',
 pushT:'휴대폰으로 알림 받기',pushSub:'메시지 · 공지 · 요청 승인 소식을 앱을 닫아 둬도 받습니다.',pushBtn:'알림 켜기',pushDone:'이 기기에서 알림이 켜졌습니다.',
 pushDenied:'알림이 차단되어 있습니다. 브라우저 설정에서 이 사이트 알림을 허용한 뒤 다시 눌러 주세요.',pushFail:'알림을 켜지 못했습니다',
@@ -392,6 +392,7 @@ members_n:n=>`${n}명`,days:['일','월','화','수','목','금','토']}
 let LANG=(()=>{try{const l=localStorage.getItem('itn_lang');if(l==='en'||l==='ko')return l}catch(e){}return /^ko/i.test(navigator.language)?'ko':'en'})();
 const t=k=>(T[LANG][k]??T.en[k]??k);
 const navT=k=>t(k==='time'?'timeclock':k);
+const TITLE_KO={'General Manager':'총괄매니저','CEO':'대표'};const titleT=x=>LANG==='ko'&&TITLE_KO[x]?TITLE_KO[x]:x;
 const LOC=()=>LANG==='ko'?'ko-KR':'en-US';
 function applyStatic(){
   document.documentElement.lang=LANG;
@@ -493,13 +494,14 @@ async function loadBase(){
     SB.rpc('itn_unread')]);
   COS=c.data||[];MEMBERS=m.data||[];CHANNELS=ch.data||[];
   UNREAD={};(u.data||[]).forEach(r=>UNREAD[r.channel_id]=Number(r.n));
-  $('#meRole').textContent=t(ME.role==='staff'?'staffR':ME.role)+(ME.company?' · '+coName(ME.company):'');
+  setMeRole();
 }
 
 /* ---------- nav ---------- */
 const NAV=[{k:'home'},{k:'news'},{k:'chat'},{k:'time'},{k:'schedule'},{k:'policies'},{k:'people'},{k:'calendar'},{k:'docs'},{k:'requests'},{k:'admin',owner:true}];
 function totalUnread(){return Object.values(UNREAD).reduce((a,b)=>a+b,0)}
-function renderNav(){
+function setMeRole(){const mm=memBy(ME.email)||{};$('#meRole').textContent=(mm.title?titleT(mm.title):t(mm.role==='staff'?'staffR':(mm.role||ME.role)))+(ME.company?' · '+coName(ME.company):'')}
+function renderNav(){if(ME)setMeRole();
   const u=totalUnread();
   let h=`<div class="grp">${t('g_main')}</div>`;
   NAV.filter(n=>!n.owner).forEach(n=>h+=`<a data-v="${n.k}" class="${VIEW===n.k?'on':''}">${ic(n.k)}<span>${navT(n.k)}</span>${n.k==='chat'&&u?`<span class="bdg">${u>99?'99+':u}</span>`:''}</a>`);
@@ -683,7 +685,7 @@ function vPeople(v){
   v.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{PEOPLE_CO=b.dataset.c;render()});
   bindPeople(v);
 }
-function personCard(m){return `<div class="card pc">${avatar(m.email,'lg')}<b>${esc(m.name||m.email)}</b><div class="t">${esc(m.title||'')}</div>
+function personCard(m){return `<div class="card pc">${avatar(m.email,'lg')}<b>${esc(m.name||m.email)}</b><div class="t">${esc(titleT(m.title||''))}</div>
   <div class="row" style="justify-content:center;gap:6px;margin-top:6px">${coTag(m.company_id)}${m.role!=='staff'?roleTag(m.role):''}</div>
   <div class="small muted" style="margin-top:8px;word-break:break-all">${esc(m.email)}${m.phone?'<br>'+esc(m.phone):''}</div>
   <div class="acts">${m.email!==ME.email?`<button class="btn sm" data-dm="${esc(m.email)}">${ic('chat')}${t('message')}</button>`:''}<a class="btn sec sm" href="mailto:${esc(m.email)}" title="${t('mail')}">${ic('mail')}</a>${m.phone?`<a class="btn sec sm" href="tel:${esc(m.phone.replace(/[^\d+]/g,''))}" title="${t('call')}">${ic('phone')}</a>`:''}</div></div>`}
@@ -1169,7 +1171,7 @@ function vAdmin(v){
   <div class="card" style="padding:14px 18px;margin-bottom:16px;background:var(--acc-bg);border-color:#C7D7FE;color:#1E3A8A;line-height:1.6">${esc(t('inviteHelp'))}<br><span class="small">${esc(t('ownersNote'))}</span></div>
   ${ADM_TAB==='members'?`<div class="card tbw"><table class="tb"><thead><tr><th>${t('name')}</th><th>${t('company')}</th><th>${t('role')}</th><th>${t('jobTitle')}</th><th>${t('phone')}</th><th>${t('status')}</th><th></th></tr></thead><tbody>
   ${list.map(m=>`<tr><td><div class="row" style="gap:10px;flex-wrap:nowrap">${avatar(m.email,'sm')}<div><b>${esc(m.name||'—')}</b><div class="small muted">${esc(m.email)}</div></div></div></td>
-    <td>${coTag(m.company_id)}</td><td>${roleTag(m.role)}</td><td>${esc(m.title||'')}</td><td>${esc(m.phone||'')}</td>
+    <td>${coTag(m.company_id)}</td><td>${roleTag(m.role)}</td><td>${esc(titleT(m.title||''))}</td><td>${esc(m.phone||'')}</td>
     <td>${m.active?`<span class="tag approved">${t('active')}</span>`:`<span class="tag">${t('inactive')}</span>`}</td>
     <td><button class="btn sec sm" data-me="${esc(m.email)}">${t('edit')}</button></td></tr>`).join('')}</tbody></table></div>`
   :`<div class="card tbw"><table class="tb"><thead><tr><th>${t('nameEn')}</th><th>${t('nameKo')}</th><th>${t('members')}</th><th></th></tr></thead><tbody>
