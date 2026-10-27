@@ -199,6 +199,8 @@ table.tb{width:100%;border-collapse:collapse}
 .act-it{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--soft);cursor:pointer}.act-it:hover{background:var(--soft)}.act-it:first-child{border-top:0}
 .act-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 @media(max-width:860px){.hide-sm{display:none}}
+.menu{position:absolute;right:0;top:40px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(15,27,45,.15);padding:6px;min-width:220px;z-index:20}
+.menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:9px 12px;border-radius:7px;cursor:pointer;font-size:14px;white-space:nowrap}.menu button:hover{background:var(--soft)}.menu button.danger{color:var(--bad)}
 .trn{font-size:12px;color:var(--muted);margin-top:4px}.trn .linkbtn{font-size:12px}
 .msg.cont{padding-top:1px}.msg.cont .av{visibility:hidden;height:0}
 .msg .del{position:absolute;right:8px;top:6px;display:none;background:#fff;border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:2px 6px;color:var(--muted);font-size:12px}
@@ -338,7 +340,7 @@ newPost:'New announcement',edit:'Edit',del:'Delete',save:'Save',cancel:'Cancel',
 title:'Title',body:'Message',pinned:'Pin to top',audience:'Audience',company:'Company',postedBy:'Posted by',
 role:'Role',owner:'Owner',manager:'Manager',staffR:'Staff',name:'Name',jobTitle:'Job title',phone:'Phone',status:'Status',active:'Active',inactive:'Inactive',
 message:'Message',call:'Call',mail:'Email',noPeople:'No one found.',
-channels:'Channels',dms:'Direct messages',grp_title:'Group chats',grp_searchPpl:'Search people…',grp_inRoom:'In this room',grp_chat:'Group chat',grp_add:'Add people',grp_invite:'Invite people',grp_members:'Members',grp_name:'Group name (optional)',grp_namePh:'e.g. CFP front desk + billing',grp_hint:'Pick one person for a private chat, or several to start a group chat.',grp_start:'Start group chat',grp_pick:'Pick at least one person.',grp_guestNote:'Invited people can read and write in this room even if they work at another company.',grp_addNote:'New members can see earlier messages in this group.',grp_guest:'Guest',grp_guestsN:n=>`${n} guest${n>1?'s':''}`,grp_remove:'Remove',grp_leave:'Leave group',grp_leaveQ:'Leave this group chat?',grp_you:'you',newDm:'New message',pickPerson:'Choose a person',typeMsg:'Write a message…',phi:'Do not enter patient information (PHI) in chat.',
+channels:'Channels',dms:'Direct messages',grp_title:'Group chats',rm_more:'More',rm_close:'Close conversation',rm_closed:'Closed. It comes back if someone writes again.',rm_leaveRoom:'Leave this room',rm_leaveQ:'Leave this room? You can be invited again later.',rm_left:'You left the room',rm_delete:'Delete room for everyone',rm_deleteQ:'Delete this group chat and all its messages for everyone? This cannot be undone.',grp_searchPpl:'Search people…',grp_inRoom:'In this room',grp_chat:'Group chat',grp_add:'Add people',grp_invite:'Invite people',grp_members:'Members',grp_name:'Group name (optional)',grp_namePh:'e.g. CFP front desk + billing',grp_hint:'Pick one person for a private chat, or several to start a group chat.',grp_start:'Start group chat',grp_pick:'Pick at least one person.',grp_guestNote:'Invited people can read and write in this room even if they work at another company.',grp_addNote:'New members can see earlier messages in this group.',grp_guest:'Guest',grp_guestsN:n=>`${n} guest${n>1?'s':''}`,grp_remove:'Remove',grp_leave:'Leave group',grp_leaveQ:'Leave this group chat?',grp_you:'you',newDm:'New message',pickPerson:'Choose a person',typeMsg:'Write a message…',phi:'Do not enter patient information (PHI) in chat.',
 annOnly:'Only owners and managers can post in Company-wide.',selectCh:'Select a conversation',attach:'Attach file',uploading:'Uploading…',today:'Today',yesterday:'Yesterday',
 deleteMsg:'Delete message?',fileBig:'File is larger than 25 MB.',
 newEvent:'New event',date:'Date',endDate:'End date',time:'Time',note:'Note',prev:'Previous',next:'Next',
@@ -371,7 +373,7 @@ newPost:'공지 작성',edit:'수정',del:'삭제',save:'저장',cancel:'취소'
 title:'제목',body:'내용',pinned:'상단 고정',audience:'대상',company:'회사',postedBy:'작성자',
 role:'권한',owner:'오너',manager:'매니저',staffR:'직원',name:'이름',jobTitle:'직책',phone:'전화',status:'상태',active:'재직',inactive:'비활성',
 message:'메시지',call:'전화',mail:'이메일',noPeople:'찾는 사람이 없습니다.',
-channels:'채널',dms:'1:1 메시지',grp_title:'그룹 채팅',grp_searchPpl:'이름 검색…',grp_inRoom:'참여 중',grp_chat:'그룹 채팅',grp_add:'사람 추가',grp_invite:'초대하기',grp_members:'멤버',grp_name:'그룹 이름 (선택)',grp_namePh:'예: CFP 프론트 + 빌링',grp_hint:'한 명을 고르면 1:1 대화, 여러 명을 고르면 그룹 채팅이 만들어집니다.',grp_start:'그룹 채팅 시작',grp_pick:'한 명 이상 선택하세요.',grp_guestNote:'초대된 사람은 다른 회사 소속이어도 이 방에서 읽고 쓸 수 있습니다.',grp_addNote:'새 멤버도 이전 대화를 볼 수 있습니다.',grp_guest:'게스트',grp_guestsN:n=>`게스트 ${n}명`,grp_remove:'내보내기',grp_leave:'그룹 나가기',grp_leaveQ:'이 그룹 채팅에서 나갈까요?',grp_you:'나',newDm:'새 메시지',pickPerson:'대화 상대 선택',typeMsg:'메시지 입력…',phi:'채팅에 환자 정보(PHI)를 입력하지 마세요.',
+channels:'채널',dms:'1:1 메시지',grp_title:'그룹 채팅',rm_more:'더보기',rm_close:'대화 닫기',rm_closed:'닫았습니다. 상대가 다시 메시지를 보내면 다시 나타납니다.',rm_leaveRoom:'이 방 나가기',rm_leaveQ:'이 방에서 나갈까요? 나중에 다시 초대받을 수 있습니다.',rm_left:'방에서 나갔습니다',rm_delete:'방 삭제 (모두에게)',rm_deleteQ:'이 그룹 채팅과 모든 메시지를 모두에게서 삭제할까요? 되돌릴 수 없습니다.',grp_searchPpl:'이름 검색…',grp_inRoom:'참여 중',grp_chat:'그룹 채팅',grp_add:'사람 추가',grp_invite:'초대하기',grp_members:'멤버',grp_name:'그룹 이름 (선택)',grp_namePh:'예: CFP 프론트 + 빌링',grp_hint:'한 명을 고르면 1:1 대화, 여러 명을 고르면 그룹 채팅이 만들어집니다.',grp_start:'그룹 채팅 시작',grp_pick:'한 명 이상 선택하세요.',grp_guestNote:'초대된 사람은 다른 회사 소속이어도 이 방에서 읽고 쓸 수 있습니다.',grp_addNote:'새 멤버도 이전 대화를 볼 수 있습니다.',grp_guest:'게스트',grp_guestsN:n=>`게스트 ${n}명`,grp_remove:'내보내기',grp_leave:'그룹 나가기',grp_leaveQ:'이 그룹 채팅에서 나갈까요?',grp_you:'나',newDm:'새 메시지',pickPerson:'대화 상대 선택',typeMsg:'메시지 입력…',phi:'채팅에 환자 정보(PHI)를 입력하지 마세요.',
 annOnly:'전사 공지방은 오너·매니저만 작성할 수 있습니다.',selectCh:'대화를 선택하세요',attach:'파일 첨부',uploading:'올리는 중…',today:'오늘',yesterday:'어제',
 deleteMsg:'메시지를 삭제할까요?',fileBig:'파일이 25MB를 넘습니다.',
 newEvent:'일정 추가',date:'날짜',endDate:'종료일',time:'시간',note:'메모',prev:'이전',next:'다음',
@@ -495,6 +497,7 @@ async function loadBase(){
     SB.rpc('itn_unread'),
     SB.from('itn_channel_members').select('channel_id,email,added_by')]);
   COS=c.data||[];MEMBERS=m.data||[];CHANNELS=ch.data||[];CH_MEM=cm.data||[];
+  HIDDEN=new Set(((await SB.from('itn_channel_hidden').select('channel_id')).data||[]).map(x=>x.channel_id));
   UNREAD={};(u.data||[]).forEach(r=>UNREAD[r.channel_id]=Number(r.n));
   setMeRole();
 }
@@ -1207,14 +1210,15 @@ function coModal(c){
 }
 
 /* ---------- CHAT ---------- */
-let MSGS=[],PEND_FILE=null,CH_MEM=[];
+let MSGS=[],PEND_FILE=null,CH_MEM=[],HIDDEN=new Set();
 function chLabel(c){if(c.kind==='all')return t('companyWide');if(c.kind==='company')return coName(c.company_id);if(c.kind==='group')return c.name||chMembers(c).filter(e=>e!==ME.email).map(e=>nameOf(e).split(' ')[0]).join(', ')||t('grp_chat');const o=c.dm_a===ME.email?c.dm_b:c.dm_a;return nameOf(o)}
 function chIcon(c,sm){if(c.kind==='group')return `<span class="hash" style="background:#475467">${ic('people','style="width:15px;height:15px"')}</span>`;if(c.kind==='dm'){const o=c.dm_a===ME.email?c.dm_b:c.dm_a;return avatar(o,'sm')}
   const col=c.kind==='all'?'#0B1A2E':coColor(c.company_id);return `<span class="hash" style="background:${col}">${c.kind==='all'?'★':'#'}</span>`}
 function sortedChannels(){
   const all=CHANNELS.filter(c=>c.kind==='all'),co=CHANNELS.filter(c=>c.kind==='company').sort((a,b)=>((coBy(a.company_id)||{}).sort||99)-((coBy(b.company_id)||{}).sort||99)),
-    dm=CHANNELS.filter(c=>c.kind==='dm').sort((a,b)=>chLabel(a).localeCompare(chLabel(b))),
-    grp=CHANNELS.filter(c=>c.kind==='group').sort((a,b)=>chLabel(a).localeCompare(chLabel(b)));
+    shown=c=>!HIDDEN.has(c.id)||c.id===CUR_CH||(UNREAD[c.id]||0)>0,
+    dm=CHANNELS.filter(c=>c.kind==='dm'&&shown(c)).sort((a,b)=>chLabel(a).localeCompare(chLabel(b))),
+    grp=CHANNELS.filter(c=>c.kind==='group'&&shown(c)).sort((a,b)=>chLabel(a).localeCompare(chLabel(b)));
   return{all,co,dm,grp};
 }
 /* everyone in a room: company staff (+ guests) / group members / the two DM people */
@@ -1227,7 +1231,8 @@ function chMembers(c){
 }
 const chGuests=c=>c.kind==='company'?CH_MEM.filter(x=>x.channel_id===c.id&&(memBy(x.email)||{}).company_id!==c.company_id).map(x=>x.email):[];
 const canAddTo=c=>(c.kind==='group'&&CH_MEM.some(x=>x.channel_id===c.id&&x.email===ME.email))||(c.kind==='company'&&canManage(c.company_id));
-async function reloadChannels(){const[{data:ch},{data:cm}]=await Promise.all([SB.from('itn_channels').select('*'),SB.from('itn_channel_members').select('channel_id,email,added_by')]);CHANNELS=ch||[];CH_MEM=cm||[]}
+async function reloadChannels(){const[{data:ch},{data:cm},{data:hd}]=await Promise.all([SB.from('itn_channels').select('*'),SB.from('itn_channel_members').select('channel_id,email,added_by'),SB.from('itn_channel_hidden').select('channel_id')]);CHANNELS=ch||[];CH_MEM=cm||[];HIDDEN=new Set((hd||[]).map(x=>x.channel_id))}
+async function unhide(id){if(HIDDEN.has(id)){HIDDEN.delete(id);await SB.from('itn_channel_hidden').delete().eq('channel_id',id).eq('email',ME.email)}}
 function vChat(v){
   v.style.padding='0';v.style.maxWidth='none';
   v.innerHTML=`<div class="chat ${CUR_CH?'sel':''}" id="chat" style="height:calc(100vh - 64px)"><div class="chl"><div class="hd row"><b style="font-size:15px">${t('chat')}</b><div class="sp"></div><button class="btn sm sec" id="dmNew">${ic('plus')}${t('newDm')}</button></div><div class="sc" id="chList"></div>
@@ -1276,6 +1281,23 @@ function peoplePicker(addTo){
     const b=bg.querySelector('.mf .btn:not(.sec)');if(b&&!addTo)b.textContent=sel.size>1?t('grp_start'):t('message')};
   bg.querySelector('#dmQ').oninput=draw;draw();chips();
 }
+/* what this person can do with a room once the conversation is over */
+function roomActions(c){
+  const a=[];const guest=chGuests(c).includes(ME.email);
+  if(c.kind==='dm'||c.kind==='group')a.push({k:'close',icon:'🙈',label:t('rm_close')});
+  if(c.kind==='group')a.push({k:'leave',icon:'🚪',label:t('grp_leave')});
+  if(guest)a.push({k:'leave',icon:'🚪',label:t('rm_leaveRoom')});
+  if(c.kind==='group'&&(c.created_by===ME.email||isOwner()))a.push({k:'delete',icon:'🗑️',label:t('rm_delete'),danger:true});
+  return a;
+}
+async function roomAct(c,k){
+  try{
+    if(k==='close'){const{error}=await SB.from('itn_channel_hidden').upsert({channel_id:c.id,email:ME.email},{onConflict:'channel_id,email'});if(error)throw error;HIDDEN.add(c.id);toast(t('rm_closed'))}
+    else if(k==='leave'){if(!confirm(c.kind==='group'?t('grp_leaveQ'):t('rm_leaveQ')))return;const{error}=await SB.rpc('itn_remove_member',{p_ch:c.id,p_email:ME.email});if(error)throw error;await reloadChannels();toast(t('rm_left'))}
+    else if(k==='delete'){if(!confirm(t('rm_deleteQ')))return;const{error}=await SB.rpc('itn_delete_group',{p_ch:c.id});if(error)throw error;await reloadChannels();toast(t('deleted'))}
+    CUR_CH=null;render();
+  }catch(e){fail(e)}
+}
 function membersModal(c){
   const mem=chMembers(c),guests=chGuests(c),canAdd=canAddTo(c);
   const canRemove=e=>e!==ME.email&&((c.kind==='company'&&canManage(c.company_id)&&guests.includes(e))||(c.kind==='group'&&c.created_by===ME.email));
@@ -1301,7 +1323,7 @@ function dmPicker(){
 async function openDm(email){
   const{data,error}=await SB.rpc('itn_open_dm',{other:email});if(error)return fail(error);
   if(!CHANNELS.some(c=>c.id===data)){const{data:ch}=await SB.from('itn_channels').select('*').eq('id',data).single();if(ch)CHANNELS.push(ch)}
-  CUR_CH=data;if(VIEW!=='chat')go('chat');else render();
+  await unhide(data);CUR_CH=data;if(VIEW!=='chat')go('chat');else render();
 }
 async function openCh(id,keep){
   CUR_CH=id;const c=CHANNELS.find(x=>x.id===id);if(!c){CUR_CH=null;return render()}
@@ -1311,13 +1333,17 @@ async function openCh(id,keep){
   const sub=c.kind==='dm'?t('dmWith'):c.kind==='all'?t('allCos'):t('members_n')(chMembers(c).length)+(nG?' · '+t('grp_guestsN')(nG):'');
   $('#chMain').innerHTML=`<div class="hd"><button class="btn ghost sm back" id="chBack">${ic('back')}</button>${chIcon(c)}<div style="min-width:0"><b>${esc(chLabel(c))}</b><div class="small muted">${esc(sub)}</div></div><div class="sp"></div>
     ${c.kind!=='dm'&&c.kind!=='all'?`<button class="btn sec sm" id="chMem">${ic('people')}<span class="hide-sm">${t('grp_members')}</span></button>`:''}
-    ${canAddTo(c)?`<button class="btn sm" id="chAdd">${ic('plus')}<span class="hide-sm">${t(c.kind==='company'?'grp_invite':'grp_add')}</span></button>`:''}</div>
+    ${canAddTo(c)?`<button class="btn sm" id="chAdd">${ic('plus')}<span class="hide-sm">${t(c.kind==='company'?'grp_invite':'grp_add')}</span></button>`:''}
+    ${roomActions(c).length?`<div style="position:relative"><button class="btn sec sm" id="chMore" aria-label="${esc(t('rm_more'))}" style="padding:0 10px;font-size:18px;line-height:1">⋯</button><div class="menu hidden" id="chMenu">${roomActions(c).map(a=>`<button data-act="${a.k}" class="${a.danger?'danger':''}">${a.icon} ${esc(a.label)}</button>`).join('')}</div></div>`:''}</div>
     <div class="phi">⚠️ ${esc(t('phi'))}</div>
     <div class="msgs" id="msgs"><div class="empty">…</div></div>
     ${canPost?`<div class="pend hidden" id="pend"></div><form class="comp" id="comp"><button type="button" class="att" id="attBtn" title="${t('attach')}">${ic('clip')}</button><textarea id="mIn" rows="1" placeholder="${esc(t('typeMsg'))}" maxlength="4000"></textarea><button class="btn send" id="sendBtn">${ic('send')}</button></form>`:`<div class="ro">${esc(t('annOnly'))}</div>`}`;
   $('#chBack').onclick=()=>{CUR_CH=null;$('#chat').classList.remove('sel');renderChList()};
   if($('#chMem'))$('#chMem').onclick=()=>membersModal(c);
   if($('#chAdd'))$('#chAdd').onclick=()=>peoplePicker(c);
+  if($('#chMore')){const mn=$('#chMenu');$('#chMore').onclick=e=>{e.stopPropagation();mn.classList.toggle('hidden');
+      if(!mn.classList.contains('hidden'))setTimeout(()=>document.addEventListener('click',()=>mn.classList.add('hidden'),{once:true}))};
+    mn.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{mn.classList.add('hidden');roomAct(c,b.dataset.act)})}
   if(canPost){
     const ta=$('#mIn');
     ta.oninput=()=>{ta.style.height='42px';ta.style.height=Math.min(ta.scrollHeight,160)+'px'};
@@ -1375,6 +1401,7 @@ function subscribe(){
     if(p.eventType!=='INSERT')return;
     const m=p.new;
     if(!CHANNELS.some(c=>c.id===m.channel_id)){await reloadChannels();if(!CHANNELS.some(c=>c.id===m.channel_id))return}
+    HIDDEN.delete(m.channel_id);
     const viewing=VIEW==='chat'&&CUR_CH===m.channel_id&&!document.hidden;
     if(VIEW==='chat'&&CUR_CH===m.channel_id){if(!MSGS.some(x=>x.id===m.id)){MSGS.push(m);drawMsgs()}}
     if(m.sender_email===ME.email)return;
