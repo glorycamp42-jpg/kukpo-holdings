@@ -189,6 +189,7 @@ table.tb{width:100%;border-collapse:collapse}
 .msg .bx{min-width:0;flex:1}
 .msg .who{font-weight:600;font-size:13px}.msg .who small{font-weight:400;color:var(--muted);margin-left:6px}
 .msg .tx{white-space:pre-wrap;word-break:break-word;line-height:1.55;color:var(--body);margin-top:2px}
+.trn{font-size:12px;color:var(--muted);margin-top:4px}.trn .linkbtn{font-size:12px}
 .msg.cont{padding-top:1px}.msg.cont .av{visibility:hidden;height:0}
 .msg .del{position:absolute;right:8px;top:6px;display:none;background:#fff;border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:2px 6px;color:var(--muted);font-size:12px}
 .msg:hover .del{display:block}
@@ -342,6 +343,7 @@ pushDenied:'Notifications are blocked. Allow them for this site in your browser 
 iosT:'Install Kukpo One on your iPhone first',iosSteps:'On iPhone, notifications work only from the home-screen app: tap the Share button ⬆ in Safari → “Add to Home Screen” → open Kukpo One from your home screen and turn on notifications.',
 install:'Install app',later:'Later',
 results:'Search results',announcementsR:'Announcements',peopleR:'People',noRes:'No results.',dmWith:'Direct message',
+trFrom:l=>l==='ko'?'Translated from Korean':'Translated from English',seeOrig:'See original',seeTr:'See translation',
 members_n:n=>`${n} members`,days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat']},
 ko:{lgHead:'국포 모든 회사를 위한 <em>하나의 업무 공간.</em>',lgSub:'공지, 팀 채팅, 직원 연락처, 일정, 문서, 요청서까지 — 국포 홀딩스 전 회사를 안전하게 한곳에서.',
 signIn:'로그인',signInSub:'국포 직원 계정으로 로그인하세요.',createAcct:'계정 만들기',createSub:'관리자가 등록해 준 이메일로 만드세요. 비밀번호는 8자 이상.',
@@ -373,6 +375,7 @@ pushDenied:'알림이 차단되어 있습니다. 브라우저 설정에서 이 �
 iosT:'아이폰은 먼저 홈 화면에 설치하세요',iosSteps:'아이폰은 홈 화면 앱에서만 알림이 됩니다: Safari 아래 공유 버튼 ⬆ → “홈 화면에 추가” → 홈 화면의 Kukpo One을 열고 알림을 켜세요.',
 install:'앱 설치',later:'나중에',
 results:'검색 결과',announcementsR:'공지',peopleR:'직원',noRes:'결과가 없습니다.',dmWith:'1:1 메시지',
+trFrom:l=>l==='ko'?'한국어에서 번역됨':'영어에서 번역됨',seeOrig:'원문 보기',seeTr:'번역 보기',
 members_n:n=>`${n}명`,days:['일','월','화','수','목','금','토']}
 };
 let LANG=(()=>{try{const l=localStorage.getItem('itn_lang');if(l==='en'||l==='ko')return l}catch(e){}return /^ko/i.test(navigator.language)?'ko':'en'})();
@@ -573,14 +576,23 @@ async function vHome(v){
     <div class="card"><div class="hd"><h3>${t('myReq')}</h3><div class="sp"></div><button class="btn ghost sm" data-go="requests">${t('viewAll')} →</button></div>
       <div class="list">${reqs.filter(r=>r.email===ME.email).slice(0,4).map(r=>`<div class="it"><div style="flex:1"><b>${esc(t('req_'+r.kind))}</b><div class="small muted">${r.start_date?esc(fmtD(dOnly(r.start_date)))+(r.end_date&&r.end_date!==r.start_date?' – '+esc(fmtD(dOnly(r.end_date))):''):esc(fmtD(r.created_at))}</div></div>${stTag(r.status)}</div>`).join('')||`<div class="empty">${t('noReq')}</div>`}</div></div>
   </div>`;
-  bindGo(v);$('#hReq').onclick=reqModal;renderPush();
+  bindGo(v);$('#hReq').onclick=reqModal;renderPush();bindTr(v,render);
   v.querySelectorAll('.kpi[data-go]').forEach(k=>k.onclick=()=>go(k.dataset.go));
 }
 function kpi(k,bg,fg,val,lab,goto){return `<div class="card kpi" data-go="${goto||(k==='people'?'people':k)}"><div class="ic" style="background:${bg};color:${fg}">${ic(k)}</div><div><div class="v">${val}</div><div class="l">${esc(lab)}</div></div></div>`}
 function bindGo(v){v.querySelectorAll('button[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go))}
-function postItem(x){return `<div class="it post">${avatar(x.author_email)}<div style="flex:1;min-width:0"><div class="row" style="gap:8px">${x.pinned?`<span class="tag pin">📌</span>`:''}<h4>${esc(x.title)}</h4></div>
+/* auto-translation: show the reader's language; original is one tap away */
+const SHOW_ORIG=new Set();
+const hasTr=x=>!!(x&&x.src_lang&&x.src_lang!==LANG&&(x.body_tr||x.title_tr));
+const useTr=(x,own)=>hasTr(x)&&!own&&!SHOW_ORIG.has(x.id);
+function trNote(x,own){if(!hasTr(x)||own)return'';const on=!SHOW_ORIG.has(x.id);
+  return `<div class="trn">🌐 ${on?esc(t('trFrom')(x.src_lang))+' · ':''}<button class="linkbtn" data-tr="${x.id}">${esc(t(on?'seeOrig':'seeTr'))}</button></div>`}
+function bindTr(root,redraw){root.querySelectorAll('[data-tr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.tr;SHOW_ORIG.has(id)?SHOW_ORIG.delete(id):SHOW_ORIG.add(id);redraw()})}
+const pTitle=x=>useTr(x,x.author_email===ME.email)&&x.title_tr?x.title_tr:x.title;
+const pBody=x=>useTr(x,x.author_email===ME.email)&&x.body_tr?x.body_tr:(x.body||'');
+function postItem(x){return `<div class="it post">${avatar(x.author_email)}<div style="flex:1;min-width:0"><div class="row" style="gap:8px">${x.pinned?`<span class="tag pin">📌</span>`:''}<h4>${esc(pTitle(x))}</h4></div>
   <div class="meta">${esc(nameOf(x.author_email))} · ${esc(fmtDT(x.created_at))} · ${esc(coName(x.company_id))}</div>
-  <div class="txt" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${linkify(x.body)}</div></div></div>`}
+  <div class="txt" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${linkify(pBody(x))}</div>${trNote(x,x.author_email===ME.email)}</div></div>`}
 function evItem(x){const d=dOnly(x.starts_on);return `<div class="it"><div class="cal-day"><div class="m">${esc(d.toLocaleDateString(LOC(),{month:'short'}))}</div><div class="d">${d.getDate()}</div></div>
   <div style="flex:1;min-width:0"><b>${esc(x.title)}</b><div class="small muted">${esc(x.time_text||'')}${x.time_text?' · ':''}${esc(coName(x.company_id))}</div></div></div>`}
 function linkCard(x){return `<a class="qlink" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer"><div class="ic" style="${x.company_id?`background:${coColor(x.company_id)}1a;color:${coColor(x.company_id)}`:''}">${ic(x.kind==='app'?'app':'file')}</div><div style="min-width:0"><b>${esc(x.title)}</b><small>${esc(x.note||coName(x.company_id))}</small></div></a>`}
@@ -593,12 +605,13 @@ async function vNews(v){
   const rows=(data||[]).filter(x=>inScope(x.company_id));
   v.innerHTML=`<div class="row" style="margin-bottom:16px"><div class="sp"></div>${canCreate()?`<button class="btn" id="nNew">${ic('plus')}${t('newPost')}</button>`:''}</div>
   <div class="card list">${rows.length?rows.map(x=>`<div class="it post">${avatar(x.author_email)}<div style="flex:1;min-width:0">
-    <div class="row" style="gap:8px">${x.pinned?`<span class="tag pin">📌</span>`:''}<h4>${esc(x.title)}</h4><div class="sp"></div>${coTag(x.company_id)}</div>
+    <div class="row" style="gap:8px">${x.pinned?`<span class="tag pin">📌</span>`:''}<h4>${esc(pTitle(x))}</h4><div class="sp"></div>${coTag(x.company_id)}</div>
     <div class="meta">${esc(nameOf(x.author_email))} · ${esc(fmtDT(x.created_at))}</div>
-    <div class="txt">${linkify(x.body)}</div>
+    <div class="txt">${linkify(pBody(x))}</div>${trNote(x,x.author_email===ME.email)}
     ${canManage(x.company_id)?`<div class="row" style="margin-top:10px;gap:6px"><button class="btn sec sm" data-e="${x.id}">${t('edit')}</button><button class="btn danger sm" data-d="${x.id}">${t('del')}</button></div>`:''}
   </div></div>`).join(''):`<div class="empty">${t('noNews')}</div>`}</div>`;
   if($('#nNew'))$('#nNew').onclick=()=>postModal();
+  bindTr(v,render);
   v.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>postModal(rows.find(r=>r.id===b.dataset.e)));
   v.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{if(!confirm(t('confirmDel')))return;const{error}=await SB.from('itn_posts').delete().eq('id',b.dataset.d);if(error)return fail(error);toast(t('deleted'));render()});
 }
@@ -632,13 +645,14 @@ function bindPeople(v){v.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>
 /* ---------- SEARCH ---------- */
 async function renderSearch(){
   const q=$('#q').value.trim().toLowerCase();const v=$('#view');
-  const{data}=await SB.from('itn_posts').select('*').or(`title.ilike.%${q.replace(/[%,()]/g,'')}%,body.ilike.%${q.replace(/[%,()]/g,'')}%`).order('created_at',{ascending:false}).limit(20);
+  const qq=q.replace(/[%,()*]/g,'');
+  const{data}=await SB.from('itn_posts').select('*').or(['title','body','title_tr','body_tr'].map(c=>`${c}.ilike.%${qq}%`).join(',')).order('created_at',{ascending:false}).limit(20);
   if($('#q').value.trim().toLowerCase()!==q)return;
   const ppl=MEMBERS.filter(m=>m.active&&[m.name,m.email,m.title,coName(m.company_id)].join(' ').toLowerCase().includes(q));
   $('#pgTitle').textContent=t('results');
   v.innerHTML=`<h3 style="margin:0 0 12px">${t('peopleR')}</h3>${ppl.length?`<div class="grid g4">${ppl.map(personCard).join('')}</div>`:`<div class="card empty">${t('noRes')}</div>`}
   <h3 style="margin:28px 0 12px">${t('announcementsR')}</h3><div class="card list">${(data||[]).length?data.map(postItem).join(''):`<div class="empty">${t('noRes')}</div>`}</div>`;
-  bindPeople(v);
+  bindPeople(v);bindTr(v,renderSearch);
 }
 
 /* ---------- CALENDAR ---------- */
@@ -855,10 +869,11 @@ function drawMsgs(toBottom){
     const cont=last&&last.sender_email===m.sender_email&&(new Date(m.created_at)-new Date(last.created_at))<5*60e3;
     const isImg=m.file_name&&/\.(png|jpe?g|gif|webp|heic)$/i.test(m.file_name);
     h+=`<div class="msg ${cont?'cont':''}" data-id="${m.id}">${avatar(m.sender_email)}<div class="bx">${cont?'':`<div class="who">${esc(nameOf(m.sender_email))}<small>${esc(fmtT(m.created_at))}</small></div>`}
-      ${m.body?`<div class="tx">${linkify(m.body)}</div>`:''}
+      ${m.body?`<div class="tx">${linkify(useTr(m,m.sender_email===ME.email)?m.body_tr:m.body)}</div>${trNote(m,m.sender_email===ME.email)}`:''}
       ${m.file_path?(isImg?`<img class="imgp" data-img="${esc(m.file_path)}" alt="${esc(m.file_name)}">`:`<div class="file" data-f="${esc(m.file_path)}" data-n="${esc(m.file_name)}">${ic('file')}<span>${esc(m.file_name)}</span></div>`):''}</div>
       ${m.sender_email===ME.email||isOwner()?`<button class="del" data-del="${m.id}">${t('del')}</button>`:''}</div>`;last=m});
   box.innerHTML=h||`<div class="empty">${ic('chat','style="width:36px;height:36px;opacity:.3"')}</div>`;
+  bindTr(box,()=>drawMsgs());
   box.querySelectorAll('[data-f]').forEach(d=>d.onclick=async()=>{const{data,error}=await SB.storage.from('itn-files').createSignedUrl(d.dataset.f,300,{download:d.dataset.n});if(error)return fail(error);location.href=data.signedUrl});
   box.querySelectorAll('[data-img]').forEach(async im=>{const{data}=await SB.storage.from('itn-files').createSignedUrl(im.dataset.img,3600);if(data){im.src=data.signedUrl;im.onclick=()=>window.open(data.signedUrl,'_blank','noopener')}});
   box.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm(t('deleteMsg')))return;const{error}=await SB.from('itn_messages').delete().eq('id',b.dataset.del);if(error)return fail(error);MSGS=MSGS.filter(x=>x.id!==b.dataset.del);drawMsgs()});
@@ -884,6 +899,8 @@ async function markRead(ch){UNREAD[ch]=0;renderNav();renderChList();await SB.fro
 function subscribe(){
   RT=SB.channel('itn-msgs').on('postgres_changes',{event:'*',schema:'public',table:'itn_messages'},async p=>{
     if(p.eventType==='DELETE'){const id=p.old&&p.old.id;if(id&&MSGS.some(m=>m.id===id)){MSGS=MSGS.filter(m=>m.id!==id);drawMsgs()}return}
+    if(p.eventType==='UPDATE'){ /* translation arrived */
+      const u=p.new;const i=MSGS.findIndex(x=>x.id===u.id);if(i>=0){MSGS[i]={...MSGS[i],...u};drawMsgs()}return}
     if(p.eventType!=='INSERT')return;
     const m=p.new;
     if(!CHANNELS.some(c=>c.id===m.channel_id)){const{data}=await SB.from('itn_channels').select('*').eq('id',m.channel_id).maybeSingle();if(!data)return;CHANNELS.push(data)}
