@@ -420,7 +420,7 @@ const PALETTE=['#1D4ED8','#7C3AED','#0F766E','#B45309','#BE123C','#0369A1','#4D7
 function avatar(e,cls=''){const n=nameOf(e);const ini=n.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase()||'?';let h=0;for(const ch of e||'')h=(h*31+ch.charCodeAt(0))>>>0;return `<div class="av ${cls}" style="background:${PALETTE[h%PALETTE.length]}">${esc(ini)}</div>`}
 function roleTag(r){return r==='owner'?`<span class="tag role-owner">${t('owner')}</span>`:r==='manager'?`<span class="tag role-manager">${t('manager')}</span>`:`<span class="tag">${t('staffR')}</span>`}
 function coTag(id){return `<span class="tag"><span class="dot" style="background:${coColor(id)}"></span>${esc(coName(id))}</span>`}
-const fmtD=(d,o={month:'short',day:'numeric'})=>new Date(d).toLocaleDateString(LOC(),o);
+const fmtD=(d,o)=>{const x=new Date(d);if(!o){o={month:'short',day:'numeric'};if(x.getFullYear()!==new Date().getFullYear())o.year='numeric'}return x.toLocaleDateString(LOC(),o)};
 const fmtDT=d=>new Date(d).toLocaleString(LOC(),{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 const fmtT=d=>new Date(d).toLocaleTimeString(LOC(),{hour:'numeric',minute:'2-digit'});
 const dOnly=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
